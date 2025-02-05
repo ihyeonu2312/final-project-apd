@@ -1,17 +1,18 @@
-package com.alpangdang.config;
+package site.unoeyhi.apd.security;
 
-import com.alpangdang.util.JwtUtil;
+import site.unoeyhi.apd.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.MembernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 
 @Component
-public class JwtFilter extends MembernamePasswordAuthenticationFilter {
+public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
 
     public JwtFilter(JwtUtil jwtUtil) {

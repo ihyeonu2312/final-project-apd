@@ -3,6 +3,9 @@ package site.unoeyhi.apd.service;
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.util.JwtUtil;
+
+import java.time.LocalDateTime;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,14 +21,24 @@ public class MemberService {
         this.jwtUtil = jwtUtil;
     }
 
-    public Member registerMember(String email, String password, String nickname) {
-        if (memberRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("이미 가입된 이메일입니다.");
-        }
-        String encryptedPassword = passwordEncoder.encode(password);
-        Member member = new Member(null, email, encryptedPassword, nickname);
-        return memberRepository.save(member);
+   public Member registerMember(String email, String password, String nickname) {
+    if (memberRepository.findByEmail(email).isPresent()) {
+        throw new RuntimeException("이미 가입된 이메일입니다.");
     }
+    String encryptedPassword = passwordEncoder.encode(password);
+
+    // ✅ Builder 패턴으로 객체 생성!
+    Member member = Member.builder()
+            .email(email)
+            .password(encryptedPassword)
+            .nickname(nickname)
+            .role(Member.Role.일반회원)
+            .createdAt(LocalDateTime.now())
+            .updatedAt(LocalDateTime.now())
+            .build();
+
+    return memberRepository.save(member);
+}
 
     public String loginMember(String email, String password) {
         Member member = memberRepository.findByEmail(email)
@@ -41,3 +54,4 @@ public class MemberService {
 }
 // ✔️ registerMember() → 회원가입 (비밀번호 암호화)
 // ✔️ loginMember() → JWT 토큰 발급
+

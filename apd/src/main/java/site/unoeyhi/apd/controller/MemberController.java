@@ -15,10 +15,14 @@ public class MemberController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestParam String email,
-            @RequestParam String password,
-            @RequestParam String nickname) {
-        memberService.registerMember(email, password, nickname, password, nickname);
+    public ResponseEntity<String> register(@RequestBody Member member) {
+        memberService.registerMember(
+            member.getEmail(), 
+            member.getPassword(), 
+            member.getNickname(), 
+            member.getPhoneNumber(), 
+            member.getAddress()
+        );
         return ResponseEntity.ok("회원가입 성공!");
     }
 

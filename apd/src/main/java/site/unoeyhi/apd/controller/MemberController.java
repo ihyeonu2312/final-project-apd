@@ -18,7 +18,7 @@ public class MemberController {
     public ResponseEntity<String> register(@RequestParam String email,
             @RequestParam String password,
             @RequestParam String nickname) {
-        memberService.registerMember(email, password, nickname);
+        memberService.registerMember(email, password, nickname, password, nickname);
         return ResponseEntity.ok("회원가입 성공!");
     }
 

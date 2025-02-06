@@ -21,24 +21,27 @@ public class MemberService {
         this.jwtUtil = jwtUtil;
     }
 
-   public Member registerMember(String email, String password, String nickname) {
-    if (memberRepository.findByEmail(email).isPresent()) {
-        throw new RuntimeException("이미 가입된 이메일입니다.");
+    public Member registerMember(String email, String password, String nickname, String phoneNumber, String address) {
+        if (memberRepository.findByEmail(email).isPresent()) {
+            throw new RuntimeException("이미 가입된 이메일입니다.");
+        }
+        String encryptedPassword = passwordEncoder.encode(password);
+        
+        Member member = Member.builder()
+                .email(email)
+                .password(encryptedPassword)
+                .nickname(nickname)
+                .phoneNumber(phoneNumber)
+                .address(address)
+                .role(Member.Role.일반회원)  // 기본값 일반회원
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+    
+        return memberRepository.save(member);
     }
-    String encryptedPassword = passwordEncoder.encode(password);
+    
 
-    // ✅ Builder 패턴으로 객체 생성!
-    Member member = Member.builder()
-            .email(email)
-            .password(encryptedPassword)
-            .nickname(nickname)
-            .role(Member.Role.일반회원)
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
-            .build();
-
-    return memberRepository.save(member);
-}
 
     public String loginMember(String email, String password) {
         Member member = memberRepository.findByEmail(email)

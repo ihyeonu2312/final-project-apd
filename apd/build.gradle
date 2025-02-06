@@ -71,7 +71,9 @@ dependencies {
     implementation 'software.amazon.awssdk:s3:2.20.25'  // 최신 버전 확인 후 사용
 
 		testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+		testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+		testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // 런처 관련 의존성
+    
 
 
 }

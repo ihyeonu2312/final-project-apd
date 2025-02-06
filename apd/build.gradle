@@ -1,16 +1,16 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.4.1'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.4.2'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'site.unoeyhi'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 configurations {
@@ -20,27 +20,23 @@ configurations {
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-			testImplementation 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
-    compileOnly 'org.projectlombok:lombok'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
-    annotationProcessor 'org.projectlombok:lombok'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+<<<<<<< HEAD
     //log4j2
     implementation 'org.springframework.boot:spring-boot-starter-log4j2'
     // https://mvnrepository.com/artifact/org.thymeleaf.extras/thymeleaf-extras-java8time
@@ -77,7 +73,13 @@ dependencies {
     implementation 'org.seleniumhq.selenium:selenium-java:4.8.0'
     
 
+=======
+    compileOnly 'org.projectlombok:lombok:1.18.26'
+    annotationProcessor 'org.projectlombok:lombok:1.18.26'
+>>>>>>> f7a4e2a9e86ba384eabe2d80f19e007ac7dc6066
 
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16' // log4jdbc 유지
 }
 
 	// springboot logger
@@ -88,7 +90,7 @@ configurations {
 
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
 
 sourceSets {

@@ -36,7 +36,7 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-<<<<<<< HEAD
+
     //log4j2
     implementation 'org.springframework.boot:spring-boot-starter-log4j2'
     // https://mvnrepository.com/artifact/org.thymeleaf.extras/thymeleaf-extras-java8time
@@ -73,10 +73,10 @@ dependencies {
     implementation 'org.seleniumhq.selenium:selenium-java:4.8.0'
     
 
-=======
+
     compileOnly 'org.projectlombok:lombok:1.18.26'
     annotationProcessor 'org.projectlombok:lombok:1.18.26'
->>>>>>> f7a4e2a9e86ba384eabe2d80f19e007ac7dc6066
+
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16' // log4jdbc 유지

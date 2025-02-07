@@ -18,7 +18,7 @@
         <Logger level="warn" name="jdbc.connection" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger level="info" name="site.unoeyhi" additivity="false">
+        <Logger level="debug" name="site.unoeyhi" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
     </Loggers>

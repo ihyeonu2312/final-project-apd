@@ -58,8 +58,8 @@ public class Member {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Column(name = "last_passwc", nullable = false)
-    private LocalDateTime lastPasswc = LocalDateTime.now();
+    @Column(name = "last_password_change", nullable = false)
+    private LocalDateTime lastPass = LocalDateTime.now();
 
     public enum Role {
         일반회원, 관리자

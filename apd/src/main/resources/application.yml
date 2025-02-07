@@ -6,16 +6,16 @@ spring:
   application:
     name: apd
   datasource:
-    url: jdbc:mariadb://np.unoeyhi.site:3306/security?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=UTC
+    url: jdbc:mariadb://np.unoeyhi.site:3306/mifo
     driver-class-name: org.mariadb.jdbc.Driver
     username: mifo
     password: 1234
-  security:
-    user:
-      name: user1
-      password: $2a$10$YP7wdCG6hYvKZD9DjVAJUOSwVkJUxuOgnqXko5mAwBha3/us7PKqm
-      roles:
-        - USER
+  # security:
+  #   user:
+  #     name: user1
+  #     password: $2a$10$YP7wdCG6hYvKZD9DjVAJUOSwVkJUxuOgnqXko5mAwBha3/us7PKqm
+  #     roles:
+  #       - USER
 
 logging:
   level:

@@ -20,7 +20,7 @@ public class MemberController {
             member.getEmail(), 
             member.getPassword(), 
             member.getNickname(), 
-            member.getPhoneNumber(), 
+            member.getPhone(), 
             member.getAddress()
         );
         return ResponseEntity.ok("회원가입 성공!");

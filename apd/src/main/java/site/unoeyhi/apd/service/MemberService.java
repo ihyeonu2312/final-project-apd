@@ -31,7 +31,7 @@ public class MemberService {
                 .email(email)
                 .password(encryptedPassword)
                 .nickname(nickname)
-                .phoneNumber(phoneNumber)
+                .phone(phoneNumber)
                 .address(address)
                 .role(Member.Role.일반회원)  // 기본값 일반회원
                 .createdAt(LocalDateTime.now())

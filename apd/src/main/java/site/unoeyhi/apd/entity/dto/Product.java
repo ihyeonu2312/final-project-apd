@@ -3,10 +3,10 @@ package site.unoeyhi.apd.entity.dto;
 import jakarta.persistence.*;
 import lombok.*;
 import site.unoeyhi.apd.entity.Member;
+import site.unoeyhi.apd.entity.dto.Category;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Locale.Category;
 
 @Entity(name = "tbl_product")
 @Getter
@@ -16,7 +16,6 @@ import java.util.Locale.Category;
 @ToString
 public class Product {
   
-  Member member;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)

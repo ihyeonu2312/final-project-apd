@@ -97,7 +97,7 @@ public class CartServiceTest {
     product.setStockQuantity(10);
     product.setCreatedAt(LocalDateTime.now());
     product.setUpdatedAt(LocalDateTime.now());
-    product.setCategory(category); // 상품에 카테고리 설정
+    product.setCategories(category); // 상품에 카테고리 설정
     productRepository.save(product); // 상품 저장
 
     // when: 상품을 조회하고 카테고리가 제대로 설정되었는지 확인

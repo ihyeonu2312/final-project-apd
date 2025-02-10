@@ -1,44 +1,67 @@
 package site.unoeyhi.apd.entity;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
-import site.unoeyhi.apd.entity.dto.FileMetadata;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Table(name = "Product")
-@Getter
-@Builder
-@AllArgsConstructor
+@Data
 @NoArgsConstructor
-@ToString
-@Setter
+@AllArgsConstructor
+@Builder
 public class Product {
-  
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long productId;  // 상품 ID
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "product_id")
+    private Long productId;
 
-  @ManyToOne(fetch = FetchType.EAGER) //LAZY을 EAGER 변경
-  @JoinColumn(name = "admin_id")
-  private Member admin;  // 관리자 (FK -> Member)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_id")
+    private Member admin;  // 관리자 (FK to Member)
 
-  private String name;      // 상품 이름
-  private String description;  // 상품 설명
-  private Double price;     // 상품 가격
-  private Integer stockQuantity;  // 재고 수량
+    @Column(nullable = false)
+    private String name;
 
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "category_id")
-  private Category category;  // 카테고리 (FK -> Category)
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+    @Column(nullable = false)
+    private Double price;
 
-  // FileMetadata와 OneToMany 관계
-  @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-  private List<FileMetadata> fileMetadataList;  // 상품 이미지 목록
+    @Column(name = "stock_quantity", nullable = false)
+    private Integer stockQuantity;
+
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "category_id")
+    // private Category category;  // 카테고리 (FK to Category)
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+    name = "Product_Category",
+    joinColumns = @JoinColumn(name = "product_id"),
+    inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private List<Category> categories = new ArrayList<>();
+
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

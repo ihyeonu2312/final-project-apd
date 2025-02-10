@@ -32,29 +32,28 @@ class CartControllerTest {
     @MockBean
     private MemberService memberService;
 
-    @Test
-    @WithMockUser(username = "testUser", roles = "USER")  // Mock 사용자 설정
-    void addItemToCartTest() throws Exception {
-        Long memberId = 1L;
-        Long productId = 1L;
-        int quantity = 2;
+@Test
+@WithMockUser(username = "testUser", roles = "USER")
+void addItemToCartTest() throws Exception {
+    Long memberId = 1L;
+    Long productId = 1L;
+    int quantity = 2;
 
-        // Mock 데이터 설정
-        Member mockMember = new Member();
-        mockMember.setMemberId(memberId);
-        Mockito.when(memberService.findById(memberId)).thenReturn(Optional.of(mockMember));
+    // Mock 데이터 설정
+    Member mockMember = new Member();
+    mockMember.setMemberId(memberId);
+    Mockito.when(memberService.findById(memberId)).thenReturn(Optional.of(mockMember));
 
-        // cartService에 대한 Mock 동작 설정
-        Mockito.doNothing().when(cartService).addItemCart(mockMember, productId, quantity);
+    Mockito.doNothing().when(cartService).addItemCart(mockMember, productId, quantity);
 
-        // API 호출 및 검증
-        mockMvc.perform(post("/api/cart/add")
-                        .with(csrf())  // CSRF 토큰 추가
-                        .param("memberId", String.valueOf(memberId))
-                        .param("productId", String.valueOf(productId))
-                        .param("quantity", String.valueOf(quantity)))
-                .andExpect(status().isOk())
-                .andExpect(content().string("상품이 장바구니에 추가되었습니다."))
-                .andDo(print());
-    }
+    // API 호출 및 검증
+    mockMvc.perform(post("/api/cart/add")
+                    .with(csrf())  // CSRF 토큰 추가
+                    .param("memberId", String.valueOf(memberId))
+                    .param("productId", String.valueOf(productId))
+                    .param("quantity", String.valueOf(quantity)))
+            .andExpect(status().isOk())  // 응답 상태가 200 OK인지 확인
+            .andExpect(content().string("상품이 장바구니에 추가되었습니다."))
+            .andDo(print());
+  }
 }

@@ -3,10 +3,12 @@ package site.unoeyhi.apd.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.log4j.Log4j2;
 import site.unoeyhi.apd.entity.Cart;
@@ -50,11 +52,13 @@ public class CartServiceTest {
     private CategoryRepository categoryRepository;
 
     private Product product;
+    private Member member;
 
+    @Transactional
     @BeforeEach
     public void setup() {
         // given: 회원과 상품 정보 준비
-        Member member = new Member();
+        member = new Member();
         member.setMemberId(1L);  // id는 실제 DB에 맞게 설정
         member.setNickname("testUser");
         memberService.save(member);  // save 메서드를 구현해야 함
@@ -70,9 +74,17 @@ public class CartServiceTest {
 
         productRepository.save(product); // 상품 저장 (없다면)
         
+        List<Cart> carts = cartRepository.findByMember(member);
+        
+        // 카트가 비어 있지 않으면
+        if (!carts.isEmpty()) {
+            Cart cart = carts.get(0);
+            Hibernate.initialize(cart.getCartItems()); // Lazy 로딩 강제 초기화
+        }
     }
+    @Transactional
     @Test
-public void testAddProductWithCategory() {
+    public void testAddProductWithCategory() {
     // given: 카테고리와 상품 정보 준비
     Category category = new Category();
     category.setName("Electronics"); // 카테고리 이름 설정
@@ -94,7 +106,7 @@ public void testAddProductWithCategory() {
     // then: 카테고리가 제대로 설정되었는지 확인
     assertThat(foundProduct.getCategory().getName()).isEqualTo("Electronics");
 }
-
+    @Transactional
     @Test
     public void testAddItemToCart() {
         Long productId = product.getProductId(); // 저장된 상품의 ID 사용
@@ -109,15 +121,19 @@ public void testAddProductWithCategory() {
         cartService.addItemCart(member, productId, quantity);
 
         // then: 장바구니에 추가된 아이템이 존재하는지 확인
-        Cart cart = cartRepository.findByMember(member)
-                .orElseThrow(() -> new IllegalArgumentException("장바구니가 없습니다."));
+        List<Cart> carts = cartRepository.findByMember(member);
+        // 카트가 비어 있으면 예외를 던짐
+        if (carts.isEmpty()){
+           throw new IllegalArgumentException("장바구니가 없습니다.");
+        }
+        Cart cart = carts.get(0); // 첫 번째 카트를 가져옴
         List<CartItem> items = cartItemRepository.findByCart(cart);
 
         assertThat(items).hasSize(1);  // 아이템이 1개여야 한다
-        assertThat(items.get(0).getProduct()).isEqualTo(productId);
+        assertThat(items.get(0).getProduct()).isEqualTo(product);
         assertThat(items.get(0).getQuantity()).isEqualTo(quantity);
     }
-
+    @Transactional
     @Test
     public void testGetCartItems() {
         // given: 회원과 장바구니 아이템 준비
@@ -132,7 +148,7 @@ public void testAddProductWithCategory() {
           cartRepository.save(cart);
   
           // CartItem 생성 및 저장
-          CartItem item = new CartItem();
+          CartItem item = new CartItem(cart, product, 0);
           item.setCart(cart);
           item.setProduct(product);  // setup()에서 생성된 product 사용
           item.setQuantity(2);

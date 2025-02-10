@@ -42,4 +42,31 @@ public class CartItem {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+
+     // 기본 생성자 추가
+     public CartItem() {
+    }
+
+    // 생성자나 메서드를 추가하여 유효성 검사 및 값 설정
+    public CartItem(Cart cart, Product product, int quantity) {
+        this.cart = cart;
+        this.product = product;
+        this.quantity = quantity;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
+    // 수량 업데이트 메서드 추가
+    public void updateQuantity(int quantity) {
+        this.quantity = quantity;
+        this.updatedAt = LocalDateTime.now();  // 수정 시간이 갱신
+    }
+    @Override
+    public String toString() {
+        return "CartItem{" +
+               "cartItemId=" + cartItemId +
+               ", cartId=" + cart.getCartId() + 
+               '}';
+    }
 }

@@ -19,10 +19,12 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 @Entity
 @Table(name = "Cart")
+@ToString
 public class Cart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,7 +36,7 @@ public class Cart {
     private Member member;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<CartItem> items = new ArrayList<>();
+    private List<CartItem> cartItems = new ArrayList<>();
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;  // 수정 시간 추가
@@ -51,6 +53,14 @@ public class Cart {
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+    @Override
+    public String toString() {
+        return "Cart{" +
+               "cartId=" + cartId +
+               ", member=" + member.getName() + 
+               ", cartItems=" + cartItems.size() + 
+               '}';
     }
 
 }

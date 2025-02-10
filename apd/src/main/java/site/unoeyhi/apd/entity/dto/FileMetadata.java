@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.*;
+import site.unoeyhi.apd.entity.Product;
 
 @Entity(name = "tbl_file_metadata")
 @Getter

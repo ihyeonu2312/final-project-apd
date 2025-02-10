@@ -5,10 +5,14 @@ import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.util.JwtUtil;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.log4j.Log4j2;
+
+@Log4j2
 @Service
 public class MemberService {
     private final MemberRepository memberRepository;
@@ -19,6 +23,10 @@ public class MemberService {
         this.memberRepository = memberRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtUtil = jwtUtil;
+    }
+    //CartController 조회에서 사용 목적
+    public Optional<Member> findById(Long memberId) {
+        return memberRepository.findById(memberId);
     }
 
     public Member registerMember(String email, String password, String nickname, String phoneNumber, String address) {
@@ -52,6 +60,10 @@ public class MemberService {
         }
 
         return jwtUtil.generateToken(email); // JWT 토큰 생성 후 반환
+    }
+    public Member save(Member member) {
+        log.info("Saving member with ID: {}", member.getMemberId());
+        return memberRepository.save(member);  // 실제 DB에 저장하는 코드
     }
 
 }

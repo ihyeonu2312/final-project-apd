@@ -1,14 +1,15 @@
-package site.unoeyhi.apd.entity.dto;
+package site.unoeyhi.apd.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity(name = "tbl_category")
+@Entity(name = "Category")
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
+@Setter
 public class Category{
 
   @Id

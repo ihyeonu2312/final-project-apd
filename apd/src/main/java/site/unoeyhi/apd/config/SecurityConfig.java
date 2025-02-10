@@ -45,18 +45,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf().disable()
-            .authorizeRequests()
-                .antMatchers("/api/cart/**").authenticated()  // 장바구니 API는 인증된 사용자만 접근 가능
-                .antMatchers("/api/admin/**").hasRole("관리자")  // 관리자는 /api/admin/** 경로에 접근 가능
+            .authorizeHttpRequests(authz -> authz
+                .requestMatchers("/api/cart/**").authenticated()  // 장바구니 API는 인증된 사용자만 접근 가능
+                .requestMatchers("/api/admin/**").hasRole("관리자")  // 관리자는 /api/admin/** 경로에 접근 가능
                 .anyRequest().permitAll() // 그 외 요청은 모두 허용
-            .and()
-            .formLogin()  // 기본 로그인 폼 사용
+            )
+            .formLogin(form -> form
                 .loginPage("/login")  // 로그인 페이지 경로
                 .permitAll()
-            .and()
-            .logout()  // 로그아웃 설정
-                .permitAll();
+            )
+            .logout(logout -> logout
+                .permitAll()
+            );
         
         return http.build();
     }
-}
+  }

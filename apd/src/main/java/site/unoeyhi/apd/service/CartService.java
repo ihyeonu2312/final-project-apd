@@ -48,6 +48,14 @@ public class CartService {
     }
     return carts; // 여러 카트를 반환
   }
+   // 회원의 첫 번째 카트 가져오기
+  public Cart getCartForMember(Member member) {
+    List<Cart> carts = getAllCart(member);
+    if (carts.isEmpty()) {
+        throw new RuntimeException("카트가 존재하지 않습니다.");
+    }
+    return carts.get(0);  // 첫 번째 카트를 반환
+}
 
   // 회원의 장바구니 아이템 목록 반환
   @Transactional
@@ -104,6 +112,16 @@ public class CartService {
       cart.getCartItems().add(newItem);// 카트아이템 추가
       cartItemRepository.save(newItem); // 아이템 저장
     }
+  }
+  // 장바구니에서 아이템 삭제
+  public void removeItemFromCart(Member member, Long productId) {
+    Cart cart = getCartForMember(member);
+    CartItem item = cartItemRepository.findByCart(cart).stream()
+            .filter(cartItem -> cartItem.getProduct()  != null && cartItem.getProduct().getProductId().equals(productId))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Item not found in cart"));
+
+    cartItemRepository.delete(item);
   }
 
 }

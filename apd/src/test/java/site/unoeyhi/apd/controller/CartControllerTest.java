@@ -1,28 +1,60 @@
-// package site.unoeyhi.apd.controller;
+package site.unoeyhi.apd.controller;
 
-// import org.junit.jupiter.api.Test;
-// import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.boot.test.context.SpringBootTest;
-// import org.springframework.boot.test.mock.mockito.MockBean;
-// import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
 
-// import site.unoeyhi.apd.service.CartService;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-// @SpringBootTest
-// class CartControllerTest {
+import java.util.Optional;
 
-//     @Autowired
-//     private MockMvc mockMvc;
+import site.unoeyhi.apd.entity.Member;
+import site.unoeyhi.apd.service.CartService;
+import site.unoeyhi.apd.service.MemberService;
 
-//     @MockBean
-//     private CartService cartService;
+@WebMvcTest(CartController.class)
+class CartControllerTest {
 
-//     @Test
-//     void addItemToCartTest() throws Exception {
-//         mockMvc.perform(post("/api/cart/add")
-//                         .param("productId", "1")
-//                         .param("quantity", "2"))
-//                 .andExpect(status().isOk())
-//                 .andExpect(content().string("Item added to cart"));
-//     }
-// }
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private CartService cartService;
+
+    @MockBean
+    private MemberService memberService;
+
+    @Test
+    @WithMockUser(username = "testUser", roles = "USER")  // Mock 사용자 설정
+    void addItemToCartTest() throws Exception {
+        Long memberId = 1L;
+        Long productId = 1L;
+        int quantity = 2;
+
+        // Mock 데이터 설정
+        Member mockMember = new Member();
+        mockMember.setMemberId(memberId);
+        Mockito.when(memberService.findById(memberId)).thenReturn(Optional.of(mockMember));
+
+        // cartService에 대한 Mock 동작 설정
+        Mockito.doNothing().when(cartService).addItemCart(mockMember, productId, quantity);
+
+        // API 호출 및 검증
+        mockMvc.perform(post("/api/cart/add")
+                        .with(csrf())  // CSRF 토큰 추가
+                        .param("memberId", String.valueOf(memberId))
+                        .param("productId", String.valueOf(productId))
+                        .param("quantity", String.valueOf(quantity)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("상품이 장바구니에 추가되었습니다."))
+                .andDo(print());
+    }
+}

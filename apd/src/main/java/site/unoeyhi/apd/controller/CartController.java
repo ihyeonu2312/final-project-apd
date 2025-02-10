@@ -12,6 +12,7 @@ import site.unoeyhi.apd.service.MemberService;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,12 +20,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 
 @RestController
-@RequestMapping("/cart")
+@RequestMapping("/api/cart")
 @RequiredArgsConstructor
 public class CartController {
   
-  private final CartService cartService;
-  private final MemberService  memberService;
+  @Autowired
+  private  CartService cartService;
+  
+  @Autowired
+  private  MemberService  memberService;
 
   @PostMapping("/add")
   public ResponseEntity<String> addItemToCart(@RequestParam Long memberId, @RequestParam Long productId, @RequestParam int quantity) {

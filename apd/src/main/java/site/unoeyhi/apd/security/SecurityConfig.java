@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter; // JWT 필터 주입
-    private final UserDetailsService userDetailsService; // 🔥 UserDetailsService 추가
+    private final CustomUserDetailsService customUserDetailsService; // 🔥 사용자 정보 로드 서비스 추가
 
     // 🔹 비밀번호 암호화를 위한 BCryptPasswordEncoder 빈 등록
     @Bean
@@ -31,18 +31,24 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // 🔹 AuthenticationManager 빈 직접 등록
+    // 🔹 AuthenticationManager 빈 등록
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    // 🔹 UserDetailsService 빈 등록
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return customUserDetailsService;
     }
 
     // 🔹 사용자 인증 제공자 (AuthenticationProvider) 설정
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setUserDetailsService(userDetailsService()); // 🔥 커스텀 UserDetailsService 사용
+        authProvider.setPasswordEncoder(passwordEncoder()); // 비밀번호 암호화 적용
         return authProvider;
     }
 

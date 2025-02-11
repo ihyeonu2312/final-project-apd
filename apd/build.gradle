@@ -33,16 +33,17 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // JJWT (JSON Web Token)
+    // JJWT (JSON Web Token) - 전체 의존성 추가
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 
     // MariaDB JDBC 드라이버
     implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.3'
 
-    // Thymeleaf Extras
+    // Thymeleaf Extras (Spring Security 6용)
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
     implementation 'org.thymeleaf.extras:thymeleaf-extras-java8time:3.0.4.RELEASE'
-    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5:3.1.3.RELEASE'
 
     // Log JDBC 설정 (query 정리되어서 출력)
     implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16'
@@ -56,10 +57,11 @@ dependencies {
     implementation 'software.amazon.awssdk:dynamodb:2.20.25'
     implementation 'software.amazon.awssdk:core:2.20.25'
 
-    // Selenium 크롤링
-    implementation 'org.seleniumhq.selenium:selenium-java:4.9.1'
-    implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.9.1'
-    
+    // Selenium 크롤링 (최신 버전으로 변경)
+    implementation 'org.seleniumhq.selenium:selenium-java:4.16.1'
+    implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.16.1'
+    implementation 'org.seleniumhq.selenium:selenium-support:4.16.1'
+
     // Hibernate Validator
     implementation 'org.hibernate.validator:hibernate-validator:7.0.4.Final'
     implementation 'jakarta.validation:jakarta.validation-api:3.0.0'
@@ -70,15 +72,11 @@ dependencies {
     testCompileOnly 'org.projectlombok:lombok:1.18.26'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.26'
 
-    // 테스트 관련 의존성
+    // 테스트 관련 의존성 (정리)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation 'org.springframework.security:spring-security-test'
-
-    // AssertJ 
     testImplementation 'org.assertj:assertj-core:3.23.0'
-
 }
 
 configurations { 
@@ -89,8 +87,9 @@ configurations {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
 tasks.withType(JavaCompile) {
-    options.compilerArgs.add("-Xlint:deprecation")
+    options.compilerArgs.addAll(["-Xlint:deprecation", "-Xlint:unchecked", "-parameters"])
 }
 
 sourceSets {

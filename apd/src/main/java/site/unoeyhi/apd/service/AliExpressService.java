@@ -20,10 +20,11 @@ public class AliExpressService {
 
             // 페이지 이동 및 로딩 대기
             page.navigate(url);
-            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.waitForSelector("[class^='multi--titleText--']");
+            // page.waitForLoadState(LoadState.NETWORKIDLE);
 
             // 상품 정보 가져오기
-            List<ElementHandle> productElements = page.querySelectorAll(".product-title-text");
+            List<ElementHandle> productElements = page.querySelectorAll("[class^='multi--titleText--']");
 
             // 🔥 상품 개수 제한 적용
             for (int i = 0; i < Math.min(productElements.size(), maxProducts); i++) {

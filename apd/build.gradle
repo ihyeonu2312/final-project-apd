@@ -66,6 +66,8 @@ dependencies {
     // implementation 'org.seleniumhq.selenium:selenium-remote-driver:4.25.0'
     // implementation 'org.seleniumhq.selenium:selenium-support:4.25.0'
 
+    implementation 'com.microsoft.playwright:playwright:1.38.0'
+
     // Hibernate Validator
     implementation 'org.hibernate.validator:hibernate-validator:7.0.4.Final'
     implementation 'jakarta.validation:jakarta.validation-api:3.0.0'
@@ -94,8 +96,11 @@ tasks.named('test') {
 
 tasks.withType(JavaCompile) {
     options.compilerArgs.addAll(["-Xlint:deprecation", "-Xlint:unchecked", "-parameters"])
+    options.encoding = 'UTF-8'  // 인코딩 설정 추가
 }
-
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
 sourceSets {
     main.java.srcDirs = ["$projectDir/src/main/java", "$projectDir/build/generated"]
 }

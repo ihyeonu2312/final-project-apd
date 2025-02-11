@@ -1,4 +1,4 @@
-package site.unoeyhi.apd.config;
+package site.unoeyhi.apd.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

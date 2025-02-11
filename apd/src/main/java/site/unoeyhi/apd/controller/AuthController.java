@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.entity.dto.LoginRequest;
+import site.unoeyhi.apd.entity.dto.SignupRequest;
+import site.unoeyhi.apd.service.MemberService;
 import site.unoeyhi.apd.entity.dto.AuthResponse;
 
 @CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
@@ -20,6 +22,8 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final MemberService memberService;
+    
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
@@ -36,5 +40,18 @@ public class AuthController {
 
         // 응답 반환
         return ResponseEntity.ok(new AuthResponse(jwt));
+    }
+    @PostMapping("/signup")
+    public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
+        memberService.registerMember(
+            request.getName(),
+            request.getEmail(),
+            request.getPassword(),
+            request.getNickname(),
+            request.getPhoneNumber(),
+            request.getAddress(),
+            request.getDetailAdd()
+        );
+        return ResponseEntity.ok("회원가입 성공!");
     }
 }

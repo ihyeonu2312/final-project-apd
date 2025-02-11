@@ -30,6 +30,11 @@ public class MemberService {
         return memberRepository.findById(memberId);
     }
 
+    // ✅ 이메일로 회원 찾기 (추가)
+    public Optional<Member> findByEmail(String email) {
+        return memberRepository.findByEmail(email);
+    }
+
     // ✅ 회원가입 (비밀번호 암호화)
     public Member registerMember(String name, String email, String password, String nickname, String phoneNumber, String address, String detailAdd) {
         if (memberRepository.findByEmail(email).isPresent()) {

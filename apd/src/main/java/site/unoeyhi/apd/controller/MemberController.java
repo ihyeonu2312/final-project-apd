@@ -2,12 +2,14 @@ package site.unoeyhi.apd.controller;
 
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.service.MemberService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/user")  // 🔥 경로 변경: /api/user 로 설정
 public class MemberController {
     private final MemberService memberService;
 
@@ -15,22 +17,25 @@ public class MemberController {
         this.memberService = memberService;
     }
 
-    // ✅ 회원가입 API
-    @PostMapping("/signup")
-    public ResponseEntity<?> register(@RequestBody Member member) {
-        try {
-            memberService.registerMember(
-                member.getName(),
-                member.getEmail(),
-                member.getPassword(),
-                member.getNickname(),
-                member.getPhone(),
-                member.getAddress(),
-                member.getDetailAdd()
-            );
-            return ResponseEntity.ok("회원가입 성공!");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    // ✅ 특정 회원 조회 (기존 코드)
+    @GetMapping("/{id}")
+    public ResponseEntity<Member> getMember(@PathVariable Long id) {
+        return memberService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ✅ 현재 로그인한 회원 정보 조회 API 추가
+    @GetMapping("/profile")
+    public ResponseEntity<Member> getProfile(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(401).build();  // 인증되지 않은 경우 401 반환
         }
+
+        String email = authentication.getName();  // 현재 로그인한 사용자의 이메일 가져오기
+        Optional<Member> member = memberService.findByEmail(email);
+
+        return member.map(ResponseEntity::ok)
+                     .orElse(ResponseEntity.notFound().build()); // 회원이 존재하지 않으면 404 반환
     }
 }

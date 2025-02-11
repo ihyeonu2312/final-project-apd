@@ -37,7 +37,6 @@ public class MemberRepositoryTest {
         Member member = Member.builder()
                 .name("이현우")
                 .email("test@example.com")  
-                // .password(encoder.encode("1234"))
                 .password("1234")
                 .nickname("testNickname")
                 .phone("010-1234-5678")
@@ -48,7 +47,7 @@ public class MemberRepositoryTest {
                 .deletedAt(null)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
-                .lastPass(null)
+                .lastPass(LocalDateTime.now())
                 .build();
 
 

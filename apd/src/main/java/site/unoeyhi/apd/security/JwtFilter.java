@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,9 +13,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 
+@Log4j2  
 @Component
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
@@ -29,24 +30,39 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        
+
+        // ✅ 요청 URL 로그 출력
+        log.info("🔍 요청 URL: {}", request.getRequestURI());
+
         // 🔹 헤더에서 Authorization 가져오기
         String token = request.getHeader("Authorization");
 
         if (token != null && token.startsWith("Bearer ")) {
             token = token.substring(7); // "Bearer " 제거
-            if (jwtUtil.validateToken(token)) { // 🔥 토큰 검증 추가
-                String email = jwtUtil.extractEmail(token); // 🔥 이메일 추출
+            log.debug("✅ JWT 토큰 감지: {}", token); // ✅ 토큰 값 로그 출력
 
-                // 🔹 사용자 정보 로드 (DB에서 가져오기)
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-                
-                // 🔥 Spring Security 인증 객체 생성
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            try {
+                if (jwtUtil.validateToken(token)) { // 🔥 토큰 검증 추가
+                    String email = jwtUtil.extractEmail(token); // 🔥 이메일 추출
+                    log.info("🔐 인증된 사용자 이메일: {}", email);
 
-                SecurityContextHolder.getContext().setAuthentication(authentication); // 🔥 인증 정보 저장
+                    // 🔹 사용자 정보 로드 (DB에서 가져오기)
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+                    // 🔥 Spring Security 인증 객체 생성
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication); // 🔥 인증 정보 저장
+                    log.info("✅ SecurityContext에 사용자 등록 완료!");
+                } else {
+                    log.warn("🚨 JWT 검증 실패: 유효하지 않은 토큰");
+                }
+            } catch (Exception e) {
+                log.error("❌ JWT 필터에서 오류 발생: ", e);
             }
+        } else {
+            log.warn("⚠️ Authorization 헤더 없음 또는 형식 오류");
         }
 
         chain.doFilter(request, response);

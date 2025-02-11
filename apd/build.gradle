@@ -58,9 +58,10 @@ dependencies {
     implementation 'software.amazon.awssdk:core:2.20.25'
 
     // Selenium 크롤링 (최신 버전으로 변경)
-    implementation 'org.seleniumhq.selenium:selenium-java:4.16.1'
-    implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.16.1'
-    implementation 'org.seleniumhq.selenium:selenium-support:4.16.1'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.25.0'
+    implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.25.0'
+    implementation 'org.seleniumhq.selenium:selenium-remote-driver:4.25.0'
+    implementation 'org.seleniumhq.selenium:selenium-support:4.25.0'
 
     // Hibernate Validator
     implementation 'org.hibernate.validator:hibernate-validator:7.0.4.Final'

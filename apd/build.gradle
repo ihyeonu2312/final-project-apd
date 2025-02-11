@@ -56,9 +56,9 @@ dependencies {
     implementation 'software.amazon.awssdk:dynamodb:2.20.25'
     implementation 'software.amazon.awssdk:core:2.20.25'
 
-    // Selenium
-    implementation 'org.seleniumhq.selenium:selenium-java:4.8.0'
-
+    // Selenium 크롤링
+    implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.9.0'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.9.0'
     // Hibernate Validator
     implementation 'org.hibernate.validator:hibernate-validator:7.0.4.Final'
     implementation 'jakarta.validation:jakarta.validation-api:3.0.0'
@@ -78,10 +78,6 @@ dependencies {
     // AssertJ 
     testImplementation 'org.assertj:assertj-core:3.23.0'
 
-    //jsoup 크롤링
-    implementation 'org.jsoup:jsoup:1.15.3'
-    //selnium 크롤링
-    implementation 'org.seleniumhq.selenium:selenium-java:4.9.1'
 }
 
 configurations { 
@@ -91,6 +87,9 @@ configurations {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+tasks.withType(JavaCompile) {
+    options.compilerArgs.add("-Xlint:deprecation")
 }
 
 sourceSets {

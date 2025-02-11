@@ -2,6 +2,7 @@ package site.unoeyhi.apd.controller;
 
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.service.MemberService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,24 +15,45 @@ public class MemberController {
         this.memberService = memberService;
     }
 
+    // ✅ 회원가입 API
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody Member member) {
-        memberService.registerMember(
-            member.getEmail(), 
-            member.getPassword(), 
-            member.getNickname(), 
-            member.getPhone(), 
-            member.getAddress()
-        );
-        return ResponseEntity.ok("회원가입 성공!");
+    public ResponseEntity<?> register(@RequestBody Member member) {
+        try {
+            memberService.registerMember(
+                member.getName(),  // ✅ 이름 추가
+                member.getEmail(),
+                member.getPassword(),
+                member.getNickname(),
+                member.getPhone(),
+                member.getAddress(),
+                member.getDetailAdd()  // ✅ 상세주소 추가
+            );
+            return ResponseEntity.ok("회원가입 성공!");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
+    // ✅ 로그인 API (DTO 사용)
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestParam String email, @RequestParam String password) {
-        String token = memberService.loginMember(email, password);
-        return ResponseEntity.ok(token);
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        try {
+            String token = memberService.loginMember(loginRequest.getEmail(), loginRequest.getPassword());
+            return ResponseEntity.ok(token);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
     }
-
 }
-// ✔️ /api/auth/register → 회원가입 API
-// ✔️ /api/auth/login → 로그인 & JWT 발급
+
+// ✅ 로그인 요청을 위한 DTO 추가
+class LoginRequest {
+    private String email;
+    private String password;
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+}

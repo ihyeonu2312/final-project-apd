@@ -49,8 +49,8 @@ public class Member {
     @Enumerated(EnumType.STRING)  // Enum을 저장할 때 문자열로 저장
     private MemberStatus status = MemberStatus.INACTIVE ;
 
-    @Column(name = "deleted_at", nullable = false)
-    private LocalDateTime deletedAt = LocalDateTime.now();
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

@@ -77,6 +77,9 @@ dependencies {
 
     // AssertJ 
     testImplementation 'org.assertj:assertj-core:3.23.0'
+
+    //jsoup 크롤링
+    implementation 'org.jsoup:jsoup:1.15.3'
 }
 
 configurations { 

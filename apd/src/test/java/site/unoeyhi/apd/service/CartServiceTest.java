@@ -1,6 +1,7 @@
 package site.unoeyhi.apd.service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 import org.hibernate.Hibernate;
@@ -97,14 +98,14 @@ public class CartServiceTest {
     product.setStockQuantity(10);
     product.setCreatedAt(LocalDateTime.now());
     product.setUpdatedAt(LocalDateTime.now());
-    product.setCategories(category); // 상품에 카테고리 설정
+    product.setCategories(Collections.singletonList(category)); // 상품에 카테고리 설정
     productRepository.save(product); // 상품 저장
 
     // when: 상품을 조회하고 카테고리가 제대로 설정되었는지 확인
     Product foundProduct = productRepository.findById(product.getProductId()).orElseThrow();
     
     // then: 카테고리가 제대로 설정되었는지 확인
-    assertThat(foundProduct.getCategory().getName()).isEqualTo("Electronics");
+    assertThat(foundProduct.getCategories().get(0)).isEqualTo("Electronics");
 }
     @Transactional
     @Test

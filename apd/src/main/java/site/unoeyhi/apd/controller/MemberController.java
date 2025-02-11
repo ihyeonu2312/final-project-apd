@@ -16,7 +16,7 @@ public class MemberController {
     }
 
     // ✅ 회원가입 API
-    @PostMapping("/register")
+    @PostMapping("/signup")
     public ResponseEntity<?> register(@RequestBody Member member) {
         try {
             memberService.registerMember(

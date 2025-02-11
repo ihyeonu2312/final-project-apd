@@ -12,6 +12,7 @@ import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.entity.dto.LoginRequest;
 import site.unoeyhi.apd.entity.dto.AuthResponse;
 
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

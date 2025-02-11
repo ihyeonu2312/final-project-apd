@@ -38,4 +38,16 @@ public class ProductService {
   
       productRepository.save(product);
     }
+
+    public void saveCrawledProducts(List<String> productNames) {
+        for (String name : productNames) {
+            Product product = Product.builder()
+                    .name(name)
+                    .price(0.0)  // 가격 정보를 가져오면 여기에 추가
+                    .stockQuantity(0)
+                    .build();
+
+            productRepository.save(product);
+        }
+    }
 }

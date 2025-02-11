@@ -64,6 +64,7 @@ public class Member {
     @Builder.Default
     private LocalDateTime lastPass = LocalDateTime.now();
 
+
     // ✅ 회원 상태 (권한)
     public enum Role {
         일반회원, 관리자

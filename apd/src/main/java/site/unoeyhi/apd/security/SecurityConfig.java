@@ -61,6 +61,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/signup").permitAll() // 🔥 로그인 & 회원가입 허용
                 .requestMatchers("/api/public/**").permitAll() // 🔥 추가적인 공개 API 허용 가능
+                .requestMatchers("/api/products").permitAll() // 🔥 `/api/products` 엔드포인트 접근 허용 추가
                 .requestMatchers("/api/cart/**").authenticated() // 🔐 장바구니 API 인증 필요
                 .anyRequest().authenticated() // 🔐 그 외 모든 요청은 인증 필요
             )
@@ -74,7 +75,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOriginPattern("*"); // 🔥 모든 도메인 허용
+        configuration.addAllowedOriginPattern("http://localhost:5173"); 
         configuration.addAllowedMethod("*"); // ✅ 모든 HTTP 메소드 허용 (GET, POST, PUT, DELETE 등)
         configuration.addAllowedHeader("*"); // ✅ 모든 요청 헤더 허용
         configuration.setAllowCredentials(true); // ✅ 인증 정보 포함 허용

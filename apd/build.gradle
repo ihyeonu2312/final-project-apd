@@ -80,6 +80,8 @@ dependencies {
 
     //jsoup 크롤링
     implementation 'org.jsoup:jsoup:1.15.3'
+    //selnium 크롤링
+    implementation 'org.seleniumhq.selenium:selenium-java:4.9.1'
 }
 
 configurations { 

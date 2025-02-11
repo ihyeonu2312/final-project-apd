@@ -32,6 +32,8 @@ public class AliExpress {
             for (WebElement element : productElements) {
                 productNames.add(element.getText());
             }
+             // 크롤링된 데이터를 콘솔에 출력
+             System.out.println("크롤링된 상품 이름 목록: " + productNames);
 
         } catch (Exception e) {
             e.printStackTrace();

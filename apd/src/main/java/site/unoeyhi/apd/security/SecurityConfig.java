@@ -63,6 +63,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/public/**").permitAll() // 🔥 추가적인 공개 API 허용 가능
                 .requestMatchers("/api/products").permitAll() // 🔥 `/api/products` 엔드포인트 접근 허용 추가
                 .requestMatchers("/api/cart/**").authenticated() // 🔐 장바구니 API 인증 필요
+                .requestMatchers( "/api/crawl/products").permitAll()  // 🔥 /api/products 엔드포인트 허용
                 .anyRequest().authenticated() // 🔐 그 외 모든 요청은 인증 필요
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 미사용

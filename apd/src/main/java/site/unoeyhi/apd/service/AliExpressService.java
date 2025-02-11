@@ -9,30 +9,27 @@ import java.util.*;
 @Service
 public class AliExpressService {
 
-    public List<String> crawlAliExpressProducts(String url) {
+    public List<String> fetchProductDetails(String url, int maxProducts) {
+        System.out.println("URL: " + url + ", maxProducts: " + maxProducts);  // 요청 로그 출력
         List<String> productNames = new ArrayList<>();
 
         try (Playwright playwright = Playwright.create()) {
-            // 1️⃣ 브라우저 설정 및 User-Agent 무작위 변경
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
-            BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-                .setUserAgent(getRandomUserAgent())
-            );
-
-            // 2️⃣ 페이지 이동 및 로딩 대기
+            BrowserContext context = browser.newContext();
             Page page = context.newPage();
+
+            // 페이지 이동 및 로딩 대기
             page.navigate(url);
             page.waitForLoadState(LoadState.NETWORKIDLE);
 
-            // 3️⃣ 동적 요소 대기 후 데이터 수집
-            page.waitForSelector(".product-title-text");  // 요소가 로드될 때까지 대기
+            // 상품 정보 가져오기
             List<ElementHandle> productElements = page.querySelectorAll(".product-title-text");
 
-            for (ElementHandle element : productElements) {
-                productNames.add(element.innerText().trim());
+            // 🔥 상품 개수 제한 적용
+            for (int i = 0; i < Math.min(productElements.size(), maxProducts); i++) {
+                productNames.add(productElements.get(i).innerText().trim());
             }
-
-            // 4️⃣ 브라우저 종료
+            System.out.println("크롤링된 상품들: " + productNames);
             browser.close();
         } catch (Exception e) {
             System.err.println("❌ 크롤링 중 오류 발생: " + e.getMessage());
@@ -40,7 +37,6 @@ public class AliExpressService {
 
         return productNames;
     }
-
     // ✅ 무작위 User-Agent 제공 메서드
     private String getRandomUserAgent() {
         List<String> userAgents = Arrays.asList(
@@ -54,3 +50,6 @@ public class AliExpressService {
         return userAgents.get(0);
     }
 }
+    
+
+

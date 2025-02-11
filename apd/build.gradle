@@ -57,8 +57,9 @@ dependencies {
     implementation 'software.amazon.awssdk:core:2.20.25'
 
     // Selenium 크롤링
-    implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.9.0'
-    implementation 'org.seleniumhq.selenium:selenium-java:4.9.0'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.9.1'
+    implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.9.1'
+    
     // Hibernate Validator
     implementation 'org.hibernate.validator:hibernate-validator:7.0.4.Final'
     implementation 'jakarta.validation:jakarta.validation-api:3.0.0'

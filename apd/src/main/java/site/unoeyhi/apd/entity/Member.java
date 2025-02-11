@@ -15,10 +15,10 @@ public class Member {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "member_id") // ✅ DB 컬럼명과 매칭
+    @Column(name = "member_id")
     private Long memberId;
 
-    @Column(name = "name",nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
     @Column(name = "email", nullable = false, unique = true)
@@ -33,40 +33,59 @@ public class Member {
     @Column(name = "phone", nullable = false)
     private String phone;
 
-    @Column(name = "address" , nullable = false)
+    @Column(name = "address", nullable = false)
     private String address;
 
-    @Column(name = "detail_address" , nullable = false)
+    @Column(name = "detail_address", nullable = false)
     private String detailAdd;
-
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
+    @Builder.Default
     private Role role = Role.일반회원;
 
-
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    @Enumerated(EnumType.STRING)  // Enum을 저장할 때 문자열로 저장
-    private MemberStatus status = MemberStatus.INACTIVE ;
+    @Builder.Default
+    private MemberStatus status = MemberStatus.INACTIVE;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at", nullable = false)
+    @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column(name = "last_password_change", nullable = false)
+    @Builder.Default
     private LocalDateTime lastPass = LocalDateTime.now();
 
+    // ✅ 회원 상태 (권한)
     public enum Role {
         일반회원, 관리자
     }
 
-    public enum MemberStatus{
-        ACTIVE,    // 접속 중
-        INACTIVE   // 접속 중 아님
+    // ✅ 회원 활성 상태
+    public enum MemberStatus {
+        ACTIVE,   // 활성 계정
+        INACTIVE  // 이메일 인증 미완료 (또는 비활성 계정)
+    }
+
+    // ✅ 자동으로 createdAt 설정 (최초 등록 시)
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+        this.lastPass = LocalDateTime.now();
+    }
+
+    // ✅ 자동으로 updatedAt 갱신 (엔티티 수정 시)
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

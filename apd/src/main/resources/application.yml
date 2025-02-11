@@ -1,4 +1,7 @@
 spring:
+  web:
+    resources:
+      static-locations: classpath:/static/
   profiles:
     include:
       - oauth
@@ -13,7 +16,7 @@ spring:
   security:
     user:
       name: user
-      password: 1234
+      password: $2a$10$Sj/Ze.8f5ZGxGuDGMMkaEe52lQ3b4Bs/8DdRMNxqoULrBy4qzE2u6
       roles:
         - USER
 

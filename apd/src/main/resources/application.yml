@@ -1,18 +1,31 @@
 spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@gmail.com
+    password: your-app-password
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+
   web:
     resources:
       static-locations: classpath:/static/
+
   profiles:
     include:
       - oauth
       - s3
+
   application:
     name: apd
+
   datasource:
     url: jdbc:mariadb://np.unoeyhi.site:3306/mifo
     driver-class-name: org.mariadb.jdbc.Driver
     username: mifo
     password: 1234
+
   security:
     user:
       name: user
@@ -20,37 +33,38 @@ spring:
       roles:
         - USER
 
-logging:
-  level:
-    jdbc.sqlonly: TRACE
-    jdbc.sqltiming: TRACE
-    jdbc.resultset: TRACE
-
-jpa:
-  hibernate:
-    ddl-auto: update
-  show-sql: true
-  properties:
+  jpa:
     hibernate:
-      format_sql: true
-      dialect: org.hibernate.dialect.MariaDBDialect
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MariaDBDialect
 
-thymeleaf:
-  cache: false
-  prefix: classpath:/templates/
-  suffix: .html
-  encoding: UTF-8
-  mode: html
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+    mode: html
 
-devtools:
-  restart:
-    enabled: true
-    additional-paths:
-      - src/main/java
-      - src/main/resources
-      - templates
+  devtools:
+    restart:
+      enabled: true
+      additional-paths:
+        - src/main/java
+        - src/main/resources
+        - templates
 
 server:
   servlet:
     encoding:
       force: true
+
+logging:
+  level:
+    jdbc:
+      sqlonly: TRACE
+      sqltiming: TRACE
+      resultset: TRACE

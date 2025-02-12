@@ -30,14 +30,14 @@ public class Member {
     @Column(name = "nickname", nullable = false, unique = true)
     private String nickname;
 
-    @Column(name = "phone", nullable = false)
-    private String phone;
+    @Column(name = "phone_number", nullable = false, unique = true)
+    private String phoneNumber;
 
     @Column(name = "address", nullable = false)
     private String address;
 
     @Column(name = "detail_address", nullable = false)
-    private String detailAdd;
+    private String detailAddress;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)

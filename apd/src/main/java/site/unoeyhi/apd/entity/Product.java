@@ -20,10 +20,6 @@ public class Product {
     @Column(name = "product_id")
     private Long productId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "admin_id")
-    private Member admin;
-
     @Column(nullable = false)
     private String name;
 
@@ -36,13 +32,16 @@ public class Product {
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)  // ✅ cascade 추가
+    // ✅ 이미지 URL 필드 추가
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinTable(
         name = "Product_Category",
         joinColumns = @JoinColumn(name = "product_id"),
         inverseJoinColumns = @JoinColumn(name = "category_id")
     )
-    
     private List<Category> categories = new ArrayList<>();
 
     @Column(name = "created_at")

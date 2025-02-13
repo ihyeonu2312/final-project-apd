@@ -1,6 +1,8 @@
 package site.unoeyhi.apd.service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,21 +59,50 @@ public class ProductService {
     }
 
       // ✅ 크롤링된 상품을 저장 (기본 카테고리 설정)
-      public void saveCrawledProducts(List<String> productNames, Long defaultCategoryId) {
-        Category category = categoryRepository.findById(defaultCategoryId)
-            .orElseThrow(() -> new RuntimeException("기본 카테고리를 찾을 수 없습니다."));
+      @Transactional
+      public void saveCrawledProducts(List<Map<String, String>> productDataList) {
+          for (Map<String, String> productData : productDataList) {
+              String name = productData.get("name");
+              double price = parsePrice(productData.getOrDefault("price", "0.0"));
+              String categoryName = productData.get("category");
+              String imageUrl = productData.get("imageUrl");
 
-        for (String name : productNames) {
-            Product product = Product.builder()
-                    .name(name)
-                    .description("크롤링된 상품")
-                    .price(0.0)
-                    .stockQuantity(100)
-                    .categories(List.of(category)) // ✅ 기본 카테고리 설정
-                    .build();
+              // ✅ 카테고리 존재 여부 확인 후 없으면 생성
+              Category category = categoryRepository.findByName(categoryName)
+                  .orElseGet(() -> {
+                      Category newCategory = new Category();
+                      newCategory.setName(categoryName);
+                      return categoryRepository.save(newCategory);
+                  });
+      
+              // ✅ 상품 저장
+              Product product = Product.builder()
+                      .name(name)
+                      .description("크롤링된 상품")
+                      .price(price)
+                      .stockQuantity(100)
+                      .imageUrl(imageUrl) // ✅ 이미지 저장
+                      .categories(List.of(category)) // ✅ 카테고리 할당
+                      .build();
+      
+              productRepository.save(product);
+          }
+      }
+      // 가격 문자열을 double로 변환하는 메서드
+    private double parsePrice(String priceStr) {
+        if (priceStr == null || priceStr.trim().isEmpty()) {
+            return 0.0; // ✅ null 또는 빈 문자열일 경우 기본값
+        }
 
+        // ✅ 화폐 기호 제거 ($, ₩, €, 등)
+        priceStr = priceStr.replaceAll("[^\\d.]", "");
 
-            productRepository.save(product);
+        try {
+            return Double.parseDouble(priceStr);
+        } catch (NumberFormatException e) {
+            System.err.println("❌ 가격 변환 오류: " + priceStr);
+            return 0.0; // ✅ 변환 실패 시 기본값
         }
     }
+    
 }

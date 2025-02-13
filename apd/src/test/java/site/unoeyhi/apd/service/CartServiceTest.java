@@ -44,12 +44,6 @@ public class CartServiceTest {
     private ProductRepository productRepository;
 
     @Autowired
-    private ProductService productService;
-
-    @Autowired
-    private CategoryService categoryService;
-
-    @Autowired
     private CategoryRepository categoryRepository;
 
     private Product product;
@@ -61,7 +55,7 @@ public class CartServiceTest {
         // given: 회원과 상품 정보 준비
         member = new Member();
         member.setMemberId(1L);  // id는 실제 DB에 맞게 설정
-        member.setNickname("testUser");
+        member.setNickname("이상원");
         memberService.save(member);  // save 메서드를 구현해야 함
 
         // 상품 정보 준비
@@ -88,7 +82,7 @@ public class CartServiceTest {
     public void testAddProductWithCategory() {
     // given: 카테고리와 상품 정보 준비
     Category category = new Category();
-    category.setName("Electronics"); // 카테고리 이름 설정
+    category.setName("패션"); // 카테고리 이름 설정
     categoryRepository.save(category); // 카테고리 저장
 
     Product product = new Product();
@@ -140,7 +134,7 @@ public class CartServiceTest {
         // given: 회원과 장바구니 아이템 준비
         Member member = new Member();
         member.setMemberId(1L);  // id는 실제 DB에 맞게 설정
-        member.setNickname("testUser");
+        member.setNickname("이상원");
         memberService.save(member);  // save 메서드를 구현해야 함
 
         // Cart 및 CartItem 생성

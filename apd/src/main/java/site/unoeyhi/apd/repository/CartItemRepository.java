@@ -14,5 +14,5 @@ import site.unoeyhi.apd.entity.CartItem;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     List<CartItem> findByCart(Cart cart); // Cart에 속한 모든 CartItem을 반환
-    Optional<CartItem> findByCartAndProductId(Cart cart, Long productId);
+    Optional<CartItem> findByCartAndProduct_ProductId(Cart cart, Long productId);
 }

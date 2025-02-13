@@ -27,11 +27,11 @@ public class CartItem {
     private Long cartItemId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cart_id")  // cart_id 컬럼과 Cart 엔티티를 매핑
+    @JoinColumn(name = "cart_id", nullable = false)  // cart_id 컬럼과 Cart 엔티티를 매핑
     private Cart cart; // 장바구니 (FK -> Cart)
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product; // 상품 (FK -> Product)
 
     @Column(name = "quantity")

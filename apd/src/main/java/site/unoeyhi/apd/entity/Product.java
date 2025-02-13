@@ -22,7 +22,7 @@ public class Product {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id")
-    private Member admin;  // 관리자 (FK to Member)
+    private Member admin;
 
     @Column(nullable = false)
     private String name;
@@ -36,19 +36,14 @@ public class Product {
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
 
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "category_id")
-    // private Category category;  // 카테고리 (FK to Category)
-
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)  // ✅ cascade 추가
     @JoinTable(
-    name = "Product_Category",
-    joinColumns = @JoinColumn(name = "product_id"),
-    inverseJoinColumns = @JoinColumn(name = "category_id")
+        name = "Product_Category",
+        joinColumns = @JoinColumn(name = "product_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
     )
-    @Builder.Default
+    
     private List<Category> categories = new ArrayList<>();
-
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

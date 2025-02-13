@@ -21,8 +21,9 @@ public class CrawlingController {
   @GetMapping("/products")
   public List<String> getCrawledProducts(
       @RequestParam String url,
-      @RequestParam(defaultValue = "10") int maxProducts
+      @RequestParam(defaultValue = "10") int maxProducts,
+      @RequestParam Long adminId // ✅ adminId 추가
   ) {
-      return aliExpressService.fetchProductDetails(url, maxProducts);
+      return aliExpressService.fetchProductDetails(url, maxProducts,adminId);
   }
 }

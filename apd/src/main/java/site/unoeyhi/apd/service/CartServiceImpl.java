@@ -16,7 +16,6 @@ import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.repository.CartItemRepository;
 import site.unoeyhi.apd.repository.CartRepository;
 import site.unoeyhi.apd.repository.ProductRepository;
-import site.unoeyhi.apd.service.CartService;
 
 @Service
 @RequiredArgsConstructor
@@ -35,18 +34,19 @@ public class CartServiceImpl implements CartService {
             newCart.setMember(member);
             newCart.setCreatedAt(LocalDateTime.now());
             cartRepository.save(newCart);
-            return List.of(newCart);
+            return new ArrayList<>(List.of(newCart));
+
         }
         return carts;
     }
 
     @Override
     public Cart getCartForMember(Member member) {
-        List<Cart> carts = getAllCart(member);
-        if (carts.isEmpty()) {
-            throw new RuntimeException("카트가 존재하지 않습니다.");
-        }
-        return carts.get(0);
+        // List<Cart> carts = getAllCart(member);
+        // if (carts.isEmpty()) {
+        //     throw new RuntimeException("카트가 존재하지 않습니다.");
+        // }
+        return getAllCart(member).get(0);
     }
 
     @Override
@@ -91,9 +91,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public void removeItemFromCart(Member member, Long productId) {
         Cart cart = getCartForMember(member);
-        CartItem item = cartItemRepository.findByCart(cart).stream()
-                .filter(cartItem -> cartItem.getProduct() != null && cartItem.getProduct().getProductId().equals(productId))
-                .findFirst()
+        CartItem item = cartItemRepository.findByCartAndProductId(cart, productId)
                 .orElseThrow(() -> new RuntimeException("Item not found in cart"));
 
         cartItemRepository.delete(item);

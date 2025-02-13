@@ -13,4 +13,5 @@ import site.unoeyhi.apd.entity.Member;
 public interface CartRepository extends JpaRepository<Cart, Long> {
     //Optional<Cart> findByMember(Member member); 단일 개체 사용시 사용  // 특정 회원의 장바구니 조회
     List<Cart> findByMember(Member member);
+    
 }

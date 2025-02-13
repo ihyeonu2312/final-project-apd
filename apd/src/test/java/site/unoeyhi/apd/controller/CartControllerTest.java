@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import java.util.Optional;
 
 import site.unoeyhi.apd.entity.Member;
@@ -32,13 +33,13 @@ class CartControllerTest {
     @MockBean
     private CartService cartService;
 
-    @Mock
+    @MockBean
     private MemberService memberService;
 
-     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+    //  @BeforeEach
+    // void setUp() {
+    //     MockitoAnnotations.openMocks(this);
+    // }
 
     @Test
     @WithMockUser(username = "testUser", roles = "USER")
@@ -47,13 +48,18 @@ class CartControllerTest {
         Long productId = 1L;
         int quantity = 2;
 
-        // Mock 데이터 설정
-        Member mockMember = new Member();
-        mockMember.setMemberId(memberId);
+         // ✅ Mock Member 객체 생성 (Builder 사용)
+        Member mockMember = Member.builder()
+            .memberId(memberId)
+            .build();
+
         Mockito.when(memberService.findById(memberId)).thenReturn(Optional.of(mockMember));
 
-        Mockito.doNothing().when(cartService).addItemCart(mockMember, productId, quantity);
 
+        Mockito.when(cartService.getCartItems(mockMember)).thenReturn(List.of()); // ✅ 장바구니 아이템 반환
+
+        Mockito.doNothing().when(cartService).addItemCart(mockMember, productId, quantity); // ✅ Mock 메서드 수정
+        
         // API 호출 및 검증
         mockMvc.perform(post("/api/cart/add")
                         .with(csrf())  // CSRF 토큰 추가

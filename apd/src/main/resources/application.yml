@@ -5,8 +5,15 @@ spring:
     username: dlgusdn2312@gmail.com
     password: nxmeqlbeehxirbpo
     properties:
-     mail.smtp.auth: true
-     mail.smtp.starttls.enable: true
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          transport:
+            protocol: smtp
+        debug: true  # 디버깅 로그 활성화
+
 
   web:
     resources:

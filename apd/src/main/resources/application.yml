@@ -68,3 +68,11 @@ logging:
       sqlonly: TRACE
       sqltiming: TRACE
       resultset: TRACE
+
+# ✅ AWS S3 설정 추가
+aws:
+  s3:
+    bucket-name: alpangdang-bucket  # ❗ 버킷 이름 입력
+    region: ap-northeast-2  # ❗ 서울 리전 (사용 중인 리전에 맞게 변경)
+  access-key: AKIAXEVXYZ77H6SCPKDK  # ❗ AWS 콘솔에서 발급받은 액세스 키
+  secret-key: bugAWuY/6/VAXOe9PwfdrtJMUHfU9YvACIsh53jO  # ❗ AWS 콘솔에서 발급받은 시크릿 키

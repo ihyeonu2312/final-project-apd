@@ -24,6 +24,7 @@ public class CrawlingController {
       @RequestParam(defaultValue = "10") int maxProducts,
       @RequestParam Long adminId // ✅ adminId 추가
   ) {
-      return aliExpressService.fetchProductDetails(url, maxProducts,adminId);
+    return aliExpressService.fetchProductDetails(url, maxProducts, adminId);
+
   }
 }

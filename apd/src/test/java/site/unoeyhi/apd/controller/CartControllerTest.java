@@ -36,11 +36,6 @@ class CartControllerTest {
     @MockBean
     private MemberService memberService;
 
-    //  @BeforeEach
-    // void setUp() {
-    //     MockitoAnnotations.openMocks(this);
-    // }
-
     @Test
     @WithMockUser(username = "testUser", roles = "USER")
     void addItemToCartTest() throws Exception {

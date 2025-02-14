@@ -7,9 +7,11 @@ import site.unoeyhi.apd.util.JwtUtil;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,11 +67,11 @@ public class MemberService {
     // ✅ 로그인 (JWT 토큰 발급)
     public String loginMember(String email, String password) {
         Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."));
 
         // 비밀번호 검증
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다.");
         }
 
         return jwtUtil.generateToken(email); // JWT 토큰 생성 후 반환
@@ -84,29 +86,32 @@ public class MemberService {
     // 🔹 중복 회원 체크 로직
     private void validateDuplicateMember(String email, String nickname, String phoneNumber) {
         if (memberRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("이미 사용 중인 이메일입니다.");
+            log.warn("❌ 중복된 이메일로 회원가입 시도: {}", email);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 가입된 이메일입니다.");
         }
         if (memberRepository.findByNickname(nickname).isPresent()) {
-            throw new RuntimeException("이미 사용 중인 닉네임입니다.");
+            log.warn("❌ 중복된 닉네임으로 회원가입 시도: {}", nickname);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.");
         }
         if (memberRepository.findByPhoneNumber(phoneNumber).isPresent()) {
-            throw new RuntimeException("이미 사용 중인 전화번호입니다.");
+            log.warn("❌ 중복된 전화번호로 회원가입 시도: {}", phoneNumber);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 전화번호입니다.");
         }
     }
 
     // 🔹 필수 입력값 검증 로직
     private void validateInputFields(String name, String email, String password, String detailAdd) {
         if (name == null || name.isBlank()) {
-            throw new RuntimeException("이름을 입력해야 합니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이름을 입력해야 합니다.");
         }
         if (email == null || email.isBlank()) {
-            throw new RuntimeException("이메일을 입력해야 합니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이메일을 입력해야 합니다.");
         }
         if (password == null || password.length() < 6) {
-            throw new RuntimeException("비밀번호는 최소 6자리 이상이어야 합니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "비밀번호는 최소 6자리 이상이어야 합니다.");
         }
         if (detailAdd == null || detailAdd.isBlank()) {
-            throw new RuntimeException("상세 주소를 입력해야 합니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "상세 주소를 입력해야 합니다.");
         }
     }
 }

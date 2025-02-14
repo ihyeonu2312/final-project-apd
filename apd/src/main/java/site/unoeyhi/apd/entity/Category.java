@@ -19,20 +19,11 @@ public class Category {
     @Column(name = "category_id")
     private Long categoryId;
 
-    @Column(nullable = false)
+    @Column(nullable = false,unique = true)
     private String name;
 
-     // ✅ 부모 카테고리 설정 (같은 Category를 참조)
-     @ManyToOne(fetch = FetchType.LAZY)
-     @JoinColumn(name = "parent_category_id")
-     private Category parentCategory;
- 
-     // ✅ 하위 카테고리 리스트
-     @OneToMany(mappedBy = "parentCategory", cascade = CascadeType.ALL)
-     private List<Category> subCategories = new ArrayList<>();
- 
-     // ✅ 상품과의 다대다 관계 (양방향 매핑)
-     @ManyToMany(mappedBy = "categories", cascade = CascadeType.PERSIST)
-     private List<Product> products = new ArrayList<>();
+      // ✅ FK 문제 수정: mappedBy 속성 일치 확인
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Product> products;
  
  }

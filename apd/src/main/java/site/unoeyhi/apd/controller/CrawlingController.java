@@ -2,6 +2,7 @@ package site.unoeyhi.apd.controller;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,12 +20,12 @@ public class CrawlingController {
     }
 
   @GetMapping("/products")
+  @PreAuthorize("hasRole('ADMIN')")//관리자만 요청가능
   public List<String> getCrawledProducts(
       @RequestParam String url,
-      @RequestParam(defaultValue = "10") int maxProducts,
-      @RequestParam Long adminId // ✅ adminId 추가
+      @RequestParam(defaultValue = "10") int maxProducts
   ) {
-    return aliExpressService.fetchProductDetails(url, maxProducts, adminId);
+    return aliExpressService.fetchProductDetails(url, maxProducts);
 
   }
 }

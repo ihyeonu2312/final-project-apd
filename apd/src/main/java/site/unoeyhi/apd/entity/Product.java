@@ -36,13 +36,10 @@ public class Product {
     @Column(name = "image_url")
     private String imageUrl;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
-    @JoinTable(
-        name = "Product_Category",
-        joinColumns = @JoinColumn(name = "product_id"),
-        inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    private List<Category> categories = new ArrayList<>();
+     // ✅ 카테고리 관계 설정 (ManyToOne) → category_id 추가됨
+     @ManyToOne(fetch = FetchType.LAZY)
+     @JoinColumn(name = "category_id", nullable = false) // Foreign Key 설정
+     private Category category;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

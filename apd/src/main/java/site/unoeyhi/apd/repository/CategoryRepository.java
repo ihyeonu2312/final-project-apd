@@ -7,4 +7,5 @@ import site.unoeyhi.apd.entity.Category;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     Optional<Category> findByName(String name); // ✅ 카테고리 이름으로 조회
+
 }

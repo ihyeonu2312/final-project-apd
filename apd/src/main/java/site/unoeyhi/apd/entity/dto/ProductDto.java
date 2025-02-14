@@ -15,5 +15,5 @@ public class ProductDto {
     private String description;   // 상품 설명
     private Double price;         // 상품 가격
     private Integer stockQuantity; // 재고 수량
-    private List<Long> categoryIds;  // 복수 카테고리 ID 리스트
+    private Long categoryId;  // 단일 카테고리 ID 리스트
 }

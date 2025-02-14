@@ -1,89 +1,75 @@
 package site.unoeyhi.apd.service;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import org.springframework.stereotype.Service;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.repository.CategoryRepository;
 import site.unoeyhi.apd.repository.ProductRepository;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Service
 public class AliExpressService {
-
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
 
-    static final Map<String, String> CATEGORY_MAPPING = Map.of(
-        "kr_home_appliances", "APPLIANCES"
-        // "kr_luggages_x2526_bags", "BAGS",
-        // "kr_beauty_x2526_health", "BEAUTY",
-        // "kr_fashion_accessories", "FASHION",
-        // "kr_home_x2526_interior", "HOME_INTERIOR",
-        // "kr_jewelry_x2526_watches", "JEWELRY",
-        // "kr_sports_x2526_entertainment", "SPORTS"
-    );
-
-    public AliExpressService(CategoryRepository categoryRepository, ProductRepository productRepository) {
-        this.categoryRepository = categoryRepository;
+    public AliExpressService(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
     }
 
-    public List<String> fetchProductDetails(String url, int maxProducts) {
-        System.out.println("🔗 크롤링 시작: URL = " + url + ", maxProducts = " + maxProducts);
-
-        List<String> productNames = new ArrayList<>();
+    public void crawlAndSaveProducts(String url, int maxProducts) {
+        System.out.println("🔗 크롤링 시작: " + url);
 
         try (Playwright playwright = Playwright.create()) {
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
+            Browser browser = playwright.firefox().launch(new BrowserType.LaunchOptions().setHeadless(false));
             BrowserContext context = browser.newContext();
             Page page = context.newPage();
 
-            // ✅ 페이지 이동 및 로딩 대기
             page.navigate(url);
-            page.waitForSelector("div[title]"); // ✅ 상품명 선택자
-            page.waitForSelector("div[class*='U-S0J'] span"); // ✅ 가격 선택자
-            page.waitForSelector("[class^='Category--categoryItem']"); // ✅ 카테고리 선택자
-            page.waitForSelector("img[class*='product-img']"); // ✅ 이미지 선택자
-            page.waitForSelector("div.1okBC"); // ✅ 숫자로 시작하는 클래스 선택자 (수정됨)
-            page.waitForTimeout(5000); // ✅ 추가 로딩 대기
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+            page.waitForTimeout(5000);
 
-            // 스크롤 이동 (가격이 화면에 보이도록)
-            Locator priceLocator = page.locator("div[class*='U-S0J'] span");
-            priceLocator.scrollIntoViewIfNeeded(); // ✅ 요소가 화면에 있도록 스크롤
+            List<ElementHandle> productElements = page.querySelectorAll("div[title]");
+            List<ElementHandle> priceElements = page.querySelectorAll(".manhattan--price-sale--1CCSZ");
+            List<ElementHandle> imageElements = page.querySelectorAll("img[class*='product-img']");
+            List<ElementHandle> categoryElements = page.querySelectorAll("[class^='Category--categoryItemTitle']");
 
-
-            // ✅ 상품 정보 크롤링
-            List<ElementHandle> productElements = page.querySelectorAll("div[title]"); // 상품명
-            List<ElementHandle> priceElements = page.querySelectorAll("div.1okBC span"); // 가격 (span 태그 포함)
-            List<ElementHandle> categoryElements = page.querySelectorAll("[class^='Category--categoryItem']"); // 카테고리
-            List<ElementHandle> imageElements = page.querySelectorAll("img[class*='product-img']"); // 이미지
-
-            // ✅ 크롤링된 요소 개수 출력 (디버깅용)
-            System.out.println("🔍 상품 개수: " + productElements.size());
-            System.out.println("🔍 가격 개수: " + priceElements.size());
-            System.out.println("🔍 카테고리 개수: " + categoryElements.size());
-            System.out.println("🔍 이미지 개수: " + imageElements.size());
+            System.out.println("🔍 크롤링된 상품 개수: " + productElements.size());
 
             for (int i = 0; i < Math.min(productElements.size(), maxProducts); i++) {
-                String productName = productElements.get(i).getAttribute("title").trim(); // ✅ 상품명 가져오기
-                String rawPrice = priceElements.size() > i ? priceElements.get(i).innerText().trim() : "0.0"; // ✅ 가격 가져오기
-                double price = parsePrice(rawPrice);
+                String productName = productElements.get(i).getAttribute("title");
 
-                String aliCategory = categoryElements.size() > i ? categoryElements.get(i).innerText().trim() : "기타";
-                String imageUrl = imageElements.size() > i ? imageElements.get(i).getAttribute("src") : null;
+                // ✅ 가격 가져오기 (기존 방식)
+                String priceText = priceElements.size() > i ? priceElements.get(i).innerText() : "0";
 
-                // ✅ AliExpress 카테고리를 React 카테고리로 변환
-                String reactCategory = CATEGORY_MAPPING.getOrDefault(aliCategory, null);
-                if (reactCategory == null) {
-                    System.out.println("⚠️ 카테고리 매칭 실패: " + aliCategory);
-                    continue;
+                // ✅ 가격이 0이거나 비어 있다면 iframe에서 가져오기
+                if (priceText.equals("0") || priceText.isEmpty()) {
+                    System.out.println("⚠️ 가격 정보가 비어 있음, iframe에서 가져오기 시도...");
+                    List<Frame> frames = page.frames();
+                    for (Frame frame : frames) {
+                        try {
+                            if (frame.locator("div.U-S0J span").count() > 0) {
+                                priceText = frame.locator("div.U-S0J span").innerText();
+                                System.out.println("✅ 찾은 가격 (iframe): " + priceText);
+                                break;
+                            }
+                        } catch (Exception e) {
+                            System.err.println("⚠️ `iframe` 접근 오류 발생: " + e.getMessage());
+                        }
+                    }
                 }
 
-                // ✅ category_id 조회 및 설정
+                double price = parsePrice(priceText);
+                String imageUrl = imageElements.size() > i ? imageElements.get(i).getAttribute("src") : null;
+
+                // ✅ 카테고리 매칭
+                String aliCategory = categoryElements.size() > i ? categoryElements.get(i).innerText().trim() : "기타";
+                String reactCategory = CATEGORY_MAPPING.getOrDefault(aliCategory, "기타");
+
+                // ✅ DB에서 카테고리 조회
                 Category category = categoryRepository.findByName(reactCategory)
                         .orElseGet(() -> {
                             Category newCategory = new Category();
@@ -91,38 +77,54 @@ public class AliExpressService {
                             return categoryRepository.save(newCategory);
                         });
 
+                // ✅ 중복 상품 확인 (DB에서 같은 이름의 상품이 있는지 검사)
+                Optional<Product> existingProduct = productRepository.findByName(productName);
+                if (existingProduct.isPresent()) {
+                    System.out.println("⚠️ 중복 상품 발견: " + productName + " (저장 안 함)");
+                    continue;
+                }
+
+                // ✅ 가격이 0이면 기본값 설정
+                if (price == 0.0) {
+                    price = 9.99;
+                }
+
+                // ✅ 저장 시도 로그 추가
+                System.out.println("🛠 저장 시도: " + productName + " | 💰 " + price + " | 📦 카테고리: " + reactCategory);
+
                 // ✅ 상품 저장
                 Product product = Product.builder()
                         .name(productName)
-                        .description("크롤링된 상품")
+                        .description("AliExpress 크롤링 상품")
                         .price(price)
                         .stockQuantity(100)
-                        .category(category) // ✅ category_id 매핑
+                        .category(category)
                         .imageUrl(imageUrl)
                         .build();
 
                 productRepository.save(product);
-                System.out.println("✅ 상품 저장 완료: " + productName + " | 가격: " + price + " | 카테고리: " + reactCategory);
+                System.out.println("✅ 저장 완료: " + productName + " | 💰 " + price + " | 📦 카테고리: " + reactCategory);
             }
-
 
             browser.close();
         } catch (Exception e) {
             System.err.println("❌ 크롤링 중 오류 발생: " + e.getMessage());
         }
-
-        return productNames;
     }
 
-    // ✅ 카테고리명 디코딩 메서드 추가
-    public String decodeAliCategory(String encodedCategory) {
-        if (encodedCategory == null) return "기타";
-        return URLDecoder.decode(encodedCategory.replace("x2526", "&"), StandardCharsets.UTF_8);
-    }
+    private static final Map<String, String> CATEGORY_MAPPING = Map.of(
+        "kr_home_appliances", "APPLIANCES",
+        "kr_luggages_&_bags", "BAGS",
+        "kr_beauty_&_health", "BEAUTY",
+        "kr_fashion_accessories", "FASHION",
+        "kr_home_&_interior", "HOME_INTERIOR",
+        "kr_jewelry_&_watches", "JEWELRY",
+        "kr_sports_&_entertainment", "SPORTS"
+    );
 
-    public double parsePrice(String priceStr) {
+    private double parsePrice(String priceStr) {
         if (priceStr == null || priceStr.isEmpty()) return 0.0;
-        priceStr = priceStr.replaceAll("[^\\d.]", ""); // 숫자와 '.'만 남기기
+        priceStr = priceStr.replaceAll("[^\\d.]", ""); // 숫자와 '.'만 남김
         try {
             return Double.parseDouble(priceStr);
         } catch (NumberFormatException e) {

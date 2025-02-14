@@ -32,7 +32,15 @@ public class JwtFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         // ✅ 요청 URL 로그 출력
-        log.info("🔍 요청 URL: {}", request.getRequestURI());
+        String requestURI = request.getRequestURI();
+        log.info("🔍 요청 URL: {}", requestURI);
+
+        // ✅ JWT 인증이 필요하지 않은 URL 예외 처리
+        if (requestURI.startsWith("/api/address/search")) {
+            log.info("🟢 주소 검색 API 요청 - JWT 인증 제외");
+            chain.doFilter(request, response);
+            return;
+        }
 
         // 🔹 헤더에서 Authorization 가져오기
         String token = request.getHeader("Authorization");

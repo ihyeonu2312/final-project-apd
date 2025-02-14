@@ -83,3 +83,8 @@ aws:
     region: ap-northeast-2  # ❗ 서울 리전 (사용 중인 리전에 맞게 변경)
   access-key: AKIAXEVXYZ77H6SCPKDK  # ❗ AWS 콘솔에서 발급받은 액세스 키
   secret-key: bugAWuY/6/VAXOe9PwfdrtJMUHfU9YvACIsh53jO  # ❗ AWS 콘솔에서 발급받은 시크릿 키
+
+# ✅ Kakao 주소 검색 API 설정 추가
+kakao:
+  api:
+    key: 4610c131c628a71164ca55417237824b # ❗ Kakao 개발자 콘솔에서 발급받은 REST API Key

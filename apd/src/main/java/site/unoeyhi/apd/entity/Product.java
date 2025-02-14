@@ -1,8 +1,6 @@
 package site.unoeyhi.apd.entity;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,20 +30,21 @@ public class Product {
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
 
-    // ✅ 이미지 URL 필드 추가
-    @Column(name = "image_url")
-    private String imageUrl;
-
-     // ✅ 카테고리 관계 설정 (ManyToOne) → category_id 추가됨
-     @ManyToOne(fetch = FetchType.LAZY)
-     @JoinColumn(name = "category_id", nullable = false) // Foreign Key 설정
-     private Category category;
+    // ✅ 카테고리 관계 설정 (ManyToOne) → category_id 추가됨
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false) // Foreign Key 설정
+    private Category category;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+     // ✅ 이미지 URL 필드 추가
+     @Column(name = "image_url")
+     private String imageUrl;
+ 
 
     @PrePersist
     protected void onCreate() {

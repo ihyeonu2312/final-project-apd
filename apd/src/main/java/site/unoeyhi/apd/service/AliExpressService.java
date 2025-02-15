@@ -8,6 +8,7 @@ import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.repository.CategoryRepository;
 import site.unoeyhi.apd.repository.ProductRepository;
 
+import java.nio.file.Path;
 import java.util.*;
 
 @Service
@@ -19,23 +20,39 @@ public class AliExpressService {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
     }
+    //가전제품 크롤링 url
+    public void crawlHomeAppliances() {
+        String url = "https://www.aliexpress.com/category/100003109/home-appliances.html";
+        crawlAndSaveProducts(url, 20); // ✅ 가전제품 최대 20개 크롤링
+    }
 
     public void crawlAndSaveProducts(String url, int maxProducts) {
         System.out.println("🔗 크롤링 시작: " + url);
 
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.firefox().launch(new BrowserType.LaunchOptions().setHeadless(false));
-            BrowserContext context = browser.newContext();
+            BrowserContext context = browser.newContext(new Browser.NewContextOptions()
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
+                .setViewportSize(1366, 768)
+                .setLocale("en-US")
+                .setJavaScriptEnabled(true)
+                .setBypassCSP(true) // ✅ AliExpress의 `bot` 감지 시스템 우회
+            );
+            context.clearCookies(); // ✅ 캐시 초기화
+            context.storageState(new BrowserContext.StorageStateOptions().setPath(Path.of("state.json"))); // ✅ 세션 초기화
+
             Page page = context.newPage();
 
             page.navigate(url);
-            page.waitForLoadState(LoadState.NETWORKIDLE);
-            page.waitForTimeout(5000);
+            page.navigate(url, new Page.NavigateOptions().setTimeout(60000)); // ✅ 60초로 타임아웃 연장
+            page.waitForFunction("document.querySelectorAll('div[data-widget-type=\"productCard\"]').length > 0", 
+            new Page.WaitForFunctionOptions().setTimeout(60000));
+            page.waitForTimeout(10000); // ✅ 추가 대기 (10초)
 
             List<ElementHandle> productElements = page.querySelectorAll("div[title]");
             List<ElementHandle> priceElements = page.querySelectorAll(".manhattan--price-sale--1CCSZ");
             List<ElementHandle> imageElements = page.querySelectorAll("img[class*='product-img']");
-            List<ElementHandle> categoryElements = page.querySelectorAll("[class^='Category--categoryItemTitle']");
+            // List<ElementHandle> categoryElements = page.querySelectorAll("[class^='Category--categoryItemTitle']");
 
             System.out.println("🔍 크롤링된 상품 개수: " + productElements.size());
 
@@ -65,15 +82,15 @@ public class AliExpressService {
                 double price = parsePrice(priceText);
                 String imageUrl = imageElements.size() > i ? imageElements.get(i).getAttribute("src") : null;
 
-                // ✅ 카테고리 매칭
-                String aliCategory = categoryElements.size() > i ? categoryElements.get(i).innerText().trim() : "기타";
-                String reactCategory = CATEGORY_MAPPING.getOrDefault(aliCategory, "기타");
+                // // ✅ 카테고리 매칭
+                // String aliCategory = categoryElements.size() > i ? categoryElements.get(i).innerText().trim() : "기타";
+                // String reactCategory = CATEGORY_MAPPING.getOrDefault(aliCategory, "기타");
 
                 // ✅ DB에서 카테고리 조회
-                Category category = categoryRepository.findByName(reactCategory)
+                Category category = categoryRepository.findByName("APPLIANCES")
                         .orElseGet(() -> {
                             Category newCategory = new Category();
-                            newCategory.setName(reactCategory);
+                            newCategory.setName("APPLIANCES");
                             return categoryRepository.save(newCategory);
                         });
 
@@ -90,7 +107,7 @@ public class AliExpressService {
                 }
 
                 // ✅ 저장 시도 로그 추가
-                System.out.println("🛠 저장 시도: " + productName + " | 💰 " + price + " | 📦 카테고리: " + reactCategory);
+                System.out.println("🛠 저장 시도: " + productName + " | 💰 " + price + " | 📦 카테고리:  APPLIANCES");
 
                 // ✅ 상품 저장
                 Product product = Product.builder()
@@ -103,7 +120,13 @@ public class AliExpressService {
                         .build();
 
                 productRepository.save(product);
-                System.out.println("✅ 저장 완료: " + productName + " | 💰 " + price + " | 📦 카테고리: " + reactCategory);
+                System.out.println("✅ 저장 완료: " + productName + " | 💰 " + price);
+            }
+            String currentUrl = page.url();
+            if (!currentUrl.contains("home-appliances")) {
+                System.out.println("🚨 AliExpress가 잘못된 페이지로 리디렉션! 다시 이동...");
+                page.navigate("https://www.aliexpress.com/category/100003109/home-appliances.html");
+                page.waitForTimeout(5000);
             }
 
             browser.close();
@@ -112,15 +135,15 @@ public class AliExpressService {
         }
     }
 
-    private static final Map<String, String> CATEGORY_MAPPING = Map.of(
-        "kr_home_appliances", "APPLIANCES",
-        "kr_luggages_&_bags", "BAGS",
-        "kr_beauty_&_health", "BEAUTY",
-        "kr_fashion_accessories", "FASHION",
-        "kr_home_&_interior", "HOME_INTERIOR",
-        "kr_jewelry_&_watches", "JEWELRY",
-        "kr_sports_&_entertainment", "SPORTS"
-    );
+    // private static final Map<String, String> CATEGORY_MAPPING = Map.of(
+    //     "kr_home_appliances", "APPLIANCES",
+    //     "kr_luggages_&_bags", "BAGS",
+    //     "kr_beauty_&_health", "BEAUTY",
+    //     "kr_fashion_accessories", "FASHION",
+    //     "kr_home_&_interior", "HOME_INTERIOR",
+    //     "kr_jewelry_&_watches", "JEWELRY",
+    //     "kr_sports_&_entertainment", "SPORTS"
+    // );
 
     private double parsePrice(String priceStr) {
         if (priceStr == null || priceStr.isEmpty()) return 0.0;

@@ -14,14 +14,11 @@ public class AliExpressRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println("🚀 AliExpress 크롤링 실행 시작...");
+        System.out.println("🚀 AliExpress 가전제품 크롤링 실행 시작...");
 
-        // ✅ 크롤링할 URL 설정 (원하는 카테고리 페이지로 변경 가능)
-        String url = "https://www.aliexpress.com/category/100003109/women-clothing.html";
+        // ✅ 가전제품 크롤링 실행 (이전 의류 크롤링 코드 제거)
+        crawlerService.crawlHomeAppliances();
 
-        // ✅ 크롤링 실행 (5개 제품 가져오기)
-        crawlerService.crawlAndSaveProducts(url, 5);
-
-        System.out.println("✅ 크롤링 완료!");
+        System.out.println("✅ 가전제품 크롤링 완료!");
     }
 }

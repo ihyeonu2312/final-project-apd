@@ -45,9 +45,13 @@ public class AliExpressService {
 
             page.navigate(url);
             page.navigate(url, new Page.NavigateOptions().setTimeout(60000)); // ✅ 60초로 타임아웃 연장
-            page.waitForFunction("document.querySelectorAll('div[data-widget-type=\"productCard\"]').length > 0", 
-            new Page.WaitForFunctionOptions().setTimeout(60000));
-            page.waitForTimeout(10000); // ✅ 추가 대기 (10초)
+            page.waitForFunction("() => document.querySelectorAll('div[data-widget-type=\"productCard\"]').length > 0");
+                new Page.WaitForFunctionOptions().setTimeout(60000);
+
+            System.out.println("✅ 페이지 이동 완료");
+
+            // ✅ 현재 HTML을 확인하여 원하는 요소가 있는지 체크
+            System.out.println("현재 페이지 HTML:\n" + page.content());
 
             List<ElementHandle> productElements = page.querySelectorAll("div[title]");
             List<ElementHandle> priceElements = page.querySelectorAll(".manhattan--price-sale--1CCSZ");

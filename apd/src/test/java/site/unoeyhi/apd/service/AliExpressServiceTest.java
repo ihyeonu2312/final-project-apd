@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 public class AliExpressServiceTest {
-  
+
     private static Playwright playwright;
     private static Browser browser;
     private static BrowserContext context;
@@ -24,94 +24,117 @@ public class AliExpressServiceTest {
         playwright = Playwright.create();
         browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                 .setHeadless(false) // UI 디버깅을 위해 Headless 모드 해제
-                .setArgs(List.of("--disable-blink-features=AutomationControlled"))); // ✅ 탐지 방지
+                .setArgs(List.of(
+                        "--disable-blink-features=AutomationControlled", // ✅ 자동화 탐지 방지
+                        "--disable-web-security", "--disable-site-isolation-trials",
+                        "--disable-features=IsolateOrigins,site-per-process" // ✅ 크롤링 차단 방지
+                )));
 
         context = browser.newContext(new Browser.NewContextOptions()
+                .setBypassCSP(true) // ✅ 크롤링 차단 우회
                 .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36") // ✅ 탐지 방지
                 .setViewportSize(1366, 768)); // 화면 해상도 설정
 
         page = context.newPage();
     }
 
-
     @Test
     void ScrapAliExpress() {
-        List<CategoryModel> categoryList = new ArrayList<>(); //결과 담을 모델 리스트
+        List<CategoryModel> categoryList = new ArrayList<>();
 
-        page.navigate("https://www.aliexpress.com/");
-        page.waitForTimeout(2500); // 이동후 2초 대기
+        page.navigate("https://www.aliexpress.com/",
+            new Page.NavigateOptions().setTimeout(60000));
+        page.waitForTimeout(3000);
+        System.out.println("✅ 페이지 이동 완료");
 
-            System.out.println("✅ 페이지 이동 완료");
+        /// 1. 팝업 제거 (강제 숨김 + ESC 키 활용)
+        System.out.println("🔵 팝업 제거 시작");
+        try {
+            // ✅ 모든 팝업 숨김 (CSS 스타일 적용)
+            page.evaluate("() => document.body.setAttribute('automation-controlled', 'false')");
 
-            /// 1. 팝업 제거
-            System.out.println("🔵 팝업 제거 시작");
-            try {
-                Locator popupClose1 = page.locator("img.pop-close-btn");
-                Locator popupClose2 = page.locator("body > div:nth-child(31) > div > img");
-                Locator popupClose3 = page.locator("body > div:nth-child(30) > div > img");
-                Locator popupClose4 = page.locator("body > div:nth-child(32) > div > img");
 
-                if (popupClose1.count() > 0) {
-                    popupClose1.click();
-                    System.out.println("✅ 팝업 1 제거 완료");
-                }
-                page.waitForTimeout(500);
+        // ✅ ESC 키로 팝업 닫기
+        page.keyboard().press("Escape");
+        page.waitForTimeout(2000);
 
-                if (popupClose2.count() > 0) {
-                    popupClose2.click();
-                    System.out.println("✅ 팝업 2 제거 완료");
-                }
-                if (popupClose3.count() > 0) {
-                    popupClose3.click();
-                    System.out.println("✅ 팝업 3 제거 완료");
-                }
-                if (popupClose4.count() > 0) {
-                    popupClose4.click();
-                    System.out.println("✅ 팝업 4 제거 완료");
-                }
-                page.waitForTimeout(500);
-            } catch (Exception e) {
-                System.out.println("⚠️ 팝업 제거 중 오류 발생: " + e.getMessage());
+        // ✅ 닫기 버튼 강제 클릭
+        Locator closeButtons = page.locator("img[alt='close']");
+        if (closeButtons.count() > 0) {
+            for (int i = 0; i < closeButtons.count(); i++) {
+                closeButtons.nth(i).scrollIntoViewIfNeeded();
+                closeButtons.nth(i).click(new Locator.ClickOptions().setForce(true));
+                page.waitForTimeout(1000);
             }
+        }
+        System.out.println("✅ 팝업 제거 완료");
 
-            /// 2. 카테고리 호버
-            System.out.println("🔵 카테고리 호버 시작");
-            try {
-                page.waitForSelector("div[data-spm=allcategoriespc]", new Page.WaitForSelectorOptions().setTimeout(5000)); // 5초 대기
-                Locator hoverCategory = page.locator("div[data-spm=allcategoriespc]");
-                if (hoverCategory.count() > 0) {
-                    hoverCategory.hover();
-                    System.out.println("✅ 카테고리 호버 완료");
-                } else {
-                    System.out.println("⚠️ 카테고리 요소를 찾을 수 없음");
-                }
-            } catch (Exception e) {
-                System.out.println("⚠️ 카테고리 호버 중 오류 발생: " + e.getMessage());
+        } catch (Exception e) {
+            System.out.println("⚠️ 팝업 제거 중 오류 발생: " + e.getMessage());
+        }
+
+        /// 2. 카테고리 메뉴 열기
+        System.out.println("🔵 카테고리 메뉴 열기");
+        try {
+           // ✅ 카테고리 메뉴 클릭 강제 실행
+        Locator categoryMenuButton = page.locator("div[data-spm='allcategoriespc']");
+        page.waitForSelector("div[data-spm='allcategoriespc']", 
+            new Page.WaitForSelectorOptions().setTimeout(10000));
+
+        if (categoryMenuButton.isVisible() && categoryMenuButton.isEnabled()) {
+            categoryMenuButton.scrollIntoViewIfNeeded();
+            categoryMenuButton.click(new Locator.ClickOptions().setForce(true));
+            page.waitForTimeout(5000);
+            System.out.println("✅ 카테고리 메뉴 클릭 성공!");
+        } else {
+            System.out.println("⚠️ 카테고리 버튼이 비활성화됨");
+        }
+
+        } catch (Exception e) {
+            System.out.println("⚠️ 카테고리 클릭 중 오류 발생: " + e.getMessage());
+            return;
+        }
+
+        /// 3. 대분류 카테고리 크롤링
+        System.out.println("🔵 대분류 카테고리 스크랩 시작");
+        try {
+            // 🔍 **디버깅용 - HTML 내용 확인**
+            String categoryHtml = page.innerHTML("ul.Categoey--categoryList--2QES_k6");
+            System.out.println("📌 카테고리 HTML 내용: " + categoryHtml);
+
+            List<Frame> frames = page.frames();
+            System.out.println("📌 현재 페이지 내 iframe 개수: " + frames.size());
+
+            for (Frame frame : frames) {
+                System.out.println("🔍 iframe URL: " + frame.url());
             }
-            page.waitForTimeout(1000);
+            page.evaluate("() => document.body.setAttribute('automation-controlled', 'false')");
+            page.waitForSelector("ul.Categoey--categoryList--2QES_k6 > a:visible",
+                new Page.WaitForSelectorOptions().setTimeout(30000)); // ⬆️ 30초로 증가
 
-            /// 3. 스크랩 실행
-            System.out.println("🔵 카테고리 스크랩 시작");
-            try {
-                Locator categories = page.locator("ul.Categoey--categoryList--2QES_k6 > a");
-                if (categories.count() > 0) {
-                    categories.all().forEach(category -> {
-                        CategoryModel newCategory = new CategoryModel();
+            Locator categories = page.locator("ul.Categoey--categoryList--2QES_k6 > a:visible");
 
-                        newCategory.setCategoryName(category.textContent()); // 카테고리명
-                        newCategory.setCategoryUrl(category.getAttribute("href")); // URL
-
-                        categoryList.add(newCategory);
-                    });
-                    System.out.println("✅ 카테고리 스크랩 완료");
-                } else {
-                    System.out.println("⚠️ 카테고리 목록을 찾을 수 없음");
-                }
-            } catch (Exception e) {
-                System.out.println("⚠️ 스크랩 중 오류 발생: " + e.getMessage());
+            int categoryCount = categories.count();
+            if (categoryCount > 0) {
+                System.out.println("✅ 대분류 카테고리 개수: " + categoryCount);
+                categories.all().forEach(category -> {
+                    CategoryModel newCategory = new CategoryModel();
+                    newCategory.setCategoryName(category.textContent().trim());
+                    newCategory.setCategoryUrl(category.getAttribute("href"));
+                    categoryList.add(newCategory);
+                });
+                System.out.println("✅ 대분류 카테고리 스크랩 완료");
+            } else {
+                System.out.println("⚠️ 대분류 카테고리를 찾을 수 없음");
             }
+        } catch (Exception e) {
+            System.out.println("⚠️ 대분류 카테고리 스크랩 중 오류 발생: " + e.getMessage());
+        }
 
-            System.out.println("📌 최종 결과: " + categoryList);
-            browser.close();
-   }
+        System.out.println("📌 최종 대분류 카테고리 결과: " + categoryList);
+        browser.close();
+    }
+
+
+
 }

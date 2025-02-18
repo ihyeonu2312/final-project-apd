@@ -31,7 +31,7 @@ public class AliExpressService {
     // ✅ 크롤링 실행 후 DB에 저장
     @Transactional
     public List<CategoryModel> scrapAndSaveCategories() {
-        List<CategoryModel> categoryList = new ArrayList<>(); // 크롤링 데이터 저장 리스트
+        List<CategoryModel> categoryList = new ArrayList<>();
 
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
@@ -49,55 +49,62 @@ public class AliExpressService {
             page.waitForTimeout(5000);
             System.out.println("✅ 페이지 이동 완료");
 
-            // ✅ 카테고리 메뉴 로드 대기
-            System.out.println("🔵 카테고리 메뉴 대기 중...");
+            // ✅ 카테고리 메뉴 활성화 (호버 후 3초 대기)
             try {
-                page.waitForSelector("ul.Categoey--categoryList--2QES_k6 > a",
-                        new Page.WaitForSelectorOptions().setTimeout(10000));
-                System.out.println("✅ 카테고리 메뉴 확인 완료!");
+                System.out.println("🔵 카테고리 메뉴 활성화...");
+                page.locator("div[data-spm='allcategoriespc']").hover();
+                page.waitForTimeout(3000);
+                System.out.println("✅ 카테고리 메뉴 활성화 완료!");
             } catch (Exception e) {
-                System.out.println("⚠️ 카테고리 메뉴를 찾을 수 없음!");
-                return categoryList; // 크롤링 실패 시 빈 리스트 반환
+                System.out.println("⚠️ 카테고리 메뉴 활성화 실패: " + e.getMessage());
             }
 
-            // ✅ 크롤링 실행
+            // ✅ 카테고리 목록 대기
+            System.out.println("🔵 카테고리 목록 대기...");
+            try {
+                page.waitForSelector("ul.Categoey--categoryList--2QES_k6", new Page.WaitForSelectorOptions().setTimeout(10000));
+                System.out.println("✅ 카테고리 목록 로드 완료!");
+            } catch (Exception e) {
+                System.out.println("⚠️ 카테고리 목록을 찾을 수 없음! " + e.getMessage());
+                return categoryList;
+            }
+
+            // ✅ 카테고리 스크랩 시작
             System.out.println("🔵 카테고리 스크랩 시작");
             try {
                 Locator categories = page.locator("ul.Categoey--categoryList--2QES_k6 > a");
+                int categoryCount = categories.count();
+                System.out.println("📌 카테고리 개수: " + categoryCount);
 
-                if (categories.count() > 0) {
-                    categories.all().forEach(category -> {
-                        String categoryName = category.locator("div.Categoey--categoryItemTitle--2uJUqT2").textContent().trim();
-                        String categoryUrl = category.getAttribute("href");
+                if (categoryCount > 0) {
+                    for (int i = 0; i < categoryCount; i++) {
+                        String categoryName = categories.nth(i).locator("div[class*='categoryItemTitle']").textContent().trim();
+                        String categoryUrl = categories.nth(i).getAttribute("href");
 
-                        // **중복 데이터 확인 후 저장**
                         Optional<Category> existingCategory = categoryRepository.findByName(categoryName);
                         if (existingCategory.isPresent()) {
                             System.out.println("⚠️ 중복 카테고리: " + categoryName);
                         } else {
-                            // **DB 저장**
                             Category newCategory = Category.builder()
                                     .name(categoryName)
                                     .url(categoryUrl)
                                     .build();
                             Category savedCategory = categoryRepository.save(newCategory);
-
-                            // **DTO 변환 후 리스트 추가**
                             categoryList.add(new CategoryModel(savedCategory.getCategoryId(), savedCategory.getName(), savedCategory.getUrl()));
                         }
-                    });
+                    }
                     System.out.println("✅ 카테고리 저장 완료");
                 } else {
                     System.out.println("⚠️ 카테고리 목록을 찾을 수 없음");
                 }
             } catch (Exception e) {
-                System.out.println("⚠️ 스크랩 중 오류 발생: " + e.getMessage());
+                System.out.println("⚠️ 크롤링 중 오류 발생: " + e.getMessage());
             }
 
             System.out.println("📌 최종 저장 결과: " + categoryList);
             browser.close();
         }
 
-        return categoryList; // 최종 크롤링 및 저장된 데이터 반환
+        return categoryList;
     }
 }

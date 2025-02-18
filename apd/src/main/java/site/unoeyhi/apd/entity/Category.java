@@ -1,12 +1,12 @@
 package site.unoeyhi.apd.entity;
 
-import java.util.List;
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.List;
 
 @Entity
-@Table(name = "category")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -21,8 +21,11 @@ public class Category {
     private String name; // ✅ 카테고리명
 
     @Column(nullable = false, unique = true)
-    private String url; // ✅ AliExpress 카테고리 URL 추가
+    private String url; // ✅ AliExpress 카테고리 URL
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Product> products;
+    @Column(nullable = false)
+    private String categoryName; // ✅ AliExpress 원본 카테고리명
+
+    @Column(nullable = false)
+    private String categoryUrl; // ✅ AliExpress 원본 URL
 }

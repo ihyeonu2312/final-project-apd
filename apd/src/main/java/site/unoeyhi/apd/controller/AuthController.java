@@ -13,7 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.HttpServletRequest;
 import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.entity.dto.LoginRequest;
 import site.unoeyhi.apd.entity.dto.SignupRequest;
@@ -21,7 +20,6 @@ import site.unoeyhi.apd.service.EmailService;
 import site.unoeyhi.apd.service.MemberService;
 import site.unoeyhi.apd.entity.dto.AuthResponse;
 import site.unoeyhi.apd.entity.dto.EmailVerificationRequest;
-import site.unoeyhi.apd.entity.Member;
 
 @CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController

@@ -1,15 +1,24 @@
 package site.unoeyhi.apd.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
-@Data
+@Entity
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Table(name = "category")
 public class CategoryModel {
-    String categoryName;
-    String categoryUrl;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id; // 기본 키 (자동 증가)
+
+    @Column(nullable = false, unique = true)
+    private String categoryName; // 카테고리명
+
+    @Column(nullable = false)
+    private String categoryUrl; // 카테고리 URL
+
 }

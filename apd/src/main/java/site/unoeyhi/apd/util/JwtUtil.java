@@ -7,8 +7,6 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 @Component
 public class JwtUtil {
@@ -53,31 +51,5 @@ public class JwtUtil {
             return false; // 유효하지 않은 토큰
         }
     }
-     // ✅ 📌 JWT 생성 (클레임 포함)
-     public String generateTokenWithClaims(String key, Boolean value, long expirationMillis) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put(key, value); // 클레임에 개인정보 동의 여부 추가
-
-        return Jwts.builder()
-                .setClaims(claims) // 클레임 설정
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMillis)) // 만료 시간 설정
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // 비밀키로 서명
-                .compact();
-    }
-
-    // ✅ 📌 JWT 토큰을 파싱하여 클레임 추출
-    public Claims parseToken(String token) {
-        try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey()) // 서명 키 확인
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-        } catch (ExpiredJwtException e) {
-            throw new RuntimeException("JWT 토큰이 만료되었습니다.");
-        } catch (JwtException e) {
-            throw new RuntimeException("JWT 토큰이 유효하지 않습니다.");
-        }
-    }
+    
 }

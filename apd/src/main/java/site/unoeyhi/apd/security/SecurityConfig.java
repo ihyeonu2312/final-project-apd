@@ -59,8 +59,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화 (API 서버에서는 주로 비활성화)
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/send-email", "/api/auth/verify-email").permitAll() //로그인 & 회원가입 & 이메일 인증 API 허용
+                .requestMatchers("/api/auth/login", "/api/auth/send-email", "/api/auth/verify-email").permitAll()//로그인 & 회원가입 & 이메일 인증 API 허용
+                .requestMatchers("/api/auth/consent").permitAll() 
+                .requestMatchers("/api/auth/check-consent").permitAll() 
+                .requestMatchers("/api/auth/signup").hasAuthority("CONSENT_AGREED")
                 .requestMatchers("/api/auth/**").authenticated() // 
+                .requestMatchers("/api/aliexpress/scrap").permitAll() // 알리 스크랩 전체권한 허용
                 .requestMatchers("/api/user/check-nickname", "/api/user/check-phone").permitAll()
                 .requestMatchers("/api/public/**").permitAll() // 🔥 추가적인 공개 API 허용 가능
                 .requestMatchers("/api/products").permitAll() // 🔥 `/api/products` 엔드포인트 접근 허용 추가

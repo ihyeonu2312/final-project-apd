@@ -30,27 +30,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    // ✅ 📌 새로운 generateTokenWithClaims 추가 (개인정보 동의 토큰 발급)
-    public String generateTokenWithClaims(String key, Boolean value, long expirationMillis) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put(key, value);
-
-        return Jwts.builder()
-                .setClaims(claims) // ✅ 클레임 추가
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // ✅ secretKey 오류 수정
-                .compact();
-    }
-
-    // ✅ 📌 JWT에서 Claims(데이터) 추출
-    public Claims parseToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey()) // ✅ 최신 방식 적용
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-    }
 
     // ✅ 📌 JWT에서 이메일 추출
     public String extractEmail(String token) {
@@ -72,6 +51,33 @@ public class JwtUtil {
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false; // 유효하지 않은 토큰
+        }
+    }
+     // ✅ 📌 JWT 생성 (클레임 포함)
+     public String generateTokenWithClaims(String key, Boolean value, long expirationMillis) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(key, value); // 클레임에 개인정보 동의 여부 추가
+
+        return Jwts.builder()
+                .setClaims(claims) // 클레임 설정
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMillis)) // 만료 시간 설정
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // 비밀키로 서명
+                .compact();
+    }
+
+    // ✅ 📌 JWT 토큰을 파싱하여 클레임 추출
+    public Claims parseToken(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey()) // 서명 키 확인
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            throw new RuntimeException("JWT 토큰이 만료되었습니다.");
+        } catch (JwtException e) {
+            throw new RuntimeException("JWT 토큰이 유효하지 않습니다.");
         }
     }
 }

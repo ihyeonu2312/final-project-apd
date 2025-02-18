@@ -70,7 +70,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 log.error("❌ JWT 필터에서 오류 발생: ", e);
             }
         } else {
-            log.warn("⚠️ Authorization 헤더 없음 또는 형식 오류");
+            log.warn("Authorization 헤더 없음 또는 형식 오류");
         }
 
         chain.doFilter(request, response);

@@ -1,6 +1,10 @@
 package site.unoeyhi.apd.controller;
 
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -8,6 +12,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.entity.dto.LoginRequest;
 import site.unoeyhi.apd.entity.dto.SignupRequest;
@@ -32,31 +38,50 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         try {
-            // 사용자 인증 수행
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
 
-            // SecurityContext에 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // JWT 생성
+            // ✅ JWT 생성 후 반환
             String jwt = jwtUtil.generateToken(authentication.getName());
-
-            // 응답 반환
             return ResponseEntity.ok(new AuthResponse(jwt));
 
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new AuthResponse(null)); // ❌ 로그인 실패 시 null 반환
+            return ResponseEntity.badRequest().body(new AuthResponse(null));
         }
     }
 
-    // ✅ 회원가입 API (회원가입 후 JWT 토큰 반환)
+    // ✅ 개인정보 동의 JWT 발급 API
+    @PostMapping("/consent")
+    public ResponseEntity<String> agreeToConsent(@RequestBody Map<String, Boolean> request) {
+        Boolean consentAgreed = request.get("consentAgreed");
+
+        if (consentAgreed == null || !consentAgreed) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("개인정보 동의가 필요합니다.");
+        }
+
+        // ✅ 개인정보 동의용 JWT 발급 (10분 만료)
+        String consentToken = jwtUtil.generateTokenWithClaims("consent", consentAgreed, 10 * 60 * 1000);
+
+        return ResponseEntity.ok(consentToken);
+    }
+
+    // ✅ 회원가입 API (JWT 활용)
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequest request) {
+    public ResponseEntity<String> signup(@RequestBody SignupRequest request, @RequestHeader("Authorization") String token) {
         try {
-            // 회원가입 수행
-            Member newMember = memberService.registerMember(
+            // ✅ JWT에서 개인정보 동의 여부 확인
+            Claims claims = jwtUtil.parseToken(token.replace("Bearer ", ""));
+            Boolean consentAgreed = (Boolean) claims.get("consent");
+
+            if (consentAgreed == null || !consentAgreed) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("개인정보 동의가 필요합니다.");
+            }
+
+            // ✅ 회원가입 수행
+            memberService.registerMember(
                 request.getName(),
                 request.getEmail(),
                 request.getPassword(),
@@ -66,38 +91,35 @@ public class AuthController {
                 request.getDetailAddress()
             );
 
-            // 회원가입 후 자동 로그인 (JWT 생성)
-            String jwt = jwtUtil.generateToken(newMember.getEmail());
-
-            return ResponseEntity.ok(new AuthResponse(jwt));
+            return ResponseEntity.ok("회원가입 성공!");
 
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new AuthResponse(null)); // ❌ 이메일 중복 등의 문제 발생 시 null 반환
+            return ResponseEntity.badRequest().body("이미 사용 중인 이메일입니다.");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(new AuthResponse(null)); // ❌ 서버 오류 발생 시 null 반환
+            return ResponseEntity.status(500).body("서버 오류로 회원가입 실패!");
         }
     }
 
-     // ✅ 이메일 인증 요청 API
-     @PostMapping("/send-email")
-     public ResponseEntity<String> sendEmail(@RequestBody EmailVerificationRequest request) {
-         try {
-             emailService.sendVerificationEmail(request.getEmail());
-             return ResponseEntity.ok("인증 이메일이 전송되었습니다.");
-         } catch (Exception e) {
-             return ResponseEntity.status(500).body("이메일 전송 실패: " + e.getMessage());
-         }
-     }
- 
-     // ✅ 이메일 인증 확인 API
-     @GetMapping("/verify-email")
-     public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
-         boolean isVerified = emailService.verifyEmail(token);
- 
-         if (isVerified) {
-             return ResponseEntity.ok("이메일 인증이 완료되었습니다.");
-         } else {
-             return ResponseEntity.badRequest().body("유효하지 않거나 만료된 인증 코드입니다.");
-         }
-     }
+    // ✅ 이메일 인증 요청 API
+    @PostMapping("/send-email")
+    public ResponseEntity<String> sendEmail(@RequestBody EmailVerificationRequest request) {
+        try {
+            emailService.sendVerificationEmail(request.getEmail());
+            return ResponseEntity.ok("인증 이메일이 전송되었습니다.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("이메일 전송 실패: " + e.getMessage());
+        }
+    }
+
+    // ✅ 이메일 인증 확인 API
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
+        boolean isVerified = emailService.verifyEmail(token);
+
+        if (isVerified) {
+            return ResponseEntity.ok("이메일 인증이 완료되었습니다.");
+        } else {
+            return ResponseEntity.badRequest().body("유효하지 않거나 만료된 인증 코드입니다.");
+        }
+    }
 }

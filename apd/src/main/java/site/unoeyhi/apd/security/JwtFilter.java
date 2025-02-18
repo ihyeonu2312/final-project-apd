@@ -36,8 +36,8 @@ public class JwtFilter extends OncePerRequestFilter {
         log.info("🔍 요청 URL: {}", requestURI);
 
         // ✅ JWT 인증이 필요하지 않은 URL 예외 처리
-        if (requestURI.startsWith("/api/address/search")) {
-            log.info("🟢 주소 검색 API 요청 - JWT 인증 제외");
+        if (requestURI.startsWith("/api/address/search") || requestURI.startsWith("/api/auth/check-consent"))  {
+            log.info("🟢 인증 제외 API 요청 - JWT 인증 제외");
             chain.doFilter(request, response);
             return;
         }

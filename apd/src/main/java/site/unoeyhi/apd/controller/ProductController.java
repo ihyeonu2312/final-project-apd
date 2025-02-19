@@ -26,9 +26,9 @@ public class ProductController {
     public List<Product> getAllProducts() {
         return productService.getAllProducts();
     }
-     // 📌 특정 카테고리(예: 가전제품) 제품만 조회
-     @GetMapping("/category/{category}")
-     public List<Product> getProductsByCategory(@PathVariable String categoryName) {
-         return productService.getProductsByCategory(categoryName);
-     }
+     // ✅ 특정 카테고리(예: 가전제품) 제품만 조회
+    @GetMapping("/category/{categoryKey}")
+    public List<Product> getProductsByCategory(@PathVariable String categoryKey) {
+        return productService.getProductsByCategory(categoryKey);
+    }
 }

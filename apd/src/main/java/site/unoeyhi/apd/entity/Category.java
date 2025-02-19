@@ -2,7 +2,6 @@ package site.unoeyhi.apd.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.List;
 
 @Entity
 @Getter
@@ -10,12 +9,16 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "category")
 public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_id")
     private Long categoryId;
+
+    @Column(name = "category_key", nullable = false, unique = true)
+    private String categoryKey; // ✅ "appliances", "fashion" 등의 카테고리 Key
 
     @Column(nullable = false, unique = true)
     private String name; // ✅ 카테고리명
@@ -28,4 +31,6 @@ public class Category {
 
     @Column(nullable = false)
     private String categoryUrl; // ✅ AliExpress 원본 URL
+
+   
 }

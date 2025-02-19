@@ -104,12 +104,7 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.addAll(["-Xlint:deprecation", "-Xlint:unchecked", "-parameters"])
     options.encoding = 'UTF-8'  // 인코딩 설정 추가
 }
-tasks.withType(Test) {
-    systemProperty 'file.encoding', 'UTF-8'
-}
-// tasks.withType(JavaCompile) {
-//     options.encoding = 'UTF-8'
-// }
+
 sourceSets {
     main.java.srcDirs = ["$projectDir/src/main/java", "$projectDir/build/generated"]
 }

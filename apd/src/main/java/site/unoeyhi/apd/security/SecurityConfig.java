@@ -1,5 +1,8 @@
 package site.unoeyhi.apd.security;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -66,13 +69,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/public/**").permitAll() // 🔥 추가적인 공개 API 허용 가능
                 .requestMatchers("/api/products").permitAll() // 🔥 `/api/products` 엔드포인트 접근 허용 추가
                 .requestMatchers("/api/cart/**").authenticated() // 🔐 장바구니 API 인증 필요
-                .requestMatchers("/api/products/**").permitAll() //상품 허용
-                .requestMatchers("/api/categories/**").permitAll()
+                .requestMatchers("/api/products/**").permitAll() // ✅ `/api/products/**` 전체 허용
+                .requestMatchers("/api/products/category/**").permitAll() // ✅ 카테고리별 상품 API 전체 허용
+                .requestMatchers("/api/categories/**").permitAll() // ✅ 카테고리 API 전체 허용
                 .requestMatchers("/api/orders/**").permitAll()
                 .requestMatchers( "/api/crawl/products").permitAll()  // 🔥 /api/products 엔드포인트 허용
                 .requestMatchers("/api/address/search").permitAll() // ✅ 주소 검색 API는 인증 없이 허용
                 .requestMatchers("/api/user/profile").authenticated() // ✅ 🔥 프로필 조회는 인증 필요
-                .anyRequest().authenticated() // 🔐 그 외 모든 요청은 인증 필요
+                .anyRequest().permitAll() // 🔐 그 외 모든 요청은 인증 필요
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 미사용
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class); // JWT 필터 추가
@@ -81,17 +85,19 @@ public class SecurityConfig {
     }
 
     // 🔹 CORS 설정 (프론트엔드와 연동할 때 필요)
+    // 🔹 CORS 설정 (프론트엔드와 연동할 때 필요)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOriginPattern("http://localhost:5173"); 
-        configuration.addAllowedMethod("*"); // ✅ 모든 HTTP 메소드 허용 (GET, POST, PUT, DELETE 등)
-        configuration.addAllowedHeader("*"); // ✅ 모든 요청 헤더 허용
+        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // ✅ 정확한 출처 허용
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // ✅ 모든 HTTP 메소드 허용
+        configuration.setAllowedHeaders(List.of("*")); // ✅ 모든 요청 헤더 허용
         configuration.setAllowCredentials(true); // ✅ 인증 정보 포함 허용
-        configuration.addExposedHeader("Authorization"); // 🔥 클라이언트가 JWT 토큰을 받을 수 있도록 허용
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie")); // ✅ 클라이언트가 JWT 토큰을 받을 수 있도록 허용
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", configuration); // ✅ 모든 경로에 대해 CORS 적용
         return source;
     }
+
 }

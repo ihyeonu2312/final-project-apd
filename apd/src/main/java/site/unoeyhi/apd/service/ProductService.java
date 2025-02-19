@@ -35,14 +35,14 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public List<Product> getProductsByCategory(String name) {
-        Category category = categoryRepository.findByCategoryName(name)
-                .orElseThrow(() -> new IllegalArgumentException("해당 카테고리가 존재하지 않습니다."));
-    
-        return productRepository.findByCategory(category);
+    public List<Product> getProductsByCategory(String categoryKey) {
+        try {
+            return productRepository.findByCategoryCategoryKey(categoryKey);
+        } catch (Exception e) {
+            e.printStackTrace(); 
+            throw new RuntimeException("상품 조회 중 오류 발생", e);
+        }
     }
-    
-
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }

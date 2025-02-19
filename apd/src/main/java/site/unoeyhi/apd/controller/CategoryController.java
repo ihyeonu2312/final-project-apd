@@ -2,6 +2,7 @@ package site.unoeyhi.apd.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import site.unoeyhi.apd.entity.Category;
@@ -25,10 +26,16 @@ public class CategoryController {
         return categoryService.saveCategory(category);
     }
 
-    @GetMapping("/api/products/category/{category}")
-    public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable String category) {
-    String normalizedCategory = category.toLowerCase();
-    List<Product> products = productService.getProductsByCategory(normalizedCategory);
-    return ResponseEntity.ok(products);
-}
+    // CategoryController.java 예시
+    @GetMapping("/api/products/category/{categoryKey}")
+    public ResponseEntity<?> getProductsByCategory(@PathVariable String categoryKey) {
+        try {
+            List<Product> products = productService.getProductsByCategory(categoryKey);
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            e.printStackTrace(); // ✅ 서버 로그에 자세한 에러 출력
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버 내부 오류 발생");
+        }
+    }
+
 }

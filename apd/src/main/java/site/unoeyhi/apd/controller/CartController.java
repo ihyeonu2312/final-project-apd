@@ -1,9 +1,12 @@
 package site.unoeyhi.apd.controller;
 
-import org.springframework.web.bind.annotation.*;
-import site.unoeyhi.apd.entity.CartItem;
+import jakarta.validation.Valid;
 import site.unoeyhi.apd.entity.dto.CartItemDto;
+import site.unoeyhi.apd.entity.dto.CartRequestDto;
 import site.unoeyhi.apd.service.CartService;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/cart")
@@ -16,7 +19,8 @@ public class CartController {
     }
 
     @PostMapping("/add")
-    public CartItem addProductToCart(@RequestBody CartItemDto cartItemDto) {
-        return cartService.addProductToCart(cartItemDto);
+    public ResponseEntity<CartItemDto> addItemToCart(@Valid @RequestBody CartRequestDto cartRequest) {
+        return cartService.addItemToCart(cartRequest);
     }
 }
+

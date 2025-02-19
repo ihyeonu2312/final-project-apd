@@ -29,18 +29,18 @@ public class Cart {
     private Long cartId;
 
     @ManyToOne
-    @JoinColumn(name = "cart_member_id")  // cart_member_id 컬럼과 Member 엔티티를 매핑
+    @JoinColumn(name = "member_id", referencedColumnName = "member_id", nullable = false)  // ✅ 한 회원당 하나의 장바구니만 허용
     private Member member;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<CartItem> cartItems = new ArrayList<>();
+    private List<CartItem> cartItems = new ArrayList<>(); // ✅ 단일 Cart에 종속된 CartItem
     
     public void addCartItem(CartItem cartItem) {
         this.cartItems.add(cartItem);
         cartItem.setCart(this);
     }
 
-    @Column(nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;  // 수정 시간 추가
 
     @Column(name = "created_at")

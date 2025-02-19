@@ -10,7 +10,6 @@ import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.entity.Product;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

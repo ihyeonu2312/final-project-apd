@@ -68,7 +68,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/user/check-nickname", "/api/user/check-phone").permitAll()
                 .requestMatchers("/api/public/**").permitAll() // 🔥 추가적인 공개 API 허용 가능
                 .requestMatchers("/api/products").permitAll() // 🔥 `/api/products` 엔드포인트 접근 허용 추가
-                .requestMatchers("/api/cart/**").authenticated() // 🔐 장바구니 API 인증 필요
+                .requestMatchers("/api/cart/**").permitAll() // 🔐 장바구니 API 인증 없이 사용가능하게
                 .requestMatchers("/api/products/**").permitAll() // ✅ `/api/products/**` 전체 허용
                 .requestMatchers("/api/products/category/**").permitAll() // ✅ 카테고리별 상품 API 전체 허용
                 .requestMatchers("/api/categories/**").permitAll() // ✅ 카테고리 API 전체 허용

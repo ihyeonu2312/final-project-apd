@@ -9,5 +9,5 @@ import site.unoeyhi.apd.entity.Cart;
 
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Long> {
-    Optional<Cart> findByMemberId(Long memberId);
-}
+    Optional<Cart> findByMember_MemberId(Long memberId); //member.memberId
+} 

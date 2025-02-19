@@ -11,8 +11,6 @@ import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.entity.Member.MemberStatus;
 
 import java.time.LocalDateTime;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 @SpringBootTest
 @Log4j2

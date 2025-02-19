@@ -1,159 +1,126 @@
-// package site.unoeyhi.apd.service;
+package site.unoeyhi.apd.service;
 
-// import java.time.LocalDateTime;
-// import java.util.Collections;
-// import java.util.List;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
-// import org.hibernate.Hibernate;
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.boot.test.context.SpringBootTest;
-// import org.springframework.transaction.annotation.Transactional;
+import org.hibernate.Hibernate;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
-// import lombok.extern.log4j.Log4j2;
-// import site.unoeyhi.apd.entity.Cart;
-// import site.unoeyhi.apd.entity.CartItem;
-// import site.unoeyhi.apd.entity.Category;
-// import site.unoeyhi.apd.entity.Member;
-// import site.unoeyhi.apd.entity.Product;
-// import site.unoeyhi.apd.repository.CartItemRepository;
-// import site.unoeyhi.apd.repository.CartRepository;
-// import site.unoeyhi.apd.repository.CategoryRepository;
-// import site.unoeyhi.apd.repository.ProductRepository;
+import lombok.extern.log4j.Log4j2;
+import site.unoeyhi.apd.entity.Cart;
+import site.unoeyhi.apd.entity.CartItem;
+import site.unoeyhi.apd.entity.Category;
+import site.unoeyhi.apd.entity.Member;
+import site.unoeyhi.apd.entity.Product;
+import site.unoeyhi.apd.entity.dto.CartItemDto;
+import site.unoeyhi.apd.entity.dto.CartRequestDto;
+import site.unoeyhi.apd.repository.CartItemRepository;
+import site.unoeyhi.apd.repository.CartRepository;
+import site.unoeyhi.apd.repository.CategoryRepository;
+import site.unoeyhi.apd.repository.ProductRepository;
 
-// import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-// @Log4j2
-// @SpringBootTest
-// public class CartServiceTest {
+@Log4j2
+@SpringBootTest
+public class CartServiceTest {
 
-//     @Autowired
-//     private CartService cartService;
+    @Autowired
+    private CartService cartService;
 
-//     @Autowired
-//     private MemberService memberService;
+    @Autowired
+    private MemberService memberService;
 
-//     @Autowired
-//     private CartRepository cartRepository;
+    @Autowired
+    private CartRepository cartRepository;
 
-//     @Autowired
-//     private CartItemRepository cartItemRepository;
+    @Autowired
+    private CartItemRepository cartItemRepository;
 
-//     @Autowired
-//     private ProductRepository productRepository;
+    @Autowired
+    private ProductRepository productRepository;
 
-//     @Autowired
-//     private CategoryRepository categoryRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
-//     private Product product;
-//     private Member member;
+    private Product product;
+    private Member member;
 
-//     @Transactional
-//     @BeforeEach
-//     public void setup() {
-//         // given: 회원과 상품 정보 준비
-//         member = new Member();
-//         member.setMemberId(1L);  // id는 실제 DB에 맞게 설정
-//         member.setNickname("이상원");
-//         memberService.save(member);  // save 메서드를 구현해야 함
-
-//         // 상품 정보 준비
-//         product = new Product();
-//         product.setName("Test Product");
-//         product.setDescription("This is a test product");
-//         product.setPrice(100.0);  // 가격 설정
-//         product.setStockQuantity(10);  // 재고 수량 설정
-//         product.setCreatedAt(LocalDateTime.now());
-//         product.setUpdatedAt(LocalDateTime.now());
-
-//         productRepository.save(product); // 상품 저장 (없다면)
-        
-//         List<Cart> carts = cartRepository.findByMember(member);
-        
-//         // 카트가 비어 있지 않으면
-//         if (!carts.isEmpty()) {
-//             Cart cart = carts.get(0);
-//             Hibernate.initialize(cart.getCartItems()); // Lazy 로딩 강제 초기화
-//         }
-//     }
-//     @Transactional
-//     @Test
-//     public void testAddProductWithCategory() {
-//     // given: 카테고리와 상품 정보 준비
-//     Category category = new Category();
-//     category.setName("패션"); // 카테고리 이름 설정
-//     categoryRepository.save(category); // 카테고리 저장
-
-//     Product product = new Product();
-//     product.setName("Test Product");
-//     product.setDescription("This is a test product");
-//     product.setPrice(100.0);
-//     product.setStockQuantity(10);
-//     product.setCreatedAt(LocalDateTime.now());
-//     product.setUpdatedAt(LocalDateTime.now());
-//     product.setCategory(category); // 상품에 카테고리 설정
-//     productRepository.save(product); // 상품 저장
-
-//     // when: 상품을 조회하고 카테고리가 제대로 설정되었는지 확인
-//     Product foundProduct = productRepository.findById(product.getProductId()).orElseThrow();
+    @Transactional
+    @BeforeEach
+    public void setup() {
+        // ✅ 회원 설정
+        member = new Member();
+        member.setMemberId(8L);  // ✅ ID를 8번으로 설정
+        member.setNickname("testNick");
+        memberService.save(member);
     
-//     // then: 카테고리가 제대로 설정되었는지 확인
-//     assertThat foundProduct.getCategory().isEqualTo("Electronics");
-// }
-//     @Transactional
-//     @Test
-//     public void testAddItemToCart() {
-//         Long productId = product.getProductId(); // 저장된 상품의 ID 사용
-//         int quantity = 2;
+        // ✅ 카테고리 및 상품 설정
+        Category category = new Category();
+        category.setName("패션");
+        categoryRepository.save(category);
+    
+        product = new Product();
+        product.setName("Test Product");
+        product.setDescription("This is a test product");
+        product.setPrice(100.0);
+        product.setStockQuantity(10);
+        product.setCategory(category);
+        product.setCreatedAt(LocalDateTime.now());
+        product.setUpdatedAt(LocalDateTime.now());
+        productRepository.save(product);
 
-//         Member member = new Member();
-//         member.setMemberId(1L);  // id는 실제 DB에 맞게 설정
-//         member.setNickname("testUser");
-//         memberService.save(member);  // save 메서드를 구현해야 함
+         // ✅ 장바구니 생성 추가
+        Cart cart = new Cart();
+        cart.setMember(member);
+        cartRepository.save(cart);
+    }
+    
+    @Transactional
+    @Test
+    public void testAddProductWithCategory() {
+        // ✅ when: 상품을 조회하고 카테고리가 제대로 설정되었는지 확인
+        Product foundProduct = productRepository.findById(product.getProductId()).orElseThrow();
+    
+        // ✅ then: 카테고리 이름을 문자열로 비교
+        assertThat(foundProduct.getCategory().getName()).isEqualTo("패션");
+    }
+    
+    @Transactional
+    @Test
+    public void testAddItemToCart() {
+        Long productId = product.getProductId();
+        int quantity = 2;
 
-//         // when: 장바구니에 상품 추가
-//         cartService.addItemCart(member, productId, quantity);
+        // ✅ 장바구니 조회
+        Optional<Cart> optionalCart = cartRepository.findByMember_MemberId(member.getMemberId());
+        if (optionalCart.isEmpty()) {
+            throw new IllegalArgumentException("장바구니가 없습니다.");
+        }
+        Cart cart = optionalCart.get();
 
-//         // then: 장바구니에 추가된 아이템이 존재하는지 확인
-//         List<Cart> carts = cartRepository.findByMember(member);
-//         // 카트가 비어 있으면 예외를 던짐
-//         if (carts.isEmpty()){
-//            throw new IllegalArgumentException("장바구니가 없습니다.");
-//         }
-//         Cart cart = carts.get(0); // 첫 번째 카트를 가져옴
-//         List<CartItem> items = cartItemRepository.findByCart(cart);
+        // ✅ CartItemDto 생성
+        CartRequestDto cartRequestDto = new CartRequestDto();
+        cartRequestDto.setProductId(productId);
+        cartRequestDto.setQuantity(quantity);
 
-//         assertThat(items).hasSize(1);  // 아이템이 1개여야 한다
-//         assertThat(items.get(0).getProduct()).isEqualTo(product);
-//         assertThat(items.get(0).getQuantity()).isEqualTo(quantity);
-//     }
-//     @Transactional
-//     @Test
-//     public void testGetCartItems() {
-//         // given: 회원과 장바구니 아이템 준비
-//         Member member = new Member();
-//         member.setMemberId(1L);  // id는 실제 DB에 맞게 설정
-//         member.setNickname("이상원");
-//         memberService.save(member);  // save 메서드를 구현해야 함
 
-//         // Cart 및 CartItem 생성
-//           Cart cart = new Cart();
-//           cart.setMember(member);
-//           cartRepository.save(cart);
-  
-//           // CartItem 생성 및 저장
-//           CartItem item = new CartItem(cart, product, 0);
-//           item.setCart(cart);
-//           item.setProduct(product);  // setup()에서 생성된 product 사용
-//           item.setQuantity(2);
-//           cartItemRepository.save(item);
-  
-//           // when: 장바구니 아이템 조회
-//           List<CartItem> cartItems = cartService.getCartItems(member);
-  
-//           // then: 장바구니 아이템이 1개 있어야 한다
-//           assertThat(cartItems).hasSize(1);
-//           assertThat(cartItems.get(0).getProduct()).isEqualTo(product);  // Product 비교
-//       }
-//   }
+        // ✅ 장바구니에 상품 추가
+        cartService.addItemToCart(cartRequestDto); // 메서드명 수정
+
+        // ✅ CartItem 조회
+        List<CartItem> items = cartItemRepository.findByCart(cart);
+
+        // ✅ 검증
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).getProduct()).isEqualTo(product);
+        assertThat(items.get(0).getQuantity()).isEqualTo(quantity);
+    }
+    
+}    

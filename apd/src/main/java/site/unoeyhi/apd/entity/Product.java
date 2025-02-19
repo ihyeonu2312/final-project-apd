@@ -35,7 +35,7 @@ public class Product {
 
     // ✅ ManyToOne 관계 설정 (외래키: category_id)
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id", referencedColumnName = "category_id", nullable = false)
     private Category category;
 
     @Column(name = "created_at", updatable = false)

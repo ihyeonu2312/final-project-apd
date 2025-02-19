@@ -8,7 +8,7 @@ import site.unoeyhi.apd.service.ProductService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/products/bulk")
+@RequestMapping("/api/products")
 public class ProductController {
     private final ProductService productService;
 
@@ -21,8 +21,14 @@ public class ProductController {
         return productService.saveProduct(productDto);
     }
 
+    // 📌 모든 제품 조회
     @GetMapping
     public List<Product> getAllProducts() {
         return productService.getAllProducts();
     }
+     // 📌 특정 카테고리(예: 가전제품) 제품만 조회
+     @GetMapping("/category/{category}")
+     public List<Product> getProductsByCategory(@PathVariable String categoryName) {
+         return productService.getProductsByCategory(categoryName);
+     }
 }

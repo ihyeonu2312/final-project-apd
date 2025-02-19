@@ -12,7 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(@NonNull CorsRegistry registry) {
-        registry.addMapping("/**")  // ✅ 모든 엔드포인트 허용
+        registry.addMapping("/api/**")  // ✅ 모든 엔드포인트 허용
                 .allowedOrigins("http://localhost:5173")  // ✅ 프론트엔드 URL 허용
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // ✅ 허용할 HTTP 메서드 지정
                 .allowedHeaders("*")  // ✅ 모든 헤더 허용
@@ -20,4 +20,5 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowCredentials(true) // ✅ 인증 정보 포함 허용
                 .maxAge(3600); // ✅ 1시간(3600초) 동안 CORS 정책을 캐시하여 불필요한 요청 방지
     }
+    
 }

@@ -1,6 +1,7 @@
 package site.unoeyhi.apd.service;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 
 import site.unoeyhi.apd.model.CategoryModel;
 
@@ -42,87 +43,76 @@ public class AliExpressServiceTest {
     void ScrapAliExpress() {
         List<CategoryModel> categoryList = new ArrayList<>();
 
+        // ✅ 페이지 이동
         page.navigate("https://www.aliexpress.com/",
             new Page.NavigateOptions().setTimeout(60000));
-        page.waitForTimeout(3000);
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.waitForTimeout(10000); // ✅ 추가 대기
         System.out.println("✅ 페이지 이동 완료");
 
-        /// 1. 팝업 제거 (강제 숨김 + ESC 키 활용)
-        System.out.println("🔵 팝업 제거 시작");
+        /// 1. 🔍 AliExpress의 봇 감지 회피
+        page.evaluate("() => navigator.webdriver = false");
+
+        /// 1. 🔍 페이지의 모든 `ul` 태그 확인 (디버깅)
+        List<Locator> allLists = page.locator("ul").all();
+        System.out.println("📌 페이지 내 모든 ul 태그 개수: " + allLists.size());
+
+        for (Locator list : allLists) {
+            System.out.println("🔍 ul 태그 내용: " + list.innerHTML());
+        }
+          /// 3. ✅ 요소가 로드될 때까지 대기
+        System.out.println("🔵 대분류 카테고리 대기 시작");
         try {
-            // ✅ 모든 팝업 숨김 (CSS 스타일 적용)
-            page.evaluate("() => document.body.setAttribute('automation-controlled', 'false')");
-
-
-        // ✅ ESC 키로 팝업 닫기
-        page.keyboard().press("Escape");
-        page.waitForTimeout(2000);
-
-        // ✅ 닫기 버튼 강제 클릭
-        Locator closeButtons = page.locator("img[alt='close']");
-        if (closeButtons.count() > 0) {
-            for (int i = 0; i < closeButtons.count(); i++) {
-                closeButtons.nth(i).scrollIntoViewIfNeeded();
-                closeButtons.nth(i).click(new Locator.ClickOptions().setForce(true));
-                page.waitForTimeout(1000);
-            }
-        }
-        System.out.println("✅ 팝업 제거 완료");
-
+            page.waitForSelector("ul.Category--categoryList--2QES_k6 > a > li ",
+                new Page.WaitForSelectorOptions().setTimeout(50000)); // ✅ 요소 로드 대기
         } catch (Exception e) {
-            System.out.println("⚠️ 팝업 제거 중 오류 발생: " + e.getMessage());
-        }
-
-        /// 2. 카테고리 메뉴 열기
-        System.out.println("🔵 카테고리 메뉴 열기");
-        try {
-           // ✅ 카테고리 메뉴 클릭 강제 실행
-        Locator categoryMenuButton = page.locator("div[data-spm='allcategoriespc']");
-        page.waitForSelector("div[data-spm='allcategoriespc']", 
-            new Page.WaitForSelectorOptions().setTimeout(10000));
-
-        if (categoryMenuButton.isVisible() && categoryMenuButton.isEnabled()) {
-            categoryMenuButton.scrollIntoViewIfNeeded();
-            categoryMenuButton.click(new Locator.ClickOptions().setForce(true));
-            page.waitForTimeout(5000);
-            System.out.println("✅ 카테고리 메뉴 클릭 성공!");
-        } else {
-            System.out.println("⚠️ 카테고리 버튼이 비활성화됨");
-        }
-
-        } catch (Exception e) {
-            System.out.println("⚠️ 카테고리 클릭 중 오류 발생: " + e.getMessage());
+            System.out.println("⚠️ 요소 로드 실패: " + e.getMessage());
             return;
         }
+        System.out.println("✅ 요소 로드 완료");
 
-        /// 3. 대분류 카테고리 크롤링
+        /// 2. 🔍 `ul.Categoey--categoryList--2QES_k6` 내부 `li` 태그 확인
+        Locator categoryItems = page.locator("ul.Categoey--categoryList--2QES_k6 > a > li");
+        categoryItems.scrollIntoViewIfNeeded();
+        int categoryCount = categoryItems.count();
+        System.out.println("📌 'ul.Categoey--categoryList--2QES_k6' 내 li 개수: " + categoryCount);
+
+        for (int i = 0; i < categoryCount; i++) {
+            System.out.println("🔍 li[" + i + "] HTML: " + categoryItems.nth(i).innerHTML());
+        }
+
+        /// 3. 🔍 iframe 존재 여부 확인
+        List<Frame> frames = page.frames();
+        System.out.println("📌 현재 페이지 내 iframe 개수: " + frames.size());
+
+        for (Frame frame : frames) {
+            System.out.println("🔍 iframe URL: " + frame.url());
+        }
+
+        /// 4. ✅ AliExpress의 봇 감지 회피
+        page.evaluate("() => navigator.webdriver = false");
+
+        /// 5. 대분류 카테고리 크롤링
         System.out.println("🔵 대분류 카테고리 스크랩 시작");
         try {
-            // 🔍 **디버깅용 - HTML 내용 확인**
-            String categoryHtml = page.innerHTML("ul.Categoey--categoryList--2QES_k6");
-            System.out.println("📌 카테고리 HTML 내용: " + categoryHtml);
-
-            List<Frame> frames = page.frames();
-            System.out.println("📌 현재 페이지 내 iframe 개수: " + frames.size());
-
-            for (Frame frame : frames) {
-                System.out.println("🔍 iframe URL: " + frame.url());
-            }
-            page.evaluate("() => document.body.setAttribute('automation-controlled', 'false')");
-            page.waitForSelector("ul.Categoey--categoryList--2QES_k6 > a:visible",
-                new Page.WaitForSelectorOptions().setTimeout(30000)); // ⬆️ 30초로 증가
-
-            Locator categories = page.locator("ul.Categoey--categoryList--2QES_k6 > a:visible");
-
-            int categoryCount = categories.count();
             if (categoryCount > 0) {
                 System.out.println("✅ 대분류 카테고리 개수: " + categoryCount);
-                categories.all().forEach(category -> {
-                    CategoryModel newCategory = new CategoryModel();
-                    newCategory.setCategoryName(category.textContent().trim());
-                    newCategory.setCategoryUrl(category.getAttribute("href"));
-                    categoryList.add(newCategory);
-                });
+                for (int i = 0; i < categoryCount; i++) {
+                    Locator item = categoryItems.nth(i);
+                    Locator link = item.locator("a");
+                    String categoryName = item.getAttribute("data"); // ✅ `li`의 `data` 속성에서 이름 가져오기
+                    String categoryUrl = (link.count() > 0) ? link.first().getAttribute("href") : null;
+
+                    if (categoryName != null && categoryUrl != null) {
+                        CategoryModel newCategory = new CategoryModel();
+                        newCategory.setCategoryName(categoryName);
+                        newCategory.setCategoryUrl(categoryUrl);
+                        categoryList.add(newCategory);
+                        System.out.println("✅ 카테고리 추가됨: " + categoryName + " | " + categoryUrl);
+                    } else {
+                        System.out.println("⚠️ 데이터가 부족한 카테고리 발견: " + categoryName);
+                    }
+                }
                 System.out.println("✅ 대분류 카테고리 스크랩 완료");
             } else {
                 System.out.println("⚠️ 대분류 카테고리를 찾을 수 없음");
@@ -134,7 +124,5 @@ public class AliExpressServiceTest {
         System.out.println("📌 최종 대분류 카테고리 결과: " + categoryList);
         browser.close();
     }
-
-
-
 }
+

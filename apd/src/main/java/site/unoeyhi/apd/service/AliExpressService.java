@@ -81,7 +81,7 @@ public class AliExpressService {
                         String categoryName = categories.nth(i).locator("div[class*='categoryItemTitle']").textContent().trim();
                         String categoryUrl = categories.nth(i).getAttribute("href");
 
-                        Optional<Category> existingCategory = categoryRepository.findByName(categoryName);
+                        Optional<Category> existingCategory = categoryRepository.findByCategoryName(categoryName);
                         if (existingCategory.isPresent()) {
                             System.out.println("⚠️ 중복 카테고리: " + categoryName);
                         } else {

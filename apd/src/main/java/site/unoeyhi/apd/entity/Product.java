@@ -34,7 +34,7 @@ public class Product {
     private Integer stockQuantity; // ✅ 재고 수량
 
     // ✅ ManyToOne 관계 설정 (외래키: category_id)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 

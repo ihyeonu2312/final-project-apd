@@ -11,15 +11,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Data
+
 @Entity
-@Table(name = "Cart_Item")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true) // ✅ Builder에 모든 필드 포함
+@Table(name = "cart_item")
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,11 +48,6 @@ public class CartItem {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-
-     // 기본 생성자 추가
-     public CartItem() {
-    }
-
     // 생성자나 메서드를 추가하여 유효성 검사 및 값 설정
     public CartItem(Cart cart, Product product, int quantity) {
         this.cart = cart;
@@ -69,4 +69,5 @@ public class CartItem {
                ", cartId=" + cart.getCartId() + 
                '}';
     }
+
 }

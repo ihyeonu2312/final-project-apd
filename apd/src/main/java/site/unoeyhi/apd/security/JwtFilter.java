@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
+import java.util.List;
 
 @Log4j2  
 @Component
@@ -35,9 +36,18 @@ public class JwtFilter extends OncePerRequestFilter {
         String requestURI = request.getRequestURI();
         log.info("🔍 요청 URL: {}", requestURI);
 
-        // ✅ JWT 인증이 필요하지 않은 URL 예외 처리
-        if (requestURI.startsWith("/api/address/search") )  {
-            log.info("🟢 인증 제외 API 요청 - JWT 인증 제외");
+        // ✅ 인증이 필요하지 않은 API 목록 (회원가입, 로그인, 이메일 인증 API 추가)
+        List<String> excludedUrls = List.of(
+                "/api/auth/login",
+                "/api/auth/signup",
+                "/api/auth/send-email",
+                "/api/auth/verify-email",
+                "/api/address/search"
+        );
+
+        // ✅ 해당 URL이면 필터 통과 (인증 제외)
+        if (excludedUrls.stream().anyMatch(requestURI::startsWith)) {
+            log.info("🟢 인증 제외 API 요청 - JWT 인증 제외: {}", requestURI);
             chain.doFilter(request, response);
             return;
         }
@@ -70,7 +80,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 log.error("❌ JWT 필터에서 오류 발생: ", e);
             }
         } else {
-            log.warn("Authorization 헤더 없음 또는 형식 오류");
+            log.warn("🚨 Authorization 헤더 없음 또는 형식 오류");
         }
 
         chain.doFilter(request, response);

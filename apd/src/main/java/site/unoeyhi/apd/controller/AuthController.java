@@ -17,6 +17,8 @@ import site.unoeyhi.apd.dto.EmailVerificationRequest;
 import site.unoeyhi.apd.dto.LoginRequest;
 import site.unoeyhi.apd.dto.SignupRequest;
 import site.unoeyhi.apd.entity.EmailVerification;
+import site.unoeyhi.apd.entity.Member;
+import site.unoeyhi.apd.entity.EmailVerification.EmailVerificationStatus;
 import site.unoeyhi.apd.repository.EmailVerificationRepository;
 import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.service.EmailService;
@@ -55,12 +57,11 @@ public class AuthController {
     }
 
 
-  @PostMapping("/signup")
+@PostMapping("/signup")
 public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
-    // ✅ 이메일 인증 여부 확인
     Optional<EmailVerification> verificationOpt = emailVerificationRepository.findByEmail(request.getEmail());
 
-    if (verificationOpt.isEmpty() || !"verified".equals(verificationOpt.get().getStatus())) {
+    if (verificationOpt.isEmpty() || verificationOpt.get().getStatus() != EmailVerificationStatus.VERIFIED) {
         return ResponseEntity.status(403).body("이메일 인증이 완료되지 않았습니다.");
     }
 
@@ -69,7 +70,6 @@ public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
         return ResponseEntity.status(409).body("이미 가입된 이메일입니다.");
     }
 
-    // ✅ 회원가입 진행
     memberService.registerMember(
         request.getName(),
         request.getEmail(),
@@ -79,8 +79,10 @@ public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
         request.getAddress(),
         request.getDetailAddress()
     );
+
     return ResponseEntity.ok("회원가입 성공!");
 }
+
 
 
     // ✅ 이메일 인증 요청 API

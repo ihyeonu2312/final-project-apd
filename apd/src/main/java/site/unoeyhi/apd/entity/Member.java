@@ -47,7 +47,7 @@ public class Member {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @Builder.Default
-    private MemberStatus status = MemberStatus.INACTIVE;
+    private MemberStatus status = MemberStatus.ACTIVE;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -73,7 +73,7 @@ public class Member {
     // ✅ 회원 활성 상태
     public enum MemberStatus {
         ACTIVE,   // 활성 계정
-        INACTIVE  // 이메일 인증 미완료 (또는 비활성 계정)
+        INACTIVE  // 이메일 인증 미완료 (또는 제제 및 정지 비활성 계정)
     }
 
     // ✅ 자동으로 createdAt 설정 (최초 등록 시)

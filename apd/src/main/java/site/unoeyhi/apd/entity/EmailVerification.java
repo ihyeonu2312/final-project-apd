@@ -28,12 +28,17 @@ public class EmailVerification {
     @Column(name = "verification_token", nullable = false, unique = true)
     private String verificationToken; // 인증코드랜덤생성
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status = "pending"; //초기상태 pending
+    private EmailVerificationStatus status = EmailVerificationStatus.PENDING; //초기 상태 PENDING
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "expired_at", nullable = false)
     private LocalDateTime expiredAt; // 만료시간 설정
+
+    public enum EmailVerificationStatus {
+        PENDING, VERIFIED, EXPIRED
+    }
 }

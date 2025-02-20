@@ -83,7 +83,11 @@ public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
     return ResponseEntity.ok("회원가입 성공!");
 }
 
-
+@PostMapping("/logout")
+public ResponseEntity<String> logout() {
+    SecurityContextHolder.clearContext(); // 🔥 Spring Security 컨텍스트 초기화
+    return ResponseEntity.ok("로그아웃 성공!");
+}
 
     // ✅ 이메일 인증 요청 API
     @PostMapping("/send-email")

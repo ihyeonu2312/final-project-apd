@@ -1,4 +1,4 @@
-package site.unoeyhi.apd.security;
+package site.unoeyhi.apd.config;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +20,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
 import lombok.RequiredArgsConstructor;
+import site.unoeyhi.apd.security.CustomUserDetailsService;
+import site.unoeyhi.apd.security.JwtFilter;
 
 @Configuration
 @RequiredArgsConstructor

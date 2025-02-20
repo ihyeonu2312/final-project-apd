@@ -2,6 +2,7 @@ package site.unoeyhi.apd.controller;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,12 +12,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import site.unoeyhi.apd.util.JwtUtil;
-import site.unoeyhi.apd.entity.dto.LoginRequest;
-import site.unoeyhi.apd.entity.dto.SignupRequest;
+import site.unoeyhi.apd.dto.AuthResponse;
+import site.unoeyhi.apd.dto.EmailVerificationRequest;
+import site.unoeyhi.apd.dto.LoginRequest;
+import site.unoeyhi.apd.dto.SignupRequest;
+import site.unoeyhi.apd.entity.EmailVerification;
+import site.unoeyhi.apd.repository.EmailVerificationRepository;
+import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.service.EmailService;
 import site.unoeyhi.apd.service.MemberService;
-import site.unoeyhi.apd.entity.dto.AuthResponse;
-import site.unoeyhi.apd.entity.dto.EmailVerificationRequest;
 
 @CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
@@ -28,6 +32,8 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final MemberService memberService;
+    private final EmailVerificationRepository emailVerificationRepository;
+    private final MemberRepository memberRepository;
 
     // ✅ 로그인 API (JWT 발급)
     @PostMapping("/login")
@@ -50,27 +56,32 @@ public class AuthController {
 
 
   @PostMapping("/signup")
-  public ResponseEntity<String> signup(@RequestBody SignupRequest request, @RequestHeader("Authorization") String token) {
-      try {
-            // ✅ 회원가입 수행
-            memberService.registerMember(
-                request.getName(),
-                request.getEmail(),
-                request.getPassword(),
-                request.getNickname(),
-                request.getPhoneNumber(),
-                request.getAddress(),
-                request.getDetailAddress()
-            );
+public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
+    // ✅ 이메일 인증 여부 확인
+    Optional<EmailVerification> verificationOpt = emailVerificationRepository.findByEmail(request.getEmail());
 
-            return ResponseEntity.ok("회원가입 성공!");
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("이미 사용 중인 이메일입니다.");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("서버 오류로 회원가입 실패!");
-        }
+    if (verificationOpt.isEmpty() || !"verified".equals(verificationOpt.get().getStatus())) {
+        return ResponseEntity.status(403).body("이메일 인증이 완료되지 않았습니다.");
     }
+
+    // ✅ 이미 가입된 이메일인지 확인
+    if (memberRepository.findByEmail(request.getEmail()).isPresent()) {
+        return ResponseEntity.status(409).body("이미 가입된 이메일입니다.");
+    }
+
+    // ✅ 회원가입 진행
+    memberService.registerMember(
+        request.getName(),
+        request.getEmail(),
+        request.getPassword(),
+        request.getNickname(),
+        request.getPhoneNumber(),
+        request.getAddress(),
+        request.getDetailAddress()
+    );
+    return ResponseEntity.ok("회원가입 성공!");
+}
+
 
     // ✅ 이메일 인증 요청 API
     @PostMapping("/send-email")

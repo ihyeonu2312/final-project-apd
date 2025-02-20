@@ -14,23 +14,16 @@ public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "category_id")
+    @Column(name = "category_id", updatable = false, nullable = false)
     private Long categoryId;
 
-    @Column(name = "category_key", nullable = false, unique = true)
-    private String categoryKey; // ✅ "appliances", "fashion" 등의 카테고리 Key
+    // @Column(name = "coupang_category_key", nullable = true, unique = true)
+    // private String coupangCategoryKey; // ✅ 쿠팡 카테고리 키 (예: "fashion", "electronics")
 
     @Column(nullable = false, unique = true)
-    private String name; // ✅ 카테고리명
+    private String categoryName; // ✅ 쿠팡 카테고리명
 
-    @Column(nullable = false, unique = true)
-    private String url; // ✅ AliExpress 카테고리 URL
+    // @Column(nullable = false, unique = true)
+    // private String categoryUrl; // ✅ 쿠팡 카테고리 URL
 
-    @Column(nullable = false)
-    private String categoryName; // ✅ AliExpress 원본 카테고리명
-
-    @Column(nullable = false)
-    private String categoryUrl; // ✅ AliExpress 원본 URL
-
-   
 }

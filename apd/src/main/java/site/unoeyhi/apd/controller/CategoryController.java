@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.service.CategoryService;
-import site.unoeyhi.apd.service.ProductService;
+import site.unoeyhi.apd.service.product.ProductService;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -21,16 +21,16 @@ public class CategoryController {
         this.productService = productService;
     }
 
-    @PostMapping
-    public Category addCategory(@RequestBody Category category) {
-        return categoryService.saveCategory(category);
-    }
+    // @PostMapping
+    // public Category addCategory(@RequestBody Category category) {
+    //     return categoryService.saveCategory(category);
+    // }
 
     // CategoryController.java 예시
-    @GetMapping("/api/products/category/{categoryKey}")
-    public ResponseEntity<?> getProductsByCategory(@PathVariable String categoryKey) {
+    @GetMapping("/api/products/category/{CategoryName}")
+    public ResponseEntity<?> getProductsByCategory(@PathVariable String coupangCategoryKey) {
         try {
-            List<Product> products = productService.getProductsByCategory(categoryKey);
+            List<Product> products = productService.getProductsByCategory(coupangCategoryKey);
             return ResponseEntity.ok(products);
         } catch (Exception e) {
             e.printStackTrace(); // ✅ 서버 로그에 자세한 에러 출력

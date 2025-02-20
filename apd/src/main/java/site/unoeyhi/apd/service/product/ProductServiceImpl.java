@@ -1,24 +1,27 @@
-package site.unoeyhi.apd.service;
+package site.unoeyhi.apd.service.product;
 
 import org.springframework.stereotype.Service;
-
 import site.unoeyhi.apd.dto.ProductDto;
-import site.unoeyhi.apd.entity.*;
+import site.unoeyhi.apd.entity.Category;
+import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.repository.CategoryRepository;
-import site.unoeyhi.apd.repository.ProductRepository;
+import site.unoeyhi.apd.repository.product.ProductRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
-public class ProductService {
+public class ProductServiceImpl implements ProductService {
+
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
 
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
     }
 
+    @Override
     public Product saveProduct(ProductDto productDto) {
         Category category = categoryRepository.findById(productDto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("카테고리 ID가 존재하지 않습니다."));
@@ -36,15 +39,26 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public List<Product> getProductsByCategory(String categoryKey) {
+    @Override
+    public List<Product> getProductsByCategory(String coupangCategoryKey) {
         try {
-            return productRepository.findByCategoryCategoryKey(categoryKey);
+            return productRepository.findByCoupangCategoryKey(coupangCategoryKey);
         } catch (Exception e) {
-            e.printStackTrace(); 
+            e.printStackTrace();
             throw new RuntimeException("상품 조회 중 오류 발생", e);
         }
     }
+
+    @Override
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
+
+    @Override
+    public Optional<Product> findByTitle(String title) {
+        return productRepository.findByName(title);
+
+        
+    }
+    
 }

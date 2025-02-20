@@ -10,6 +10,7 @@ import site.unoeyhi.apd.entity.Cart;
 import site.unoeyhi.apd.entity.CartItem;
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.entity.Product;
+import site.unoeyhi.apd.repository.product.ProductRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;

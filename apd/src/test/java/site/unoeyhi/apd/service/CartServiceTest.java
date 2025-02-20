@@ -23,7 +23,7 @@ import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.repository.CartItemRepository;
 import site.unoeyhi.apd.repository.CartRepository;
 import site.unoeyhi.apd.repository.CategoryRepository;
-import site.unoeyhi.apd.repository.ProductRepository;
+import site.unoeyhi.apd.repository.product.ProductRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,7 +63,7 @@ public class CartServiceTest {
     
         // ✅ 카테고리 및 상품 설정
         Category category = new Category();
-        category.setName("패션");
+        category.setCategoryName("패션");
         categoryRepository.save(category);
     
         product = new Product();
@@ -89,7 +89,7 @@ public class CartServiceTest {
         Product foundProduct = productRepository.findById(product.getProductId()).orElseThrow();
     
         // ✅ then: 카테고리 이름을 문자열로 비교
-        assertThat(foundProduct.getCategory().getName()).isEqualTo("패션");
+        assertThat(foundProduct.getCategory().getCategoryName()).isEqualTo("패션");
     }
     
     @Transactional

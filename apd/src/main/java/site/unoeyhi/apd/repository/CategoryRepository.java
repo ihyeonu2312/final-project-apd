@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import site.unoeyhi.apd.entity.Category;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    Optional<Category> findByUrl(String url);
+    Optional<Category> findByUrl(String categoryUrl);
 
-    Optional<Category> findByCategoryName(String name);
+    Optional<Category> findByCategoryName(String categoryName);
 
     List<Category> findByCategoryId(Long categoryId);  // ✅ 올바른 메서드
 

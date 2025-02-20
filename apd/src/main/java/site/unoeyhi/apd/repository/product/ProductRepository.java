@@ -1,4 +1,4 @@
-package site.unoeyhi.apd.repository;
+package site.unoeyhi.apd.repository.product;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,7 +12,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findByName(String name);  // 중복 방지용 메서드
     List<Product> findByCategory(Category category); // ✅ 특정 카테고리에 속한 상품 조회
     List<Product> findByCategoryCategoryId(Long categoryId); //상품 카테고리별 상품 조회
-    List<Product> findByCategoryCategoryKey(String categoryKey);
+    List<Product> findByCoupangCategoryKey(String coupangCategoryKey);//"쿠팡에서 크롤링한 카테고리에 속한 모든 상품을 조회하고 싶다"
     
     
 }

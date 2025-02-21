@@ -32,6 +32,8 @@ public class EmailService {
         return String.format("%06d", random.nextInt(1000000)); // 6자리 숫자 코드 생성
     }
 
+    
+
     // ✅ 이메일 인증 요청 (이메일 기준 저장)
     @Transactional
     public String sendVerificationEmail(String email) {

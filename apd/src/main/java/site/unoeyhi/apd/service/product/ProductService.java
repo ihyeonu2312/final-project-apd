@@ -8,7 +8,6 @@ import java.util.Optional;
 
 public interface ProductService {
     Product saveProduct(ProductDto productDto);
-    List<Product> getProductsByCategory(String coupangCategoryKey);
     List<Product> getAllProducts();
     Optional<Product> findByTitle(String title);
     

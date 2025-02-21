@@ -15,7 +15,7 @@
 // import site.unoeyhi.apd.entity.Product;
 // import site.unoeyhi.apd.repository.CartItemRepository;
 // import site.unoeyhi.apd.repository.CartRepository;
-// import site.unoeyhi.apd.repository.ProductRepository;
+// import site.unoeyhi.apd.repository.product.ProductRepository;
 
 // @Service
 // @RequiredArgsConstructor

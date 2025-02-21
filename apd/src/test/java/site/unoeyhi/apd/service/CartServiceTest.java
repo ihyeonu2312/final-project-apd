@@ -1,11 +1,9 @@
 package site.unoeyhi.apd.service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +11,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.extern.log4j.Log4j2;
-import site.unoeyhi.apd.dto.CartItemDto;
 import site.unoeyhi.apd.dto.CartRequestDto;
 import site.unoeyhi.apd.entity.Cart;
 import site.unoeyhi.apd.entity.CartItem;

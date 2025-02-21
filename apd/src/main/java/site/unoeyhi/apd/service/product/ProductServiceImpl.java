@@ -39,15 +39,6 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.save(product);
     }
 
-    @Override
-    public List<Product> getProductsByCategory(String coupangCategoryKey) {
-        try {
-            return productRepository.findByCoupangCategoryKey(coupangCategoryKey);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("상품 조회 중 오류 발생", e);
-        }
-    }
 
     @Override
     public List<Product> getAllProducts() {

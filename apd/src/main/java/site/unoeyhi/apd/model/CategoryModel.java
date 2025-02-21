@@ -18,7 +18,4 @@ public class CategoryModel {
     @Column(nullable = false, unique = true)
     private String categoryName; // 카테고리명
 
-    @Column(nullable = false)
-    private String categoryUrl; // 카테고리 URL
-
 }

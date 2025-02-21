@@ -10,6 +10,7 @@ public interface ProductService {
     Product saveProduct(ProductDto productDto);
     List<Product> getAllProducts();
     Optional<Product> findByTitle(String title);
-    
+    List<Product> getProductsByCategoryId(Long categoryId);
+
 }
 

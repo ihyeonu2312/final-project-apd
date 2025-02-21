@@ -1,6 +1,8 @@
 package site.unoeyhi.apd.service.product;
 
 import org.springframework.stereotype.Service;
+
+import jakarta.transaction.Transactional;
 import site.unoeyhi.apd.dto.ProductDto;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.entity.Product;
@@ -22,22 +24,41 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public Product saveProduct(ProductDto productDto) {
-        Category category = categoryRepository.findById(productDto.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("카테고리 ID가 존재하지 않습니다."));
-
-        Product product = Product.builder()
-                .adminId(productDto.getAdminId())
-                .name(productDto.getName())
-                .description(productDto.getDescription())
-                .price(productDto.getPrice())
-                .stockQuantity(productDto.getStockQuantity())
-                .category(category)
-                .imageUrl(productDto.getImageUrl())
-                .build();
-
-        return productRepository.save(product);
+        try {
+            System.out.println("🚀 [saveProduct] 상품 저장 시작: " + productDto.getName());
+            System.out.println("🚀 [saveProduct] categoryId: " + productDto.getCategoryId());
+    
+            Category category = categoryRepository.findById(productDto.getCategoryId())
+                    .orElseThrow(() -> new IllegalArgumentException("🚨 [saveProduct] 카테고리 ID가 존재하지 않습니다: " + productDto.getCategoryId()));
+    
+            System.out.println("✅ [saveProduct] 카테고리 찾음: " + category.getCategoryName());
+    
+            Product product = Product.builder()
+                    .adminId(productDto.getAdminId())
+                    .name(productDto.getName())
+                    .description(productDto.getDescription())
+                    .price(productDto.getPrice())
+                    .stockQuantity(productDto.getStockQuantity())
+                    .imageUrl(productDto.getImageUrl())
+                    .category(category)
+                    .build();
+    
+            Product savedProduct = productRepository.save(product);
+            System.out.println("✅ [saveProduct] 저장된 상품 ID: " + savedProduct.getProductId());
+            System.out.println("✅ [saveProduct] 저장된 상품의 category_id: " + savedProduct.getCategory().getCategoryId());
+    
+            return savedProduct;
+        } catch (Exception e) {
+            System.out.println("🚨 [saveProduct] 상품 저장 중 예외 발생: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
+    
+
+
 
 
     @Override
@@ -48,8 +69,12 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Optional<Product> findByTitle(String title) {
         return productRepository.findByName(title);
-
-        
     }
+    @Override
+    public List<Product> getProductsByCategoryId(Long categoryId) {
+        return productRepository.findByCategoryCategoryId(categoryId);
+    }
+
+
     
 }

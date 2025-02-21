@@ -3,6 +3,7 @@ package site.unoeyhi.apd.entity;
 import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.*;
+import site.unoeyhi.apd.repository.CategoryRepository;
 
 @Entity
 @Getter
@@ -18,8 +19,8 @@ public class Product {
     @Column(name = "product_id")
     private Long productId; // ✅ 상품 ID (PK, 자동 증가)
 
-    @Column(name = "admin_id", nullable = false)
-    private Long adminId; // ✅ 관리자 ID 추가
+    @Column(name = "admin_id", nullable = true) // ✅ nullable 허용
+    private Long adminId; // ✅ 관리자 ID (크롤링 데이터에서 값 없을 수도 있음)
 
     @Column(nullable = false)
     private String name; // ✅ 상품 이름
@@ -35,14 +36,14 @@ public class Product {
 
     // ✅ ManyToOne 관계 설정 (외래키: category_id)
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "category_id", referencedColumnName = "category_id", nullable = false)
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     // ✅ 이미지 URL 필드 추가
     @Column(name = "image_url")
@@ -51,10 +52,22 @@ public class Product {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    // 🛠 크롤링한 데이터에서 categoryName을 category_id로 자동 매핑하는 메서드 추가
+    public void setCategoryByName(String categoryName, CategoryRepository categoryRepository) {
+        this.category = categoryRepository.findByCategoryName(categoryName)
+                .orElseGet(() -> {
+                    Category newCategory = new Category();
+                    newCategory.setCategoryName(categoryName);
+                    return categoryRepository.save(newCategory);
+                });
+    }
+    
 }

@@ -1,17 +1,21 @@
 package site.unoeyhi.apd.dto;
 
+import java.util.List;
+
 import lombok.*;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ProductDto {
-    private Long adminId;         // ✅ 관리자 ID
-    private String name;          // ✅ 상품 이름
-    private String description;   // ✅ 상품 설명
-    private Double price;         // ✅ 상품 가격
-    private Integer stockQuantity; // ✅ 재고 수량
-    private Long categoryId;  // ✅ 카테고리 ID (FK)
-    private String imageUrl;  // ✅ 이미지 URL 추가
+    private String name;                 // 상품명
+    private Double price;                // 가격
+    private Integer stockQuantity;       // 재고 수량
+    private Long categoryId;             // 카테고리 ID
+    private String imageUrl;             // 상품 이미지 URL
+    private String thumbnailImageUrl;    // 썸네일 이미지 URL
+    private String detailUrl;            // 상세 페이지 URL
+    private List<String> additionalImages; // ✅ 추가 이미지 리스트
 }

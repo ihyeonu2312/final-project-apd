@@ -4,9 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,16 +12,49 @@ public class CoupangCrawlSelenium {
     private static final String DB_URL = "jdbc:mariadb://np.unoeyhi.site:3306/mifo";
     private static final String DB_USER = "mifo";
     private static final String DB_PASSWORD = "1234";
-    private int count = 0;
-    private static final String BASE_DATA_PATH = "C:\\coupang\\data\\";
 
     @Test
     public void testCrawlInit() {
         System.setProperty("webdriver.chrome.driver", "C:/chromedriver/chromedriver.exe");
 
-        List<String> categories = getCategoryUrls(); // ✅ DB에서 카테고리 URL 가져옴
+        WebDriver driver = new ChromeDriver();
+        driver.get("https://www.coupang.com/"); // ✅ 쿠팡 메인 페이지 접근
+        sleep(3000);
+
+        List<String> categoryUrls = new ArrayList<>();
+        try {
+            // ✅ 카테고리 목록 가져오기
+            List<WebElement> categoryElements = driver.findElements(By.cssSelector(".nav-list > li > a"));
+
+            for (WebElement categoryElement : categoryElements) {
+                String categoryName = categoryElement.getText().trim();
+                String categoryUrl = categoryElement.getAttribute("href");
+
+                if (categoryUrl != null && categoryUrl.contains("/np/categories/")) {
+                    Long coupangCategoryId = extractCategoryId(categoryUrl);
+
+                    // ✅ 크롤링한 데이터 DB에 저장
+                    saveCategoryToDB(categoryName, coupangCategoryId, categoryUrl);
+
+                    // ✅ URL 리스트에 추가 (추후 상품 크롤링을 위해)
+                    categoryUrls.add(categoryUrl);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("⚠ 카테고리 크롤링 실패");
+            e.printStackTrace();
+        } finally {
+            driver.quit();
+        }
+
+        System.out.println("✅ 카테고리 크롤링 완료. 상품 크롤링 시작...");
+        crawlProducts(categoryUrls);
+    }
+
+    // **📌 상품 크롤링 메서드**
+    private void crawlProducts(List<String> categories) {
         for (String categoryUrl : categories) {
-            String categoryId = extractCategoryId(categoryUrl); // ✅ 카테고리 ID 추출
+            String categoryId = String.valueOf(extractCategoryId(categoryUrl)); // ✅ 카테고리 ID 추출
 
             WebDriver driver = new ChromeDriver();
             driver.get(categoryUrl);
@@ -47,7 +77,7 @@ public class CoupangCrawlSelenium {
             }
             driver.quit(); // ✅ 목록 크롤링 후 브라우저 닫기
 
-            // ✅ 상품 상세 페이지 크롤링 (HTML 저장)
+            // ✅ 상품 상세 페이지 크롤링
             for (String itemHref : productUrls) {
                 driver = new ChromeDriver();
                 driver.get(itemHref);
@@ -56,17 +86,10 @@ public class CoupangCrawlSelenium {
                 try {
                     handleAlert(driver);
 
-                    // ✅ 상품 ID 추출 (잘못된 숫자 제거)
+                    // ✅ 상품 ID 추출
                     String productId = extractProductId(itemHref);
 
-                    // ✅ 저장 폴더 생성 (C:\coupang\data\{categoryId}\{productId})
-                    String productDataPath = BASE_DATA_PATH + categoryId + "\\" + productId + "\\";
-                    Files.createDirectories(Paths.get(productDataPath));
-
-                    // ✅ HTML 저장 (이미지 크롤링 없음)
-                    savePageHtml(driver, productDataPath + "page.html");
-
-                    count++;
+                    System.out.println("✅ 크롤링 완료 - 상품 ID: " + productId);
                 } catch (Exception e) {
                     System.out.println("⚠ 상세 페이지 크롤링 실패: " + itemHref);
                     e.printStackTrace();
@@ -75,7 +98,6 @@ public class CoupangCrawlSelenium {
                 }
             }
         }
-        System.out.println("✅ 총 상품 개수: " + count);
     }
 
     // **📌 Alert 자동 닫기**
@@ -85,17 +107,6 @@ public class CoupangCrawlSelenium {
             System.out.println("⚠ Alert 감지됨, 닫습니다.");
             alert.dismiss();
         } catch (NoAlertPresentException ignored) {
-        }
-    }
-
-    // **📌 HTML 저장 함수**
-    private void savePageHtml(WebDriver driver, String savePath) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(savePath))) {
-            writer.write(driver.getPageSource());
-            System.out.println("📄 HTML 저장 완료: " + savePath);
-        } catch (IOException e) {
-            System.out.println("⚠ HTML 저장 실패: " + savePath);
-            e.printStackTrace();
         }
     }
 
@@ -112,27 +123,50 @@ public class CoupangCrawlSelenium {
     }
 
     // **📌 URL에서 카테고리 ID 추출**
-    private String extractCategoryId(String url) {
-        String[] parts = url.split("/");
-        for (String part : parts) {
-            if (part.matches("\\d{3,}")) { // 3자리 이상의 숫자를 카테고리 ID로 간주
-                return part;
-            }
+    private Long extractCategoryId(String url) {
+        String pattern = ".*/np/categories/(\\d+).*";  // `/np/categories/` 다음 숫자 찾기
+        java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
+        java.util.regex.Matcher matcher = regex.matcher(url);
+
+        if (matcher.matches()) {
+            return Long.parseLong(matcher.group(1));  // 숫자로 변환
         }
-        return "unknown";
+        return null;
+    }
+
+    // **📌 DB에 카테고리 저장**
+    private void saveCategoryToDB(String categoryName, Long coupangCategoryId, String url) {
+        String query = "INSERT INTO category (category_name, coupang_category_id, url) VALUES (?, ?, ?) " +
+                       "ON DUPLICATE KEY UPDATE category_name = VALUES(category_name), url = VALUES(url)";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setString(1, categoryName);
+            pstmt.setLong(2, coupangCategoryId);
+            pstmt.setString(3, url);
+            pstmt.executeUpdate();
+
+            System.out.println("✅ 카테고리 저장 완료: " + categoryName + " (" + coupangCategoryId + ")");
+        } catch (Exception e) {
+            System.out.println("⚠ 카테고리 저장 실패: " + categoryName);
+            e.printStackTrace();
+        }
     }
 
     // **📌 DB에서 카테고리 URL 조회**
     private List<String> getCategoryUrls() {
         List<String> urlList = new ArrayList<>();
-        String query = "SELECT url FROM tmp_category";
+        String query = "SELECT url FROM category";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(query);
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                urlList.add(rs.getString("url"));
+                String url = rs.getString("url");
+                System.out.println("🔹 카테고리 URL 가져옴: " + url);
+                urlList.add(url);
             }
 
         } catch (Exception e) {

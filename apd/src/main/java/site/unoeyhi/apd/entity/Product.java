@@ -25,9 +25,6 @@ public class Product {
     @Column(nullable = false)
     private String name; // ✅ 상품 이름
 
-    @Column(columnDefinition = "TEXT")
-    private String description; // ✅ 상품 설명
-
     @Column(nullable = false)
     private Double price; // ✅ 상품 가격
 
@@ -48,6 +45,12 @@ public class Product {
     // ✅ 이미지 URL 필드 추가
     @Column(name = "image_url")
     private String imageUrl;
+
+    @Column(name = "thumbnail_image_url")
+    private String thumbnailImageUrl;
+
+    @Column(name = "detail_url", nullable = false)
+    private String detailUrl; // ✅ 상세 페이지 URL 필수 필드로 지정
 
     @PrePersist
     protected void onCreate() {

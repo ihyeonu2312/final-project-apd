@@ -58,7 +58,6 @@ class CartItemRepositoryTest {
         // ✅ 상품 생성 및 저장
         product = new Product();
         product.setName("Test Product");
-        product.setDescription("This is a test product");
         product.setPrice(100.0);
         product.setStockQuantity(10);
         product.setCreatedAt(LocalDateTime.now());

@@ -26,6 +26,9 @@ public class Category {
     @Column(nullable = false, unique = true) 
     private String categoryName; // ✅ 쿠팡 카테고리명
 
+    private String coupangCategoryId; // DB의 coupang_category_id 컬럼
+    private String url; // DB의 url 컬럼
+
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> products = new ArrayList<>();
 

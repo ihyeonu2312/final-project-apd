@@ -64,7 +64,8 @@ dependencies {
     implementation 'org.seleniumhq.selenium:selenium-chrome-driver:4.25.0'
     implementation 'org.seleniumhq.selenium:selenium-remote-driver:4.25.0'
     implementation 'org.seleniumhq.selenium:selenium-support:4.25.0'
-    implementation 'com.microsoft.playwright:playwright:1.41.0' // 최신 버전 확인 후 적용
+    
+     implementation 'com.microsoft.playwright:playwright:1.42.0' // 최신 버전 확인 후 변경
 
     implementation 'com.microsoft.playwright:playwright:1.38.0'
 
@@ -88,6 +89,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
     implementation 'com.sun.mail:jakarta.mail:2.0.1' // ✅ 최신 버전 사용
+
+    //jsoup
+    implementation 'org.jsoup:jsoup:1.16.1'
+
 
 }
 

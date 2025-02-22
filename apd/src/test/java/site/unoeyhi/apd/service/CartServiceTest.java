@@ -65,7 +65,6 @@ public class CartServiceTest {
     
         product = new Product();
         product.setName("Test Product");
-        product.setDescription("This is a test product");
         product.setPrice(100.0);
         product.setStockQuantity(10);
         product.setCategory(category);

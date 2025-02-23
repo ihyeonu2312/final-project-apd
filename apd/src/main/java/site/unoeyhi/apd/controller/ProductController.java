@@ -2,7 +2,7 @@ package site.unoeyhi.apd.controller;
 
 import org.springframework.web.bind.annotation.*;
 
-import site.unoeyhi.apd.dto.ProductDto;
+import site.unoeyhi.apd.dto.product.ProductDto;
 import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.service.product.ProductService;
 

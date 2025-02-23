@@ -1,4 +1,4 @@
-package site.unoeyhi.apd.dto;
+package site.unoeyhi.apd.dto.product;
 
 import java.util.List;
 
@@ -18,4 +18,5 @@ public class ProductDto {
     private String thumbnailImageUrl;    // 썸네일 이미지 URL
     private String detailUrl;            // 상세 페이지 URL
     private List<String> additionalImages; // ✅ 추가 이미지 리스트
+    private List<OptionDto> options; // ✅ 옵션 리스트 추가
 }

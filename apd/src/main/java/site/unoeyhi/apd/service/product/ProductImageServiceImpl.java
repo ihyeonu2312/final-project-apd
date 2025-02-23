@@ -2,7 +2,8 @@ package site.unoeyhi.apd.service.product;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import site.unoeyhi.apd.dto.ProductImageDto;
+
+import site.unoeyhi.apd.dto.product.ProductImageDto;
 import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.entity.ProductImage;
 import site.unoeyhi.apd.repository.product.ProductImageRepository;

@@ -1,4 +1,4 @@
-package site.unoeyhi.apd.dto;
+package site.unoeyhi.apd.dto.product;
 
 import lombok.*;
 

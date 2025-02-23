@@ -1,6 +1,9 @@
 package site.unoeyhi.apd.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
 import site.unoeyhi.apd.repository.CategoryRepository;
@@ -62,6 +65,13 @@ public class Product {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductOption> productOptions = new ArrayList<>();
+
+    
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images = new ArrayList<>();
 
     // 🛠 크롤링한 데이터에서 categoryName을 category_id로 자동 매핑하는 메서드 추가
     public void setCategoryByName(String categoryName, CategoryRepository categoryRepository) {

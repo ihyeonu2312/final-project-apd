@@ -2,149 +2,156 @@ package site.unoeyhi.apd.service.product.crawling;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.WaitForSelectorState;
+
+import jakarta.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
+import site.unoeyhi.apd.dto.product.OptionDto;
+import site.unoeyhi.apd.dto.product.ProductDto;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.repository.CategoryRepository;
 import site.unoeyhi.apd.repository.product.ProductRepository;
+import site.unoeyhi.apd.service.product.ProductService;
 
-import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class CoupangCrawlerService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductService productService;
 
-    public CoupangCrawlerService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public CoupangCrawlerService(ProductRepository productRepository, CategoryRepository categoryRepository, ProductService productService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.productService = productService;
     }
 
-    /**
-     * ✅ 카테고리별 상품 크롤링 (카테고리당 10개)
-     */
-    public void crawlProductsByCategory(Category category) {
-        String categoryUrl = "https://www.coupang.com" + category.getUrl(); // ✅ 쿠팡 카테고리 URL 가져오기
-
-        try (Playwright playwright = Playwright.create()) {
-            // ✅ Playwright 설정 추가
-            Browser browser = playwright.chromium().launch(
-                new BrowserType.LaunchOptions()
-                    .setHeadless(false) // ✅ 브라우저 UI를 띄움 (차단 확인용)
-                    .setArgs(List.of("--disable-blink-features=AutomationControlled")) // ✅ 자동화 탐지 방지
-            );
-
-            BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-                .setExtraHTTPHeaders(Map.of(
-                    "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-                    "Accept-Language", "ko-KR,ko;q=0.9",
-                    "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"
-                ))
-            );
-
-            Page page = context.newPage();
-            System.out.println("🚀 [크롤링 시작] " + category.getCategoryName() + " - " + categoryUrl);
-            
-            // ✅ 쿠팡 카테고리 페이지 이동 (타임아웃 증가)
-            page.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(90000)); 
-            page.waitForLoadState(LoadState.NETWORKIDLE); // ✅ 네트워크 요청 끝날 때까지 대기
-
-            System.out.println("✅ 페이지 로드 완료: " + page.title());
-
-            // ✅ 상품 리스트 가져오기
-        List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
-
-        if (productElements.isEmpty()) {
-            System.out.println("🚨 상품을 찾을 수 없습니다! CSS 선택자를 확인하세요.");
+    public void crawlAllCategories() {
+        System.out.println("🚀 [테스트] 모든 카테고리에서 상품 크롤링 시작!"); // ✅ 여기까지 실행되는지 확인
+        List<Category> categories = categoryRepository.findAll();
+        if (categories.isEmpty()) {
+            System.out.println("🚨 [크롤링 중단] 크롤링할 카테고리가 없습니다!");
             return;
         }
-
-        int count = 0;
-        for (ElementHandle productElement : productElements) {
-            if (count >= 10) break;
-        
-            // ✅ 상품명 크롤링 (null 체크 추가)
-            ElementHandle nameElement = productElement.querySelector("a.baby-product-link");
-            if (nameElement == null) {
-                System.out.println("🚨 상품명 요소를 찾을 수 없습니다!");
-                continue;
-            }
-            String name = nameElement.innerText();
-        
-            // ✅ 상세페이지 URL 크롤링 (null 체크 추가)
-            String detailUrl = "https://www.coupang.com" + nameElement.getAttribute("href");
-        
-            // ✅ 상품 이미지 URL 크롤링 (null 체크 추가)
-            ElementHandle imageElement = productElement.querySelector("img");
-            String imageUrl = (imageElement != null) ? imageElement.getAttribute("src") : "";
-
-            // ✅ 원가 선택자 (할인이 없는 경우)
-            ElementHandle basePriceElement = productElement.querySelector("del.base-price");
-
-            // ✅ 할인가 선택자 (할인이 적용된 경우)
-            ElementHandle salePriceElement = productElement.querySelector("span.price");
-
-            String priceText = "0";
-            if (basePriceElement != null) {
-                priceText = basePriceElement.innerText().replace(",", "").trim();
-            } else if (salePriceElement != null) {
-                priceText = salePriceElement.innerText().replace(",", "").trim();
-            }
-
-            // ✅ 숫자로 변환
-            Double price = 0.0;
-            try {
-                price = Double.parseDouble(priceText);
-            } catch (NumberFormatException e) {
-                System.out.println("🚨 [가격 오류] 변환 실패: " + priceText);
-            }
-
-            // ✅ 가격이 0원이면 다음 상품으로 스킵
-            if (price == 0.0) {
-                System.out.println("⏩ [상품 스킵] 가격이 0원이므로 다음 상품으로 이동");
-                continue;
-            }
-
-            // ✅ 디버깅 로그
-            System.out.println("✅ [상품 가격] " + price);
-
-
-
-        
-            // ✅ 상품 저장
-            Product product = Product.builder()
-                .name(name)
-                .price(price)
-                .stockQuantity(10)
-                .category(category)
-                .imageUrl(imageUrl)
-                .thumbnailImageUrl(imageUrl)
-                .detailUrl(detailUrl)
-                .build();
-        
-            productRepository.save(product);
-            System.out.println("✅ 상품 저장 완료: " + name);
-            count++;
-        }
-        
-
-                browser.close();
-            } catch (Exception e) {
-                System.out.println("🚨 크롤링 중 오류 발생: " + e.getMessage());
-                e.printStackTrace();
-            }
-    }
-
-    /**
-     * ✅ 모든 카테고리에 대해 크롤링 실행
-     */
-    public void crawlAllCategories() {
-        List<Category> categories = categoryRepository.findAll(); // ✅ DB에서 모든 카테고리 가져오기
         for (Category category : categories) {
+            System.out.println("📌 [카테고리] ID: " + category.getCategoryId() + " | Name: " + category.getCategoryName());
+            System.out.println("📌 [카테고리] 크롤링 시작 - " + category.getCategoryName()); // ✅ 카테고리 출력
             crawlProductsByCategory(category);
         }
+        System.out.println("✅ [크롤링 완료]");
     }
+
+    public void crawlProductsByCategory(Category category) {
+        String categoryUrl = "https://www.coupang.com" + category.getUrl();
+        try (Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                .setHeadless(false)
+                .setArgs(List.of("--disable-http2", "--disable-blink-features=AutomationControlled"))
+            );
+    
+            BrowserContext context = browser.newContext(new Browser.NewContextOptions()
+                .setIgnoreHTTPSErrors(true)
+                .setJavaScriptEnabled(false)
+            );
+    
+            Page page = context.newPage();
+            page.navigate(categoryUrl);
+            page.waitForLoadState(LoadState.LOAD);
+            page.waitForTimeout(3000); // ✅ 추가 대기
+    
+            // ✅ 상품 리스트 HTML 일부 확인 (올바른 선택자로 변경)
+            String productListHtml = page.innerHTML("ul#productList"); // ✅ 올바른 상품 리스트 컨테이너
+            System.out.println("📌 [디버깅] 상품 리스트 HTML:\n" + productListHtml);
+    
+            // ✅ 상품이 로드될 때까지 대기 (이전보다 안정적인 크롤링 가능)
+            page.waitForSelector("li.baby-product.renew-badge", 
+                new Page.WaitForSelectorOptions().setState(WaitForSelectorState.ATTACHED));
+    
+            // ✅ 상품 리스트 가져오기
+            List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
+            System.out.println("✅ 크롤링된 상품 개수: " + productElements.size());
+    
+            if (productElements.isEmpty()) {
+                System.out.println("🚨 상품 없음 (선택자 확인 필요)");
+                System.out.println("📌 현재 페이지 HTML:\n" + page.content());
+                return;
+            }
+    
+            int count = 0;
+            for (ElementHandle productElement : productElements) {
+                if (count >= 10) break;
+    
+                ElementHandle nameElement = productElement.querySelector("a.baby-product-link");
+                if (nameElement == null) continue;
+                String name = nameElement.innerText();
+                String detailUrl = "https://www.coupang.com" + nameElement.getAttribute("href");
+    
+                ElementHandle imageElement = productElement.querySelector("img");
+                String imageUrl = (imageElement != null) ? imageElement.getAttribute("src") : "";
+    
+                String priceText = "0";
+                ElementHandle priceElement = productElement.querySelector("strong.price-value");
+    
+                if (priceElement != null) {
+                    priceText = priceElement.innerText().replace(",", "").trim();
+                }
+    
+                Double price = 0.0;
+                try {
+                    price = Double.parseDouble(priceText);
+                } catch (NumberFormatException e) {
+                    System.out.println("🚨 [가격 오류] " + priceText);
+                }
+    
+                if (price == 0.0) continue;
+    
+                System.out.println("📌 [디버깅] 상품 데이터 변환 완료 - Name: " + name + ", Price: " + price + ", Image: " + imageUrl);
+    
+                ProductDto productDto = ProductDto.builder()
+                    .name(name)
+                    .price(price)
+                    .stockQuantity(10)
+                    .categoryId(category.getCategoryId())
+                    .imageUrl(imageUrl)
+                    .thumbnailImageUrl(imageUrl)
+                    .detailUrl(detailUrl)
+                    .build();
+    
+                saveProductData(productDto);
+                System.out.println("✅ 저장 요청 완료: " + name);
+                count++;
+            }
+    
+            browser.close();
+        } catch (Exception e) {
+            System.out.println("🚨 오류 발생: " + e.getMessage());
+        }
+    }
+    
+    
+    @Transactional
+    public void saveProductData(ProductDto productDto) {
+        System.out.println("📌 [saveProductData] 상품 데이터 저장 요청 - " + (productDto != null ? productDto.getName() : "NULL PRODUCT DTO"));
+        try {
+            System.out.println("📌 [saveProductData] 상품 데이터 저장 요청 - " + productDto.getName());
+            Product savedProduct = productService.saveProduct(productDto);
+            productRepository.flush();  // ✅ 강제 flush 실행
+            System.out.println("✅ [saveProductData] 저장된 상품 ID: " + savedProduct.getProductId());
+
+            // ✅ DB 저장 후 개수 확인
+            long productCount = productRepository.count();
+            System.out.println("📌 [DB 저장 후] 현재 DB 상품 개수: " + productCount);
+        } catch (Exception e) {
+            System.out.println("🚨 [saveProductData] 상품 저장 실패: " + e.getMessage());
+        }
+    }
+
+
 }
+    

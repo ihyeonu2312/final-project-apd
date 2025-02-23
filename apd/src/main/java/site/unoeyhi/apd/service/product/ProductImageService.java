@@ -1,6 +1,6 @@
 package site.unoeyhi.apd.service.product;
 
-import site.unoeyhi.apd.dto.ProductImageDto;
+import site.unoeyhi.apd.dto.product.ProductImageDto;
 import site.unoeyhi.apd.entity.ProductImage;
 
 import java.util.List;

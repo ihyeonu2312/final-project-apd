@@ -5,13 +5,10 @@ import org.junit.jupiter.api.Assertions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
-import org.springframework.transaction.annotation.Transactional;
 
-import site.unoeyhi.apd.dto.product.ProductDto;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.repository.CategoryRepository;
 import site.unoeyhi.apd.repository.product.ProductRepository;
-import site.unoeyhi.apd.service.product.ProductServiceImpl;
 import site.unoeyhi.apd.service.product.crawling.CoupangCrawlerService;
 
 import java.util.List;

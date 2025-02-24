@@ -50,17 +50,17 @@ public class CoupangCrawlerService {
 
     public void crawlProductsByCategory(Category category) {
         String categoryUrl = "https://www.coupang.com" + category.getUrl();
-
+    
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                 .setHeadless(false)
-                .setArgs(List.of
-                ("--disable-http2",
-                 "--disable-blink-features=AutomationControlled", // 자동화 탐지 방지
-                 "--disable-gpu" // GPU 가속 비활성화 (안정성 증가)
-                 ))
+                .setArgs(List.of(
+                    "--disable-http2",
+                    "--disable-blink-features=AutomationControlled",
+                    "--disable-gpu"
+                ))
             );
-
+    
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
                 .setIgnoreHTTPSErrors(true)
                 .setJavaScriptEnabled(true)
@@ -70,137 +70,159 @@ public class CoupangCrawlerService {
                     "Referer", "https://www.coupang.com/"
                 ))
             );
+            context.addInitScript("Object.defineProperty(navigator, 'webdriver', { get: () => false })");
+    
+            // 카테고리 페이지 열기
+            Page categoryPage = context.newPage();
+            categoryPage.navigate(categoryUrl, new Page.NavigateOptions()
+                .setTimeout(60000)
+                .setWaitUntil(WaitUntilState.NETWORKIDLE)
+            );
+            categoryPage.waitForTimeout(5000);
 
-            Page page = context.newPage();
-            page.navigate(categoryUrl);
-            page.waitForLoadState(LoadState.LOAD);
-            page.waitForTimeout(3000);
-
-            // ✅ 상품 리스트 확인
-            String productListHtml = page.innerHTML("ul#productList");
-            System.out.println("📌 [디버깅] 상품 리스트 HTML:\n" + productListHtml);
-
-            // ✅ 상품이 로드될 때까지 대기
-            page.waitForSelector("li.baby-product.renew-badge", 
-                new Page.WaitForSelectorOptions().setState(WaitForSelectorState.ATTACHED));
-
-            // ✅ 상품 리스트 가져오기
-            List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
+    
+            // 상품 리스트 가져오기
+            List<ElementHandle> productElements = categoryPage.querySelectorAll("li.baby-product.renew-badge");
             System.out.println("✅ 크롤링된 상품 개수: " + productElements.size());
-
+    
             if (productElements.isEmpty()) {
                 System.out.println("🚨 상품 없음 (선택자 확인 필요)");
-                System.out.println("📌 현재 페이지 HTML:\n" + page.content());
                 return;
             }
-
+    
             int count = 0;
+            // 상품 크롤링을 위한 페이지 열기
             for (ElementHandle productElement : productElements) {
                 if (count >= 10) break;
-
+    
+                System.out.println("🔍 [디버깅] 현재 처리 중인 상품 인덱스: " + count);
+    
                 ElementHandle nameElement = productElement.querySelector("a.baby-product-link");
                 if (nameElement == null) continue;
                 String name = nameElement.innerText();
                 String detailUrl = "https://www.coupang.com" + nameElement.getAttribute("href");
-
-                ElementHandle imageElement = productElement.querySelector("img");
-                String imageUrl = (imageElement != null) ? imageElement.getAttribute("src") : "";
-
+    
+                // 가격 초기화
                 String priceText = "0";
                 ElementHandle priceElement = productElement.querySelector("strong.price-value");
-
                 if (priceElement != null) {
                     priceText = priceElement.innerText().replace(",", "").trim();
                 }
-
                 Double price = 0.0;
                 try {
                     price = Double.parseDouble(priceText);
                 } catch (NumberFormatException e) {
                     System.out.println("🚨 [가격 오류] " + priceText);
                 }
-
-                if (price == 0.0) continue;
-
-                // ✅ 추가 이미지 가져오기
+    
+                // 이미지 URL 초기화
+                String imageUrl = "";
+                ElementHandle imageElement = productElement.querySelector("img");
+                if (imageElement != null) {
+                    imageUrl = imageElement.getAttribute("src");
+                }
+    
+                // 추가 이미지 리스트 초기화
                 List<String> additionalImages = new ArrayList<>();
-                List<ElementHandle> imageElements = productElement.querySelectorAll("img");
-                for (ElementHandle imgElement : imageElements) {
-                    String imgUrl = imgElement.getAttribute("src");
-                    if (imgUrl != null && !imgUrl.trim().isEmpty()) {
-                        additionalImages.add(imgUrl);
+                List<ElementHandle> imgElements = productElement.querySelectorAll("img");
+                for (ElementHandle imgElement : imgElements) {
+                    String imgSrc = imgElement.getAttribute("src");
+                    if (imgSrc != null && !imgSrc.trim().isEmpty()) {
+                        additionalImages.add(imgSrc);
                     }
                 }
-
-                // ✅ 옵션 크롤링 (상세 페이지에서 진행)
-                List<OptionDto> optionList = new ArrayList<>();
-                Page detailPage = context.newPage();  // ✅ 새로운 페이지 열기
-
+    
+                // 상세 페이지 크롤링
+                Page detailPage = context.newPage(); // 상품마다 새로운 상세 페이지 열기
                 try {
-                    detailPage.navigate(detailUrl ,new Page.NavigateOptions()
-                        .setTimeout(60000) // ✅ 타임아웃을 60초로 증가
-                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED) // ✅ LoadState 대신 DOMContentLoaded 사용
+                   // 안정적인 페이지 로딩을 위해 navigate() 사용
+                    detailPage.navigate(detailUrl, new Page.NavigateOptions()
+                        .setTimeout(90000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
                     );
-                    detailPage.waitForTimeout(5000); // ✅ 페이지 로드 대기
+                    // ✅ 페이지가 완전히 로딩될 때까지 기다림
+                    detailPage.waitForLoadState(LoadState.DOMCONTENTLOADED);
+                    detailPage.waitForTimeout(5000);
+                    System.out.println("📌 [디버깅] JavaScript URL 이동 후: " + detailPage.url());
 
-                    // ✅ 옵션 버튼이 있는지 확인하고 클릭하여 펼치기
-                    ElementHandle optionButton = detailPage.querySelector("div#optionWrapper .single-attribute__textLabel");
-                    if (optionButton != null) {
-                        optionButton.click();
-                        detailPage.waitForTimeout(1000); // ✅ 클릭 후 1초 대기
+                    // ✅ about:blank 상태인지 확인 후 재시도
+                    int retryCount = 0;
+                    while (detailPage.url().equals("about:blank") && retryCount < 3) {
+                        System.out.println("🚨 [경고] 페이지가 about:blank 상태입니다. 새로고침 시도... (" + (retryCount + 1) + "/3)");
+                        detailPage.reload();
+                        detailPage.waitForTimeout(5000);
+                        retryCount++;
                     }
 
-                    // ✅ JavaScript 실행: 숨겨진 옵션을 보이게 함
-                    detailPage.evaluate("document.querySelectorAll('div#optionWrapper ul.prod-option__item').forEach(e => e.style.display = 'block');");
+                    if (detailPage.url().equals("about:blank")) {
+                        System.out.println("🚨 [실패] 페이지가 여전히 about:blank 상태입니다. 상품 크롤링 스킵.");
+                        detailPage.close();
+                        continue;  // 다음 상품으로 이동
+                    }
 
-                    // ✅ 옵션이 로드될 때까지 대기
-                    detailPage.waitForSelector("div#optionWrapper ul.prod-option__item li", 
-                        new Page.WaitForSelectorOptions().setState(WaitForSelectorState.ATTACHED));
-
-                    // ✅ 모든 옵션 요소 가져오기
-                    List<ElementHandle> optionElements = detailPage.querySelectorAll("div#optionWrapper ul.prod-option__item li");
-                    System.out.println("🛠️ [옵션 크롤링] 옵션 개수: " + optionElements.size());
-
-                    for (ElementHandle optionElement : optionElements) {
-                        String optionId = optionElement.getAttribute("data-attribute-id");
-                        String optionValue = optionElement.innerText().trim();
-
-                        if (optionId != null && !optionId.isEmpty() && optionValue != null && !optionValue.isEmpty()) {
-                            optionList.add(new OptionDto("DEFAULT", optionValue));
-                            System.out.println("🔹 [옵션 발견] 옵션 값: " + optionValue);
+                    // 옵션 크롤링
+                    List<OptionDto> optionList = new ArrayList<>();
+                    ElementHandle optionWrapper = detailPage.querySelector("div#optionWrapper");
+                    if (optionWrapper != null) {
+                        ElementHandle optionButton = detailPage.querySelector("div#optionWrapper .single-attribute__textLabel");
+                        if (optionButton != null) {
+                            optionButton.click();
+                            detailPage.waitForTimeout(1000);
+                        }
+    
+                        detailPage.evaluate("document.querySelectorAll('div#optionWrapper ul.prod-option__item').forEach(e => e.style.display = 'block');");
+                        detailPage.waitForSelector("div#optionWrapper ul.prod-option__item li", 
+                            new Page.WaitForSelectorOptions().setState(WaitForSelectorState.VISIBLE)
+                        );
+    
+                        List<ElementHandle> optionElements = detailPage.querySelectorAll("div#optionWrapper ul.prod-option__item li");
+                        for (ElementHandle optionElement : optionElements) {
+                            String optionId = optionElement.getAttribute("data-attribute-id");
+                            String optionValue = optionElement.innerText().trim();
+                            if (optionId != null && !optionId.isEmpty() && optionValue != null && !optionValue.isEmpty()) {
+                                optionList.add(new OptionDto("DEFAULT", optionValue));
+                                System.out.println("🔹 [옵션 발견] 옵션 값: " + optionValue);
+                            }
                         }
                     }
-
+    
+                    // 상품 데이터 생성 및 저장
+                    ProductDto productDto = ProductDto.builder()
+                        .name(name)
+                        .price(price)
+                        .stockQuantity(10)
+                        .categoryId(category.getCategoryId())
+                        .imageUrl(imageUrl)
+                        .thumbnailImageUrl(imageUrl)
+                        .detailUrl(detailUrl)
+                        .additionalImages(additionalImages)
+                        .options(optionList)
+                        .build();
+    
+                    saveProductData(productDto);
+                    System.out.println("✅ 저장 요청 완료: " + name);
+    
                 } catch (Exception e) {
                     System.out.println("🚨 [옵션 크롤링 오류] " + e.getMessage());
                 } finally {
-                    detailPage.close(); // ✅ 상세 페이지 닫기
+                    detailPage.waitForTimeout(1000);  // 1초 대기
+                    detailPage.close();  // 상세 페이지 크롤링이 끝난 후 페이지 닫기
                 }
-
-
-                // ✅ 상품 데이터 생성
-                ProductDto productDto = ProductDto.builder()
-                    .name(name)
-                    .price(price)
-                    .stockQuantity(10)
-                    .categoryId(category.getCategoryId())
-                    .imageUrl(imageUrl)
-                    .thumbnailImageUrl(imageUrl)
-                    .detailUrl(detailUrl)
-                    .additionalImages(additionalImages) // ✅ 추가 이미지 리스트 저장
-                    .options(optionList) // ✅ 옵션 리스트 저장
-                    .build();
-
-                saveProductData(productDto);
-                System.out.println("✅ 저장 요청 완료: " + name);
+    
                 count++;
             }
-
+    
+            // 카테고리 페이지 크롤링이 끝난 후 카테고리 페이지 닫기
+            categoryPage.close();
             browser.close();
         } catch (Exception e) {
             System.out.println("🚨 오류 발생: " + e.getMessage());
         }
     }
+    
+    
+    
+    
 
     @Transactional
     public void saveProductData(ProductDto productDto) {

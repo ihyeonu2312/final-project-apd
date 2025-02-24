@@ -19,6 +19,7 @@ import site.unoeyhi.apd.dto.SignupRequest;
 import site.unoeyhi.apd.entity.EmailVerification;
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.entity.EmailVerification.EmailVerificationStatus;
+import site.unoeyhi.apd.entity.Member.AuthType;
 import site.unoeyhi.apd.repository.EmailVerificationRepository;
 import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.service.EmailService;
@@ -77,7 +78,8 @@ public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
         request.getNickname(),
         request.getPhoneNumber(),
         request.getAddress(),
-        request.getDetailAddress()
+        request.getDetailAddress(),
+        AuthType.EMAIL
     );
 
     return ResponseEntity.ok("회원가입 성공!");
@@ -100,7 +102,7 @@ public ResponseEntity<String> logout() {
         }
     }
 
-    // ✅ 이메일 인증 확인 API
+  //  ✅ 이메일 인증 확인 API
     @GetMapping("/verify-email")
     public ResponseEntity<String> verifyEmail(@RequestParam("token") String token) {
         boolean isVerified = emailService.verifyEmail(token);

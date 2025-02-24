@@ -1,4 +1,7 @@
 spring:
+  config:
+    import: "application-secret.yml" 
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -40,6 +43,16 @@ spring:
       roles:
         - USER
 
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            redirect-uri: "http://localhost:8080/api/auth/kakao/callback"
+            client-authentication-method: post
+            authorization-grant-type: authorization_code
+            scope: profile_nickname, profile_image, account_email
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -80,12 +93,12 @@ logging:
 # ✅ AWS S3 설정 추가
 aws:
   s3:
-    bucket-name: alpangdang-bucket  # ❗ 버킷 이름 입력
+    bucket-name: ${AWS_S3_BUCKET}  # ❗ 버킷 이름 입력
     region: ap-northeast-2  # ❗ 서울 리전 (사용 중인 리전에 맞게 변경)
-  access-key: AKIAXEVXYZ77H6SCPKDK  # ❗ AWS 콘솔에서 발급받은 액세스 키
-  secret-key: bugAWuY/6/VAXOe9PwfdrtJMUHfU9YvACIsh53jO  # ❗ AWS 콘솔에서 발급받은 시크릿 키
+  access-key: ${AWS_ACCESS_KEY}  # ❗ AWS 콘솔에서 발급받은 액세스 키
+  secret-key: ${AWS_SECRET_KEY}  # ❗ AWS 콘솔에서 발급받은 시크릿 키
 
 # ✅ Kakao 주소 검색 API 설정 추가
 kakao:
   api:
-    key: 4610c131c628a71164ca55417237824b # ❗ Kakao 개발자 콘솔에서 발급받은 REST API Key
+    key: ${KAKAO_API_KEY} # ❗ Kakao 개발자 콘솔에서 발급받은 REST API Key

@@ -9,8 +9,11 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.unoeyhi.apd.entity.EmailVerification;
+import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.entity.EmailVerification.EmailVerificationStatus;
+import site.unoeyhi.apd.entity.Member.MemberStatus;
 import site.unoeyhi.apd.repository.EmailVerificationRepository;
+import site.unoeyhi.apd.repository.MemberRepository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -23,7 +26,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final EmailVerificationRepository emailVerificationRepository;
-
+    private final MemberRepository memberRepository;
 
 
     // ✅ 랜덤 인증 코드 생성
@@ -88,7 +91,7 @@ public class EmailService {
     }
     
 
-    // ✅ 이메일 인증 코드 검증 (토큰 확인)
+   //  ✅ 이메일 인증 코드 검증 (토큰 확인)
     public boolean verifyEmail(String token) {
         Optional<EmailVerification> verificationOpt = emailVerificationRepository.findByVerificationToken(token);
 
@@ -110,4 +113,5 @@ public class EmailService {
         }
         return false;
     }
+    
 }

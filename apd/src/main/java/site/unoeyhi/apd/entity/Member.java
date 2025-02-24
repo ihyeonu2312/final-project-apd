@@ -24,7 +24,7 @@ public class Member {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password", nullable = false)
+    @Column(name = "password") //, nullable = false
     private String password;
 
     @Column(name = "nickname", nullable = false, unique = true)
@@ -47,7 +47,12 @@ public class Member {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     @Builder.Default
-    private MemberStatus status = MemberStatus.ACTIVE;
+    private MemberStatus status = MemberStatus.INACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auth_type", nullable = false)
+    @Builder.Default
+    private AuthType authType = AuthType.EMAIL;  // ✅ 기본값 EMAIL
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -64,6 +69,10 @@ public class Member {
     @Builder.Default
     private LocalDateTime lastPass = LocalDateTime.now();
 
+    public enum AuthType {
+        EMAIL,  // 일반 이메일 로그인
+        KAKAO   // 카카오 로그인
+    }
 
     // ✅ 회원 상태 (권한)
     public enum Role {

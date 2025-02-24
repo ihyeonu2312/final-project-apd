@@ -1,6 +1,11 @@
 package site.unoeyhi.apd.service;
 
+import site.unoeyhi.apd.entity.EmailVerification;
+import site.unoeyhi.apd.entity.EmailVerification.EmailVerificationStatus;
 import site.unoeyhi.apd.entity.Member;
+import site.unoeyhi.apd.entity.Member.AuthType;
+import site.unoeyhi.apd.entity.Member.MemberStatus;
+import site.unoeyhi.apd.repository.EmailVerificationRepository;
 import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.util.JwtUtil;
 
@@ -21,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MemberService {
 
+    private final EmailVerificationRepository emailVerificationRepository;  // ✅ 필드 추가!
     private final MemberRepository memberRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
@@ -37,7 +43,7 @@ public class MemberService {
 
     // ✅ 회원가입 (비밀번호 암호화 및 검증 강화)
     @Transactional
-    public Member registerMember(String name, String email, String password, String nickname, String phoneNumber, String address, String detailAddress) {
+    public Member registerMember(String name, String email, String password, String nickname, String phoneNumber, String address, String detailAddress, AuthType authType) {
         // 중복 체크
         validateDuplicateMember(email, nickname, phoneNumber);
 
@@ -45,7 +51,21 @@ public class MemberService {
         validateInputFields(name, email, password, detailAddress);
 
         // 비밀번호 암호화
-        String encryptedPassword = passwordEncoder.encode(password);
+        String encryptedPassword = (authType == AuthType.EMAIL) ? passwordEncoder.encode(password) : null;
+
+        // ✅ 이메일 인증 여부 확인 (email_verification 테이블 조회)
+        Optional<EmailVerification> verificationOpt = emailVerificationRepository.findByEmail(email);
+        
+        
+        // 🔥 isVerified 변수 선언 (이제 에러 없음!)
+        boolean isVerified = verificationOpt.isPresent() && verificationOpt.get().getStatus() == EmailVerificationStatus.VERIFIED;
+
+        if (!isVerified) {
+            log.warn("❌ 이메일 인증이 완료되지 않은 상태에서 회원가입 시도 - 이메일: {}", email);
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다. 인증 후 회원가입을 진행하세요.");
+        }
+
+        MemberStatus memberStatus = MemberStatus.ACTIVE;
 
         // 회원 객체 생성 및 저장
         Member member = Member.builder()
@@ -57,9 +77,13 @@ public class MemberService {
                 .address(address)
                 .detailAddress(detailAddress)
                 .role(Member.Role.일반회원)  // 기본 역할 설정
+                .authType(authType)
+                .status(memberStatus)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
+
+                log.info("🔥 회원가입 완료 - 이메일: {}, 상태: {}", email, memberStatus);
 
         return memberRepository.save(member);
     }

@@ -1,15 +1,23 @@
 package site.unoeyhi.apd.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.dto.AuthResponse;
@@ -23,13 +31,21 @@ import site.unoeyhi.apd.entity.Member.AuthType;
 import site.unoeyhi.apd.repository.EmailVerificationRepository;
 import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.service.EmailService;
+import site.unoeyhi.apd.service.KakaoAuthService;
 import site.unoeyhi.apd.service.MemberService;
 
+@Slf4j
 @CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
+    @Value("${KAKAO_CLIENT_ID}")
+    private String KAKAO_CLIENT_ID;
+
+    @Value("http://localhost:8080/api/auth/kakao/callback")
+    private String REDIRECT_URI;
 
     private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
@@ -37,6 +53,7 @@ public class AuthController {
     private final MemberService memberService;
     private final EmailVerificationRepository emailVerificationRepository;
     private final MemberRepository memberRepository;
+    private final KakaoAuthService kakaoAuthService;
 
     // ✅ 로그인 API (JWT 발급)
     @PostMapping("/login")
@@ -113,4 +130,47 @@ public ResponseEntity<String> logout() {
             return ResponseEntity.badRequest().body("유효하지 않거나 만료된 인증 코드입니다.");
         }
     }
+
+        // ✅ 프론트에서 카카오 로그인 요청 시 실행되는 엔드포인트
+        @GetMapping("/kakao/login")
+        public ResponseEntity<String> kakaoLogin() {
+            String redirectUrl = "https://kauth.kakao.com/oauth/authorize"
+                    + "?client_id=" + KAKAO_CLIENT_ID
+                    + "&redirect_uri=" + REDIRECT_URI
+                    + "&response_type=code";
+    
+            return ResponseEntity.ok(redirectUrl);
+        }
+    
+        @PostMapping("/kakao/callback")
+        public ResponseEntity<?> kakaoCallback(@RequestParam("code") String code) {
+            String tokenUrl = "https://kauth.kakao.com/oauth/token"
+                    + "?grant_type=authorization_code"
+                    + "&client_id=" + KAKAO_CLIENT_ID
+                    + "&redirect_uri=" + REDIRECT_URI
+                    + "&code=" + code;
+        
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, null, String.class);
+        
+            // ✅ 응답 값 출력 확인 (디버깅용)
+            System.out.println("카카오 응답: " + response.getBody());
+        
+            // ✅ JSON 파싱 및 access_token 추출
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode jsonNode = objectMapper.readTree(response.getBody());
+        
+                String accessToken = jsonNode.get("access_token").asText(); // 🔥 access_token 가져오기
+        
+                // ✅ JWT 생성 후 반환 (Spring Security + JWT 활용)
+                String jwtToken = jwtUtil.generateToken(accessToken);
+        
+                // ✅ 클라이언트에 토큰 반환
+                return ResponseEntity.ok(new AuthResponse(jwtToken));
+        
+            } catch (Exception e) {
+                return ResponseEntity.status(500).body("카카오 로그인 실패: " + e.getMessage());
+            }
+        }
 }

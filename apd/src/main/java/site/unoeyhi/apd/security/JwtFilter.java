@@ -39,6 +39,8 @@ public class JwtFilter extends OncePerRequestFilter {
         // ✅ 인증이 필요하지 않은 API 목록 (회원가입, 로그인, 이메일 인증 API 추가)
         List<String> excludedUrls = List.of(
                 "/api/auth/login",
+                "/api/auth/kakao/login",
+                "/api/auth/kakao/callback",
                 "/api/auth/signup",
                 "/api/auth/send-email",
                 "/api/auth/verify-email",

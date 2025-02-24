@@ -44,7 +44,7 @@ public class AuthController {
     @Value("${KAKAO_CLIENT_ID}")
     private String KAKAO_CLIENT_ID;
 
-    @Value("http://localhost:8080/api/auth/kakao/callback")
+    @Value("{KAKAO_REDIRECT_URI}")
     private String REDIRECT_URI;
 
     private final EmailService emailService;
@@ -141,36 +141,31 @@ public ResponseEntity<String> logout() {
     
             return ResponseEntity.ok(redirectUrl);
         }
-    
-        @PostMapping("/kakao/callback")
+
+        @GetMapping("/kakao/callback")
         public ResponseEntity<?> kakaoCallback(@RequestParam("code") String code) {
+            log.info("🔥 카카오 로그인 코드 수신: {}", code); // ✅ 카카오 인증 코드 로그 추가
+            return handleKakaoLogin(code);
+        }
+        
+        @PostMapping("/kakao/callback")
+        public ResponseEntity<?> handleKakaoLogin(@RequestParam("code") String code) {
+            log.info("🔥 카카오 로그인 처리 시작. 코드: {}", code);
+            
             String tokenUrl = "https://kauth.kakao.com/oauth/token"
                     + "?grant_type=authorization_code"
                     + "&client_id=" + KAKAO_CLIENT_ID
                     + "&redirect_uri=" + REDIRECT_URI
                     + "&code=" + code;
         
+            log.info("🔥 카카오 토큰 요청 URL: {}", tokenUrl); // ✅ 토큰 요청 URL 로그
+        
             RestTemplate restTemplate = new RestTemplate();
             ResponseEntity<String> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, null, String.class);
         
-            // ✅ 응답 값 출력 확인 (디버깅용)
-            System.out.println("카카오 응답: " + response.getBody());
+            log.info("🔥 카카오 응답: {}", response.getBody());
         
-            // ✅ JSON 파싱 및 access_token 추출
-            try {
-                ObjectMapper objectMapper = new ObjectMapper();
-                JsonNode jsonNode = objectMapper.readTree(response.getBody());
-        
-                String accessToken = jsonNode.get("access_token").asText(); // 🔥 access_token 가져오기
-        
-                // ✅ JWT 생성 후 반환 (Spring Security + JWT 활용)
-                String jwtToken = jwtUtil.generateToken(accessToken);
-        
-                // ✅ 클라이언트에 토큰 반환
-                return ResponseEntity.ok(new AuthResponse(jwtToken));
-        
-            } catch (Exception e) {
-                return ResponseEntity.status(500).body("카카오 로그인 실패: " + e.getMessage());
-            }
+            return ResponseEntity.ok(response.getBody());
         }
+        
 }

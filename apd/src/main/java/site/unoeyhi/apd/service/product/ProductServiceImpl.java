@@ -42,6 +42,11 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public Product saveProduct(ProductDto productDto) {
         System.out.println("🚀 [saveProduct] 상품 저장 시작: " + productDto.getName());
+        System.out.println("📌 [디버깅] `saveProduct()`에 전달된 옵션 개수: " + productDto.getOptions().size());
+
+        if (productDto.getOptions().isEmpty()) {
+            System.out.println("⚠️ [saveProduct] 옵션이 비어 있음!");
+        }
 
         try {
             // ✅ 카테고리 찾기
@@ -79,31 +84,37 @@ public class ProductServiceImpl implements ProductService {
                 System.out.println("⚠️ [saveProduct] 추가 이미지가 없습니다!");
             }
 
-            // ✅ 옵션 저장 (ProductOption 추가)
+            
+            // ✅ 옵션 저장
             if (productDto.getOptions() != null && !productDto.getOptions().isEmpty()) {
+                System.out.println("📌 [saveProduct] 옵션 개수 확인: " + productDto.getOptions().size());
+
                 for (OptionDto optionDto : productDto.getOptions()) {
-                    Option option = optionRepository.findByOptionValueTypeAndOptionValue(
-                            optionDto.getOptionValueType(), optionDto.getOptionValue())
-                            .orElseGet(() -> {
-                                Option newOption = Option.builder()
-                                        .optionValueType(optionDto.getOptionValueType())
-                                        .optionValue(optionDto.getOptionValue())
-                                        .build();
-                                return optionRepository.save(newOption);
-                            });
+                    System.out.println("🛠️ 저장할 옵션: " + optionDto.getOptionValueType() + " - " + optionDto.getOptionValue());
+
+                    Optional<Option> existingOption = optionRepository.findByOptionValueTypeAndOptionValue(
+                            optionDto.getOptionValueType(), optionDto.getOptionValue());
+
+                    Option option = existingOption.orElseGet(() -> {
+                        Option newOption = Option.builder()
+                                .optionValueType(optionDto.getOptionValueType())
+                                .optionValue(optionDto.getOptionValue())
+                                .build();
+                        System.out.println("✅ [DB 저장] 새로운 옵션 생성: " + newOption.getOptionValue());
+                        return optionRepository.save(newOption);
+                    });
 
                     ProductOption productOption = ProductOption.builder()
                             .product(savedProduct)
                             .option(option)
                             .build();
                     productOptionRepository.save(productOption);
-                    System.out.println("✅ [saveProduct] 옵션 저장 완료: " + optionDto.getOptionValueType() + " - " + optionDto.getOptionValue());
+                    System.out.println("✅ [DB 저장] ProductOption 저장: " + productOption.getOption().getOptionValue());
                 }
 
             } else {
-                System.out.println("⚠️ [saveProduct] 옵션 데이터가 없습니다!");
+                System.out.println("⚠️ [saveProduct] 옵션이 비어있음! 상품 ID: " + savedProduct.getProductId());
             }
-
 
             System.out.println("✅ [saveProduct] 상품, 이미지, 옵션 최종 저장 완료");
             return savedProduct;

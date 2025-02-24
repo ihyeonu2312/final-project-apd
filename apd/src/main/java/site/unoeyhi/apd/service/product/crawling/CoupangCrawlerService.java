@@ -1,18 +1,16 @@
 package site.unoeyhi.apd.service.product.crawling;
 
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.LoadState;
-import com.microsoft.playwright.options.WaitForSelectorState;
 import com.microsoft.playwright.options.WaitUntilState;
-
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import site.unoeyhi.apd.dto.product.OptionDto;
 import site.unoeyhi.apd.dto.product.ProductDto;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.entity.Product;
+import site.unoeyhi.apd.entity.ProductImage;
 import site.unoeyhi.apd.repository.CategoryRepository;
-import site.unoeyhi.apd.repository.product.ProductRepository;
+import site.unoeyhi.apd.repository.product.ProductImageRepository;
 import site.unoeyhi.apd.service.product.ProductService;
 
 import java.util.ArrayList;
@@ -22,14 +20,14 @@ import java.util.Map;
 @Service
 public class CoupangCrawlerService {
 
-    private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductService productService;
+    private final ProductImageRepository productImageRepository;
 
-    public CoupangCrawlerService(ProductRepository productRepository, CategoryRepository categoryRepository, ProductService productService) {
-        this.productRepository = productRepository;
+    public CoupangCrawlerService(CategoryRepository categoryRepository, ProductService productService,ProductImageRepository productImageRepository) {
         this.categoryRepository = categoryRepository;
         this.productService = productService;
+        this.productImageRepository = productImageRepository;
     }
 
     public void crawlAllCategories() {
@@ -39,6 +37,7 @@ public class CoupangCrawlerService {
             System.out.println("🚨 [크롤링 중단] 크롤링할 카테고리가 없습니다!");
             return;
         }
+
         for (Category category : categories) {
             System.out.println("📌 [카테고리] ID: " + category.getCategoryId() + " | Name: " + category.getCategoryName());
             crawlProductsByCategory(category);
@@ -52,11 +51,7 @@ public class CoupangCrawlerService {
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                 .setHeadless(false)
-                .setArgs(List.of(
-                    "--disable-http2",
-                    "--disable-blink-features=AutomationControlled",
-                    "--disable-gpu"
-                ))
+                .setArgs(List.of("--disable-http2", "--disable-blink-features=AutomationControlled", "--disable-gpu"))
             );
 
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
@@ -65,15 +60,14 @@ public class CoupangCrawlerService {
                 .setExtraHTTPHeaders(Map.of(
                     "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
                     "Accept-Language", "ko-KR,ko;q=0.9",
-                    "Referer", categoryUrl
+                    "Referer", "https://www.coupang.com/",
+                    "X-Forwarded-For", "220.95.91.1"
                 ))
             );
             context.addInitScript("Object.defineProperty(navigator, 'webdriver', { get: () => false })");
 
             Page currentPage = context.newPage();
-            currentPage.navigate(categoryUrl, new Page.NavigateOptions()
-                .setTimeout(60000)
-                .setWaitUntil(WaitUntilState.NETWORKIDLE));
+            currentPage.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(120000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
             currentPage.waitForTimeout(5000);
 
             List<ElementHandle> productElements = currentPage.querySelectorAll("li.baby-product.renew-badge");
@@ -86,71 +80,92 @@ public class CoupangCrawlerService {
             for (ElementHandle productElement : productElements) {
                 if (count >= 10) break;
 
-                ElementHandle nameElement = productElement.querySelector("a.baby-product-link");
-                if (nameElement == null) continue;
-                String name = nameElement.innerText();
-                String detailUrl = "https://www.coupang.com" + nameElement.getAttribute("href");
+                // ✅ 상품명 크롤링 (목록 페이지에서 가져옴, 위치 그대로 유지)
+                ElementHandle nameElement = productElement.querySelector("div.name");
+                String name = (nameElement != null) ? nameElement.innerText().trim() : "알 수 없음";
+                System.out.println("🏷️ [디버깅] 상품명: " + name);
 
+                // ✅ 상품 상세 페이지 URL 크롤링 (위치 그대로 유지)
+                ElementHandle linkElement = productElement.querySelector("a.baby-product-link");
+                String detailUrl = (linkElement != null) ? "https://www.coupang.com" + linkElement.getAttribute("href") : "";
+                System.out.println("🔍 [디버깅] 상품 상세 URL: " + detailUrl);
+
+
+                // ✅ 상품 상세 페이지 크롤링 로직 개선
                 try {
-                    System.out.println("🔍 [디버깅] 상품 이동: " + detailUrl);
-
-                    // ✅ 새로운 상세 페이지 열기 (기존 페이지에서 이동하지 않음)
                     Page detailPage = context.newPage();
-                    detailPage.navigate(detailUrl, new Page.NavigateOptions()
-                        .setTimeout(90000)
-                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
-
-                    detailPage.waitForLoadState(LoadState.LOAD);
-                    detailPage.waitForTimeout(5000);
-
-                    // ✅ about:blank 상태인지 확인 후 재시도
+                    boolean success = false;
                     int retryCount = 0;
-                    while (detailPage.url().equals("about:blank") && retryCount < 3) {
-                        System.out.println("🚨 [경고] 페이지가 about:blank 상태입니다. 새로고침 시도... (" + (retryCount + 1) + "/3)");
-                        detailPage.reload();
-                        retryCount++;
-                        detailPage.waitForTimeout(5000);
-                    }
 
-                    if (detailPage.url().equals("about:blank")) {
-                        System.out.println("🚨 [실패] 페이지가 여전히 about:blank 상태입니다. 상품 크롤링 스킵.");
-                        detailPage.close();
-                        continue;
-                    }
+                    while (!success && retryCount < 3) {
+                        try {
+                            detailPage.navigate(detailUrl, new Page.NavigateOptions()
+                                .setTimeout(60000)
+                                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
+                            );
 
-                    // ✅ 가격 가져오기
-                    ElementHandle priceElement = detailPage.querySelector("strong.price-value");
-                    String priceText = (priceElement != null) ? priceElement.innerText().replace(",", "").trim() : "0";
-                    Double price = priceText.isEmpty() ? 0.0 : Double.parseDouble(priceText);
-
-                    // ✅ 이미지 가져오기
-                    ElementHandle imageElement = detailPage.querySelector("img");
-                    String imageUrl = (imageElement != null) ? imageElement.getAttribute("src") : "";
-
-                    List<String> additionalImages = new ArrayList<>();
-                    List<ElementHandle> imgElements = detailPage.querySelectorAll("img");
-                    for (ElementHandle imgElement : imgElements) {
-                        String imgSrc = imgElement.getAttribute("src");
-                        if (imgSrc != null && !imgSrc.trim().isEmpty()) {
-                            additionalImages.add(imgSrc);
+                            detailPage.waitForTimeout(5000);
+                            if (!detailPage.url().equals("about:blank")) {
+                                success = true;
+                            }
+                        } catch (PlaywrightException e) {
+                            System.out.println("🚨 [경고] 페이지 로드 실패: " + e.getMessage());
                         }
+                        retryCount++;
                     }
 
-                    // ✅ 옵션 크롤링
-                    List<OptionDto> optionList = new ArrayList<>();
-                    ElementHandle optionWrapper = detailPage.querySelector("div#optionWrapper");
-                    if (optionWrapper != null) {
-                        List<ElementHandle> optionElements = detailPage.querySelectorAll("div#optionWrapper ul.prod-option__item li");
-                        for (ElementHandle optionElement : optionElements) {
-                            String optionValue = optionElement.innerText().trim();
-                            if (!optionValue.isEmpty()) {
-                                optionList.add(new OptionDto("DEFAULT", optionValue));
-                                System.out.println("🔹 [옵션 발견] 옵션 값: " + optionValue);
+                    if (!success) {
+                        System.out.println("🚨 [실패] 상품 페이지 로드 실패로 크롤링 건너뜀: " + detailUrl);
+                        detailPage.close();
+                        return;
+                    }
+
+                    // ✅ 가격 크롤링
+                    Locator priceLocator = detailPage.locator("strong.price-value");
+                    String priceText = priceLocator.isVisible() ? priceLocator.innerText().replace(",", "").trim() : "0";
+                    Double price = priceText.isEmpty() ? 0.0 : Double.parseDouble(priceText);
+                    System.out.println("💰 [디버깅] 상품 가격: " + price);
+
+                    // ✅ 대표 이미지 크롤링
+                    Locator imageLocator = detailPage.locator("div.prod-image img").first();
+                    String imageUrl = imageLocator.isVisible() ? imageLocator.getAttribute("src") : "";
+                    System.out.println("🖼️ [디버깅] 대표 이미지 URL: " + imageUrl);
+
+                    // ✅ 추가 이미지 크롤링
+                    List<String> additionalImages = new ArrayList<>();
+                    List<Locator> imageLocators = detailPage.locator("div.prod-image img").all();
+                    for (Locator imgLocator : imageLocators) {
+                        if (imgLocator.isVisible()) {
+                            String imgSrc = imgLocator.getAttribute("src");
+                            if (imgSrc != null && !imgSrc.trim().isEmpty() && !imgSrc.equals(imageUrl)) {
+                                additionalImages.add(imgSrc);
                             }
                         }
                     }
+                    System.out.println("📸 [디버깅] 추가 이미지 개수: " + additionalImages.size());
 
-                    // ✅ 상품 데이터 저장
+                    // ✅ 옵션 크롤링 (옵션이 없는 경우 대비)
+                    List<OptionDto> optionList = new ArrayList<>();
+                    Locator optionWrapperLocator = detailPage.locator("div#optionWrapper");
+
+                    if (optionWrapperLocator.count() > 0 && optionWrapperLocator.isVisible()) {
+                        List<String> optionValues = detailPage.locator("ul.prod-option__item li").allInnerTexts();
+                        for (String optionValue : optionValues) {
+                            optionValue = optionValue.trim();
+                            if (!optionValue.isEmpty()) {
+                                optionList.add(new OptionDto("DEFAULT", optionValue));
+                            }
+                        }
+                    }
+                    
+                    // ✅ 옵션이 없는 경우 처리
+                    if (optionList.isEmpty()) {
+                        System.out.println("⚠️ [디버깅] 옵션이 없는 상품입니다.");
+                    } else {
+                        System.out.println("🎯 [디버깅] 옵션 개수: " + optionList.size());
+                    }
+
+                    // ✅ 상품 데이터 저장 (builder 사용)
                     ProductDto productDto = ProductDto.builder()
                         .name(name)
                         .price(price)
@@ -159,29 +174,46 @@ public class CoupangCrawlerService {
                         .imageUrl(imageUrl)
                         .thumbnailImageUrl(imageUrl)
                         .detailUrl(detailUrl)
-                        .additionalImages(additionalImages)
                         .options(optionList)
+                        .additionalImages(additionalImages) // ✅ 추가 이미지 포함
                         .build();
 
                     saveProductData(productDto);
-                    System.out.println("✅ 저장 요청 완료: " + name);
-                    
-                    detailPage.close();  // ✅ 상세 페이지 닫기
 
                 } catch (Exception e) {
                     System.out.println("🚨 [크롤링 오류] " + e.getMessage());
                 }
                 count++;
             }
-
             browser.close();
-        } catch (Exception e) {
-            System.out.println("🚨 오류 발생: " + e.getMessage());
         }
     }
 
-    @Transactional
+        @Transactional
     public void saveProductData(ProductDto productDto) {
-        productService.saveProduct(productDto);
+        try {
+            // ✅ 상품 저장
+            Product savedProduct = productService.saveProduct(productDto);
+            System.out.println("✅ [saveProduct] 상품 저장 완료: " + savedProduct.getName());
+
+            // ✅ 추가 이미지 저장 (비어있지 않은 경우만)
+            if (productDto.getAdditionalImages() != null && !productDto.getAdditionalImages().isEmpty()) {
+                for (String imageUrl : productDto.getAdditionalImages()) {
+                    if (imageUrl != null && !imageUrl.trim().isEmpty()) { // ✅ 빈 값 필터링
+                        ProductImage productImage = ProductImage.builder()
+                                .product(savedProduct) // ✅ 저장된 상품과 연결
+                                .imageUrl(imageUrl)
+                                .build();
+                        productImageRepository.save(productImage); // ✅ 추가 이미지 저장
+                        System.out.println("🖼️ [saveProduct] 추가 이미지 저장 완료: " + imageUrl);
+                    }
+                }
+            } else {
+                System.out.println("⚠️ [saveProduct] 추가 이미지가 없습니다!");
+            }
+        } catch (Exception e) {
+            System.out.println("🚨 [saveProduct] 상품 저장 실패: " + e.getMessage());
+        }
     }
 }
+

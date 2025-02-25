@@ -65,11 +65,12 @@ public class Product {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
+    
+    @Builder.Default
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductOption> productOptions = new ArrayList<>();
 
-    
+    @Builder.Default
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images = new ArrayList<>();
 
@@ -82,5 +83,15 @@ public class Product {
                     return categoryRepository.save(newCategory);
                 });
     }
+    public void addProductOption(ProductOption option) {
+        option.setProduct(this); // Product 설정
+        this.productOptions.add(option);
+    }
+    
+    public void addProductImage(ProductImage image) {
+        image.setProduct(this); // Product 설정
+        this.images.add(image);
+    }
+    
     
 }

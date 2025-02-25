@@ -134,44 +134,32 @@ public class CoupangCrawlerService {
                     System.out.println("✅ [성공] 상세 페이지 크롤링 시작: " + detailUrl);
 
                     // ✅ 가격 크롤링
-                    // 기존 선택자
-                    Locator originalPriceLocator = detailPage.locator("del.base-price");
-                    Locator discountPriceLocator = detailPage.locator("del.base-price + span");
-
-                    // ✅ 새로운 선택자 (백업)
-                    Locator newOriginalPriceLocator = detailPage.locator("span.origin-price");  // 원가
-                    Locator newDiscountPriceLocator = detailPage.locator("span.total-price");   // 할인가
-                    Locator salePriceLocator = detailPage.locator("span.final-price"); // 최종 가격 (이게 있을 수도 있음)
-
-                    // ✅ 가격 파싱
-                    String originalPriceText = originalPriceLocator.count() > 0 ? originalPriceLocator.textContent().trim() : 
-                                                newOriginalPriceLocator.count() > 0 ? newOriginalPriceLocator.textContent().trim() : "";
-                    String discountPriceText = discountPriceLocator.count() > 0 ? discountPriceLocator.textContent().trim() :
-                                                newDiscountPriceLocator.count() > 0 ? newDiscountPriceLocator.textContent().trim() : 
-                                                salePriceLocator.count() > 0 ? salePriceLocator.textContent().trim() : "";
-
-                    // ✅ 가격 값 변환
+                    Locator originalPriceLocator = detailPage.locator("span.origin-price").first();
+                    Locator discountPriceLocator = detailPage.locator("span.discount-price").first();
+                    String originalPriceText = originalPriceLocator.count() > 0 ? originalPriceLocator.textContent().trim() : "";
+                    String discountPriceText = discountPriceLocator.count() > 0 ? discountPriceLocator.textContent().trim() : "";
+                    
+                    // ✅ 가격 파싱 예외 처리
                     double originalPrice = 0.0;
                     double discountPrice = 0.0;
                     try {
                         if (!originalPriceText.isEmpty() && originalPriceText.matches(".*\\d.*")) {  
-                            originalPrice = Double.parseDouble(originalPriceText.replaceAll("[^0-9.]", ""));
+                            originalPrice = Double.parseDouble(originalPriceText.replaceAll("[^0-9]", ""));
                         }
                         if (!discountPriceText.isEmpty() && discountPriceText.matches(".*\\d.*")) {  
-                            discountPrice = Double.parseDouble(discountPriceText.replaceAll("[^0-9.]", ""));
+                            discountPrice = Double.parseDouble(discountPriceText.replaceAll("[^0-9]", ""));
                         }
                     } catch (NumberFormatException e) {
                         System.out.println("🚨 [오류] 가격 변환 실패: " + e.getMessage());
                     }
-
+                    
                     // ✅ 최종 가격 결정
                     double finalPrice = (discountPrice > 0) ? discountPrice : originalPrice;
-
-                    // ✅ 디버깅 로그 추가
+                    
+                    // ✅ 디버깅 로그
                     System.out.println("💰 [디버깅] 원가: " + originalPrice);
                     System.out.println("💰 [디버깅] 할인 가격: " + discountPrice);
                     System.out.println("💰 [디버깅] 최종 가격: " + finalPrice);
-
 
                     // ✅ 대표 이미지 크롤링
                     Locator imageLocator = detailPage.locator("div.prod-image img").first();

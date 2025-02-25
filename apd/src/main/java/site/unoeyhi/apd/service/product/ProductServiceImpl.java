@@ -85,7 +85,7 @@ public class ProductServiceImpl implements ProductService {
         } catch (Exception e) {
             System.out.println("🚨 [saveProduct] 상품 저장 실패: " + e.getMessage());
             e.printStackTrace();
-            return null;
+            throw e; //트랜잭션 자동 롤백
         }
     }
 
@@ -138,6 +138,8 @@ public class ProductServiceImpl implements ProductService {
                 return optionRepository.save(newOption);
             });
 
+            productOptionRepository.flush(); // ✅ 동기화 보장 추가
+            
             ProductOption productOption = ProductOption.builder()
                 .product(savedProduct)
                 .option(option)

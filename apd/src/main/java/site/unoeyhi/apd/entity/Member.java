@@ -85,6 +85,15 @@ public class Member {
         INACTIVE  // 이메일 인증 미완료 (또는 제제 및 정지 비활성 계정)
     }
 
+    // kakao 유저 전용
+    public Member(String email, String nickname, AuthType authType) {
+        this.email = email;
+        this.nickname = nickname;
+        this.authType = authType;
+        this.password = null;  // ✅ 카카오는 비밀번호 없음
+        this.createdAt = LocalDateTime.now();
+    }
+
     // ✅ 자동으로 createdAt 설정 (최초 등록 시)
     @PrePersist
     protected void onCreate() {

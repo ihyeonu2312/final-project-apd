@@ -1,6 +1,6 @@
 spring:
   config:
-    import: "application-secret.yml" 
+    import: classpath:application-secret.yml
 
   mail:
     host: smtp.gmail.com
@@ -33,8 +33,8 @@ spring:
   datasource:
     url: jdbc:mariadb://np.unoeyhi.site:3306/mifo
     driver-class-name: org.mariadb.jdbc.Driver
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    username: ${database.username}
+    password: ${database.password}
 
   security:
     user:
@@ -47,9 +47,9 @@ spring:
       client:
         registration:
           kakao:
-            client-id: ${KAKAO_CLIENT_ID}
-            client-secret: ${KAKAO_CLIENT_SECRET} 
-            redirect-uri: ${KAKAO_REDIRECT_URI}
+            client-id: ${kakao.client-id}
+            client-secret: ${kakao.client-secret}
+            redirect-uri: ${kakao.redirect-uri}
             client-authentication-method: post
             authorization-grant-type: authorization_code
             scope: profile_nickname, profile_image, account_email
@@ -101,12 +101,12 @@ logging:
 # ✅ AWS S3 설정 추가
 aws:
   s3:
-    bucket-name: ${AWS_S3_BUCKET}  # ❗ 버킷 이름 입력
+    bucket-name: ${aws.s3.bucket-name}  # ❗ 버킷 이름 입력
     region: ap-northeast-2  # ❗ 서울 리전 (사용 중인 리전에 맞게 변경)
-  access-key: ${AWS_ACCESS_KEY}  # ❗ AWS 콘솔에서 발급받은 액세스 키
-  secret-key: ${AWS_SECRET_KEY}  # ❗ AWS 콘솔에서 발급받은 시크릿 키
+  access-key: ${aws.s3.access-key}  # ❗ AWS 콘솔에서 발급받은 액세스 키
+  secret-key: ${aws.s3.secret-key}  # ❗ AWS 콘솔에서 발급받은 시크릿 키
 
 # ✅ Kakao 주소 검색 API 설정 추가
 kakao:
   api:
-    key: ${KAKAO_API_KEY} # ❗ Kakao 개발자 콘솔에서 발급받은 REST API Key
+    key: ${kakao.api.key} # ❗ Kakao 개발자 콘솔에서 발급받은 REST API Key

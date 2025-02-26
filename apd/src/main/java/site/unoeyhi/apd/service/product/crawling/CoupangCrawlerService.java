@@ -1,6 +1,7 @@
 package site.unoeyhi.apd.service.product.crawling;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitUntilState;
 import org.springframework.stereotype.Service;
 import site.unoeyhi.apd.dto.product.OptionDto;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 @Service
@@ -32,6 +34,107 @@ public class CoupangCrawlerService {
         this.productService = productService;
         this.discountService = discountService;
     }
+    private String generateRandomIP() {
+        Random random = new Random();
+        return random.nextInt(256) + "." + 
+            random.nextInt(256) + "." + 
+            random.nextInt(256) + "." + 
+            random.nextInt(256);
+    }
+    private Page openDetailPage(BrowserContext context, String detailUrl) {
+        Page detailPage = context.newPage();
+        int retryCount = 0;
+        boolean success = false;
+    
+        while (!success && retryCount < 2) {
+            try {
+                System.out.println("🔄 [재시도 " + (retryCount + 1) + "] 상품 페이지 로딩 중: " + detailUrl);
+    
+                // ✅ 랜덤 딜레이 추가 (자동화 탐지 방지)
+                int delay = new Random().nextInt(3000) + 1000; // 2~5초 랜덤 대기
+                detailPage.waitForTimeout(delay);
+    
+                // ✅ 페이지 이동
+                Response response = detailPage.navigate(detailUrl, new Page.NavigateOptions()
+                    .setTimeout(60000)  // ✅ 타임아웃 증가 (90초)
+                    .setWaitUntil(WaitUntilState.NETWORKIDLE)  // ✅ 완전한 로딩까지 대기
+                );
+    
+                // ✅ 응답 상태 체크 (200 OK 여부 확인)
+                if (response == null || response.status() != 200) {
+                    System.out.println("🚨 [경고] 응답 상태 오류: " + (response != null ? response.status() : "NULL"));
+                    retryCount++;
+                    continue;
+                }
+    
+                // ✅ `about:blank` 상태인지 확인 후 새로고침
+                if (detailPage.url().equals("about:blank")) {
+                    System.out.println("🚨 [경고] `about:blank` 감지됨. 2초 대기 후 새로고침...");
+                    detailPage.waitForTimeout(2000);
+                    detailPage.reload();
+                }
+
+    
+                // ✅ `iframe` 감지 및 크롤링
+                FrameLocator iframeLocator = detailPage.frameLocator("iframe");
+
+                // ✅ `iframe`이 존재하는지 확인
+                boolean hasIframe = iframeLocator.locator("body").isVisible(); // 🔥 `count()` 없이 iframe 확인!
+
+                if (hasIframe) {  
+                    System.out.println("📌 [경고] iframe 감지됨. iframe 내부에서 직접 크롤링 시도...");
+
+                    // ✅ iframe 내부에서 제목 크롤링
+                    Locator iframeTitleLocator = iframeLocator.first().locator("h1.prod-buy-header__title");
+                    if (iframeTitleLocator.isVisible()) {
+                        System.out.println("✅ [성공] iframe 내부에서 상품 제목 크롤링 완료: " + iframeTitleLocator.textContent());
+                    } else {
+                        System.out.println("⚠️ [경고] iframe 내부에서 제목을 찾을 수 없음. 메인 페이지에서 시도...");
+                    }
+                }
+
+                // ✅ iframe이 없거나, 내부에서 제목을 찾지 못하면 메인 페이지에서 진행
+                Locator mainTitleLocator = detailPage.locator("h1.prod-buy-header__title");
+                if (mainTitleLocator.isVisible()) {
+                    System.out.println("✅ [성공] 메인 페이지에서 상품 제목 크롤링 완료: " + mainTitleLocator.textContent());
+                } else {
+                    System.out.println("🚨 [오류] 상품 제목을 찾을 수 없음!");
+                }
+    
+                // // ✅ 스크롤 최적화 (3단계)
+                // for (int i = 0; i < 3; i++) {
+                //     detailPage.evaluate("window.scrollBy(0, document.body.scrollHeight / 3)");
+                //     detailPage.waitForTimeout(1000);
+                // }
+                // ✅ waitForSelector 적용
+                detailPage.waitForSelector(
+                    "div.prod-option, ul.Image_Select__items, div.tab-selector__tab",
+                    new Page.WaitForSelectorOptions().setTimeout(10000)
+                );
+
+                success = true; // ✅ 성공적으로 페이지가 로드되었으면 종료
+                System.out.println("✅ [성공] 상세 페이지 로딩 완료: " + detailPage.url());
+    
+            } catch (PlaywrightException e) {
+                System.out.println("🚨 [경고] 페이지 로드 실패: " + e.getMessage());
+                retryCount++;
+                detailPage.waitForTimeout(3000); // ✅ 3초 대기 후 재시도
+            }
+        }
+    
+        // ✅ 최종적으로도 실패하면 null 반환
+        if (!success) {
+            System.out.println("🚨 [실패] 상세 페이지 로드 실패: " + detailUrl);
+            if (!detailPage.isClosed()) {
+                detailPage.close();
+            }
+            return null;
+        }
+    
+        return detailPage;
+    }
+    
+    
 
     public void crawlAllCategories() {
         System.out.println("🚀 [테스트] 모든 카테고리에서 상품 크롤링 시작!");
@@ -65,19 +168,35 @@ public class CoupangCrawlerService {
             headers.put("Upgrade-Insecure-Requests", "1");
             headers.put("Connection", "keep-alive");
 
+            
+
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
             .setIgnoreHTTPSErrors(true) // HTTPS 오류 무시
             .setJavaScriptEnabled(true) // JavaScript 활성화
-            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36") // 일반 브라우저로 인식
+            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36") // ✅ 최신 버전 반영
             .setExtraHTTPHeaders(Map.of(
                 "Accept-Language", "ko-KR,ko;q=0.9",
                 "Referer", "https://www.coupang.com/",
-                "X-Forwarded-For", "220.95.91.1" // ✅ IP 우회 효과
+                "X-Forwarded-For", generateRandomIP() // ✅ 무작위 IP 적용        
             ))
         );
         
-            context.addInitScript("Object.defineProperty(navigator, 'webdriver', { get: () => false })");
-        
+        // ✅ Playwright 봇 감지 방지 코드 추가
+        context.addInitScript("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });");
+        context.addInitScript("window.navigator.chrome = { runtime: {} };");
+        context.addInitScript("Object.defineProperty(navigator, 'languages', { get: () => ['ko-KR', 'ko'] });");
+        context.addInitScript("Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });");
+        context.addInitScript("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 });");
+        context.addInitScript("Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });");
+        context.addInitScript("Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 1 });");
+        context.addInitScript("Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' });");
+        context.addInitScript("Object.defineProperty(navigator, 'userAgentData', { get: () => undefined });");
+
+        // ✅ Coupang의 `canvas fingerprinting` 탐지를 우회
+        context.addInitScript("HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,FAKE_IMAGE';");
+        context.addInitScript("WebGLRenderingContext.prototype.getParameter = () => 'FAKE_WEBGL';");
+        context.addInitScript("RTCPeerConnection = function() { return {}; };");
+
             Page currentPage = context.newPage();
             currentPage.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(120000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
 
@@ -99,68 +218,34 @@ public class CoupangCrawlerService {
                 String detailUrl = (linkElement != null) ? "https://www.coupang.com" + linkElement.getAttribute("href") : "";
                 System.out.println("🔍 [디버깅] 상품 상세 URL: " + detailUrl);
 
-                Page detailPage = context.newPage();
+                Page detailPage = openDetailPage(context, detailUrl);
+                if (detailPage == null) {
+                    System.out.println("🚨 [오류] 상품 상세 페이지를 열 수 없어 크롤링 건너뜀.");
+                    continue;
+                }
 
-                // context.setExtraHTTPHeaders(headers);
-                
-                // ✅ 상세 페이지 크롤링
-                try {
-                    int retryCount = 0;
-                    boolean success = false;
-                
-                    while (!success && retryCount < 3) {
-                        try {
-                            System.out.println("🔄 [재시도 " + (retryCount + 1) + "] 상품 페이지 로딩 중: " + detailUrl);
-                
-                            // ✅ 페이지가 닫혀있으면 다시 생성
-                            if (detailPage.isClosed()) { 
-                                detailPage = context.newPage();
-                            }
-                
-                            // ✅ User-Agent 및 WebDriver 조작 (차단 방지)
-                            context.addInitScript("Object.defineProperty(navigator, 'webdriver', { get: () => undefined })");
-                
-                            // ✅ 페이지 로드
-                            detailPage.navigate(detailUrl, new Page.NavigateOptions()
-                                .setTimeout(180000)  // ✅ 타임아웃 증가
-                                .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
-                            );
-                
-                            // ✅ iframe 감지 후 mainFrame 전환
-                            List<Frame> frames = detailPage.frames();
-                            for (Frame frame : frames) {
-                                if (frame.url().contains("coupang.com")) {
-                                    System.out.println("📌 [경고] iframe 감지됨. mainFrame으로 전환 시도...");
-                                    detailPage = frame.page();
-                                    break;
-                                }
-                            }
-                
-                            // ✅ `about:blank` 상태 확인
-                            if (detailPage.url().equals("about:blank") || detailPage.locator("body").count() == 0) {
-                                throw new PlaywrightException("🚨 [경고] 페이지가 정상적으로 로드되지 않음 (about:blank)!");
-                            }
-                
-                            // ✅ 정상 로딩 완료
-                            success = true;
-                            System.out.println("✅ [성공] 상세 페이지 로딩 완료: " + detailPage.url());
-                
-                        } catch (PlaywrightException e) {
-                            System.out.println("🚨 [경고] 페이지 로드 실패: " + e.getMessage());
-                
-                            retryCount++;
-                            detailPage.waitForTimeout(3000); // ✅ 3초 대기 후 재시도
-                
-                            if (retryCount >= 3) {
-                                System.out.println("🚨 [실패] 상품 페이지 로드 실패로 크롤링 건너뜀: " + detailUrl);
-                                return;
-                            }
-                        }
+                // ✅ Coupang 트래킹 요청 차단
+                detailPage.route("**/*", route -> {
+                    String url = route.request().url();
+                    if (url.contains("analytics") || url.contains("tracking") || url.contains("adservice")) {
+                        route.abort();  // ✅ 광고 및 추적 차단
+                    } else {
+                        route.resume();
                     }
-                
-                    // ✅ **상세 페이지 크롤링 유지**
-                    System.out.println("✅ [성공] 상세 페이지 크롤링 시작: " + detailUrl);
+                });
 
+                
+                // ✅ 상품 제목 크롤링
+                Locator productTitleLocator = detailPage.locator("h1.prod-buy-header__title");
+                if (!productTitleLocator.isVisible()) {
+                    System.out.println("🚨 [오류] 상품 제목 찾을 수 없음! 크롤링 건너뜀.");
+                    detailPage.close();
+                    continue;
+                }
+                System.out.println("✅ [성공] 상품 제목: " + productTitleLocator.textContent());
+               
+                    
+                    System.out.println("✅ [성공] 상세 페이지 크롤링 시작: " + detailUrl);
                     // ✅ 가격 크롤링
                     Locator originalPriceLocator = detailPage.locator("span.origin-price").first();
                     Locator discountPriceLocator = detailPage.locator("span.discount-price").first();
@@ -210,30 +295,49 @@ public class CoupangCrawlerService {
 
                     // ✅ `optionWrapper` 내부 옵션 체크
                     Locator optionWrapper = detailPage.locator("#optionWrapper");
-                    if (optionWrapper.count() > 0 && !optionWrapper.getAttribute("class").contains("no-option")) {
-                        System.out.println("🔍 [옵션 감지됨] 옵션 분석 시작...");
 
-                        // ✅ 옵션 요소가 로드될 때까지 대기
+                    // ✅ `optionWrapper`가 존재하는지 먼저 확인
+                    // ✅ 옵션 요소가 존재하는지 확인한 후 `waitForSelector` 실행
+                    if (detailPage.locator("div.prod-option, ul.Image_Select__items, div.tab-selector__tab").count() > 0) {
+                        System.out.println("✅ 옵션 요소 감지됨. 크롤링 대기...");
                         detailPage.waitForSelector(
                             "div.prod-option, ul.Image_Select__items, div.tab-selector__tab",
-                            new Page.WaitForSelectorOptions().setTimeout(5000)
+                            new Page.WaitForSelectorOptions().setTimeout(5000) // ✅ 대기 시간 단축
                         );
+                    } else {
+                        System.out.println("⚠️ [경고] 옵션 요소 없음. 기본 옵션 처리.");
+                    }
+
+                    
+
+                        // ✅ 옵션 요소가 로드될 때까지 대기
+                        try {
+                            detailPage.waitForSelector(
+                                "div.prod-option, ul.Image_Select__items, div.tab-selector__tab",
+                                new Page.WaitForSelectorOptions().setTimeout(15000)
+                            );
+                        } catch (TimeoutError e) {
+                            System.out.println("⚠️ [옵션 없음] 해당 상품은 옵션이 없습니다. 기본 옵션 처리.");
+                        }
 
                         // ✅ 옵션 크롤링을 위한 `Locator` 리스트 생성
                         List<Locator> optionLocators = Arrays.asList(
-                            detailPage.locator("ul.prod-option__item li"),  // 기본 옵션
-                            detailPage.locator("div.Dropdown-Select.prod-option__item"), // 드롭다운 방식
-                            detailPage.locator("div.prod-option__selected-container button") // 선택된 옵션 방식
+                            detailPage.locator("ul.prod-option__item li"),
+                            detailPage.locator("div.Dropdown-Select.prod-option__item"),
+                            detailPage.locator("div.prod-option__selected-container button")
                         );
 
                         // ✅ 각 옵션을 탐색하여 중복 없이 추가
                         for (Locator locator : optionLocators) {
                             if (locator.count() > 0) {
                                 for (Locator option : locator.all()) {
-                                    String optionValue = option.textContent().trim();
-                                    if (!optionSet.contains(optionValue)) {
-                                        optionSet.add(optionValue);
-                                        optionList.add(new OptionDto("OPTION", optionValue));
+                                    String optionValue = option.textContent();
+                                    if (optionValue == null || optionValue.trim().isEmpty()) {
+                                        optionValue = "단일 상품"; // 기본값 설정
+                                    }
+                                    if (!optionSet.contains(optionValue.trim())) {
+                                        optionSet.add(optionValue.trim());
+                                        optionList.add(new OptionDto("OPTION", optionValue.trim()));
                                     }
                                 }
                             }
@@ -247,61 +351,134 @@ public class CoupangCrawlerService {
                                 if (optionValue == null) {
                                     optionValue = option.getAttribute("data-origin-image-url");
                                 }
-                                if (optionValue != null && !optionSet.contains(optionValue.trim())) {
+                                if (optionValue == null) {
+                                    optionValue = "기본 옵션 이미지"; // 기본값 설정
+                                }
+                                if (!optionSet.contains(optionValue.trim())) {
                                     optionSet.add(optionValue.trim());
                                     optionList.add(new OptionDto("IMAGE", optionValue.trim()));
                                 }
                             }
                         }
 
-                        // ✅ `tab-selector` 방식 옵션 탐색
-                        Locator tabOptions = detailPage.locator("div.tab-selector__tab");
-                        if (tabOptions.count() > 0) {
-                            for (Locator option : tabOptions.all()) {
-                                String optionValue = option.getAttribute("data-id"); // 옵션 ID
-                                Locator imageOption = option.locator("img.tab-selector__tab-image");
-                                String optionImage = imageOption.count() > 0 ? imageOption.getAttribute("src") : null; // 옵션 이미지
+                        // // ✅ `tab-selector` 방식 옵션 탐색
+                        // Locator tabOptions = detailPage.locator("div.tab-selector__tab");
+                        // if (tabOptions.count() > 0) {
+                        //     for (Locator option : tabOptions.all()) {
+                        //         String optionValue = option.getAttribute("data-id"); // 옵션 ID
+                        //         if (optionValue == null) {
+                        //             optionValue = "기본 옵션"; // 기본값 설정
+                        //         }
 
-                                if (optionValue != null && !optionSet.contains(optionValue.trim())) {
-                                    optionSet.add(optionValue.trim());
-                                    if (optionImage != null) {
-                                        optionList.add(new OptionDto("TAB", optionValue.trim(), optionImage));
-                                    } else {
-                                        optionList.add(new OptionDto("TAB", optionValue.trim()));
+                        //         Locator imageOption = option.locator("img.tab-selector__tab-image");
+                        //         String optionImage = imageOption.count() > 0 ? imageOption.getAttribute("src") : null; // 옵션 이미지
+
+                        //         if (!optionSet.contains(optionValue.trim())) {
+                        //             optionSet.add(optionValue.trim());
+                        //             if (optionImage != null) {
+                        //                 optionList.add(new OptionDto("TAB", optionValue.trim(), optionImage));
+                        //             } else {
+                        //                 optionList.add(new OptionDto("TAB", optionValue.trim()));
+                        //             }
+                        //         }
+                        //     }
+                        // }
+                        // ✅ `tab-selector-container` 기반 옵션 크롤링
+                            Locator tabContainer = detailPage.locator("div.tab-selector-container");
+
+                            if (tabContainer.count() > 0) {
+                                System.out.println("🔍 [탭 옵션 감지됨] 옵션 크롤링 시작...");
+
+                                Locator tabOptions = tabContainer.locator("div.tab-selector__tab");
+
+                                if (tabOptions.count() > 0) {
+                                    for (Locator option : tabOptions.all()) {
+                                        // ✅ 옵션 ID (data-id 속성)
+                                        String optionId = option.getAttribute("data-id");
+                                        if (optionId == null) {
+                                            optionId = "기본 옵션"; // 기본값 설정
+                                        }
+
+                                        // ✅ 옵션 값 가져오기 (`.tab-selector__tab-title` 안의 텍스트)
+                                        Locator titleLocator = option.locator("div.tab-selector__tab-title");
+                                        String optionValue = titleLocator.count() > 0 ? titleLocator.textContent().trim() : optionId;
+
+                                        // ✅ 만약 옵션 텍스트가 비어있다면, `optionId`를 대신 사용
+                                        if (optionValue == null || optionValue.isEmpty()) {
+                                            optionValue = optionId;
+                                        }
+
+                                        // ✅ 이미지가 있는지 확인 (img 태그)
+                                        Locator imageOption = option.locator("img");
+                                        String optionImage = null;
+                                        if (imageOption.count() > 0) {
+                                            optionImage = imageOption.getAttribute("src"); // ✅ 이미지 URL 가져오기
+                                            System.out.println("🖼 [옵션 이미지 크롤링] 옵션 값: " + optionValue + " | 이미지: " + optionImage);
+                                        }
+
+                                        // ✅ 중복 방지 및 옵션 리스트에 추가
+                                        if (!optionSet.contains(optionValue.trim())) {
+                                            optionSet.add(optionValue.trim());
+
+                                            if (optionImage != null) { // ✅ 이미지가 있는 경우
+                                                optionList.add(new OptionDto("TAB", optionValue.trim(), optionImage));
+                                            } else { // ✅ 이미지가 없는 경우
+                                                optionList.add(new OptionDto("TAB", optionValue.trim()));
+                                            }
+                                        }
+
+                                        // ✅ 디버깅 로그 추가
+                                        System.out.println("🛠 [옵션 크롤링] 옵션 ID: " + optionId + " | 옵션 값: " + optionValue);
+                                    }
+                                } else {
+                                    System.out.println("⚠️ [경고] `.tab-selector__tab` 요소를 찾지 못함.");
+                                }
+                            }
+
+                        // ✅ `optionContainer` 변수를 먼저 선언
+                        Locator optionContainer = detailPage.locator("div.prod-option");
+
+                        // ✅ `prod-option` 기반 옵션 크롤링
+                        if (optionContainer.count() > 0) {
+                            if (optionContainer.locator("tr").count() > 0) {
+                                List<Locator> optionRows = optionContainer.locator("tr").all();
+                                for (Locator row : optionRows) {
+                                    Locator titleLocator = row.locator("span.title");
+                                    Locator valueLocator = row.locator("span.value");
+
+                                    String optionTitle = titleLocator.count() > 0 ? titleLocator.textContent().trim() : "기본 옵션";
+                                    String optionValue = valueLocator.count() > 0 ? valueLocator.textContent().trim() : "단일 상품";
+
+                                    if (!optionTitle.isEmpty() && !optionValue.isEmpty() && !optionSet.contains(optionValue)) {
+                                        optionSet.add(optionValue);
+                                        System.out.println("🛠 [옵션 크롤링] " + optionTitle + ": " + optionValue);
+                                        optionList.add(new OptionDto(optionTitle, optionValue));
+                                    }
+                                }
+                            } else {
+                                // ✅ `div` 구조로 되어 있는 경우 처리
+                                List<Locator> optionDivs = optionContainer.locator("div").all();
+                                for (Locator div : optionDivs) {
+                                    String optionValue = div.textContent().trim();
+                                    if (!optionValue.isEmpty() && !optionSet.contains(optionValue)) {
+                                        optionSet.add(optionValue);
+                                        System.out.println("🛠 [옵션 크롤링] " + optionValue);
+                                        optionList.add(new OptionDto("OPTION", optionValue));
                                     }
                                 }
                             }
                         }
 
-                        // ✅ `prod-option` 기반 옵션 탐색 (테이블 형식)
-                        Locator optionContainer = detailPage.locator("div.prod-option");
-                        if (optionContainer.count() > 0) {
-                            List<Locator> optionRows = optionContainer.locator("tr").all();
-                            for (Locator row : optionRows) {
-                                Locator titleLocator = row.locator("span.title");
-                                Locator valueLocator = row.locator("span.value");
-
-                                String optionTitle = titleLocator.count() > 0 ? titleLocator.textContent().trim() : "";
-                                String optionValue = valueLocator.count() > 0 ? valueLocator.textContent().trim() : "";
-
-                                if (!optionTitle.isEmpty() && !optionValue.isEmpty() && !optionSet.contains(optionValue)) {
-                                    optionSet.add(optionValue);
-                                    System.out.println("🛠 [옵션 크롤링] " + optionTitle + ": " + optionValue);
-                                    optionList.add(new OptionDto(optionTitle, optionValue));
-                                }
-                            }
-                        }
-                    }
 
                     // ✅ 옵션이 없는 경우 기본값 추가
                     if (optionList.isEmpty()) {
                         System.out.println("⚠️ [옵션 없음] 기본값으로 설정");
                         optionList.add(new OptionDto("기본 옵션", "단일 상품"));
                     }
-
-
-                    
-
+                    // ✅ 크롤링된 옵션 출력
+                    for (OptionDto option : optionList) {
+                        System.out.println("🛠 [옵션 크롤링] " + option);
+                    }
 
                     // ✅ 상품 데이터 저장
                     ProductDto productDto = ProductDto.builder()
@@ -327,13 +504,19 @@ public class CoupangCrawlerService {
                         discountService.saveDiscount(savedProduct, "PERCENT", (originalPrice - discountPrice) / originalPrice * 100);
                     }
 
-                } catch (Exception e) {
-                    System.out.println("🚨 [크롤링 오류] " + e.getMessage());
-                }finally {
-                    detailPage.close(); // ✅ finally 블록에서 페이지 닫기
+                // ✅ finally 블록을 올바르게 정리
+                try {
+                    if (detailPage == null || detailPage.isClosed()) {
+                        System.out.println("🚨 [경고] detailPage가 null이거나 닫혀 있습니다. 새 페이지를 생성합니다.");
+                        detailPage = context.newPage();
+                    }
+                } finally {
+                    detailPage.close();
                 }
+
                 count++;
             }
+            context.close();
             browser.close();
         }
     }

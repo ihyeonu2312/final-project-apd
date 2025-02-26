@@ -63,8 +63,9 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false  # 🔹 추가됨: View에서 JPA 세션 사용 방지
     properties:
       hibernate:
         format_sql: true
@@ -76,6 +77,8 @@ spring:
     suffix: .html
     encoding: UTF-8
     mode: html
+    check-template-location: false  # 🔹 추가됨: 템플릿 위치 확인 비활성화
+
 
   devtools:
     restart:
@@ -97,6 +100,7 @@ logging:
       sqlonly: TRACE
       sqltiming: TRACE
       resultset: TRACE
+    org.springframework.security: ERROR  # 🔹 추가됨: Security 관련 불필요한 경고 제거
 
 # ✅ AWS S3 설정 추가
 aws:

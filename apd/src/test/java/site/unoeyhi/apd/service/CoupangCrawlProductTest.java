@@ -44,4 +44,10 @@ public class CoupangCrawlProductTest {
 
         System.out.println("✅ [테스트 완료] 상품 크롤링 완료! 저장된 상품 개수: " + productCount);
     }
+    @Test
+    @Rollback(false)
+    public void testCrawling() {
+        coupangCrawlerService.crawlAllCategories();
+        // 크롤링 후 결과 확인 (예: DB에 저장된 데이터 개수 체크)
+    }
 }

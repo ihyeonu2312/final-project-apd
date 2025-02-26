@@ -34,6 +34,7 @@ public class CoupangCrawlerService {
         this.productService = productService;
         this.discountService = discountService;
     }
+    
     private String generateRandomIP() {
         Random random = new Random();
         return random.nextInt(256) + "." + 
@@ -41,26 +42,58 @@ public class CoupangCrawlerService {
             random.nextInt(256) + "." + 
             random.nextInt(256);
     }
+    
     private Page openDetailPage(BrowserContext context, String detailUrl) {
         Page detailPage = context.newPage();
         int retryCount = 0;
         boolean success = false;
     
-        while (!success && retryCount < 2) {
+        while (!success && retryCount < 3) {  // ✅ 재시도 횟수 3회로 증가
             try {
                 System.out.println("🔄 [재시도 " + (retryCount + 1) + "] 상품 페이지 로딩 중: " + detailUrl);
     
-                // ✅ 랜덤 딜레이 추가 (자동화 탐지 방지)
-                int delay = new Random().nextInt(3000) + 1000; // 2~5초 랜덤 대기
-                detailPage.waitForTimeout(delay);
+                int randomDelay = new Random().nextInt(5000) + 2000; // 2~7초 랜덤 대기
+                detailPage.waitForTimeout(randomDelay);
+
+                // ✅ (일단 비활성화) 광고 & 트래킹 차단 코드 해제
+                detailPage.route("**/*", route -> {
+                    String url = route.request().url();
+                    if (url.contains("analytics") || url.contains("tracking") || url.contains("adservice")) {
+                        route.abort();
+                    } else {
+                        route.resume();
+                    }
+                });
+
+                // ✅ [브라우저 오류 감지 후 자동 재시작]
+            if (detailPage.url().contains("chrome-error://")) {
+                System.out.println("🚨 [경고] 브라우저 오류 감지됨. 브라우저 재시작...");
+                detailPage.close(); // 기존 페이지 닫기
+                
+                Browser browser = context.browser();
+                browser.close(); // 기존 브라우저 종료
+                
+                Browser newBrowser = context.browser().newContext().browser();
+                context = newBrowser.newContext();
+                detailPage = context.newPage();
+                
+                detailPage.navigate(detailUrl, new Page.NavigateOptions()
+                    .setTimeout(90000)
+                    .setWaitUntil(WaitUntilState.LOAD)
+                );
+            }
+
+
+                success = true; // ✅ 성공적으로 페이지 로딩 완료
+                System.out.println("✅ [성공] 상세 페이지 로딩 완료: " + detailPage.url());
     
-                // ✅ 페이지 이동
+                // ✅ 페이지 이동 (waitUntil 변경)
                 Response response = detailPage.navigate(detailUrl, new Page.NavigateOptions()
-                    .setTimeout(60000)  // ✅ 타임아웃 증가 (90초)
-                    .setWaitUntil(WaitUntilState.NETWORKIDLE)  // ✅ 완전한 로딩까지 대기
+                    .setTimeout(90000)  // ✅ 타임아웃 60초로 조정
+                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)  // ✅ 'load' 상태까지 대기 (모든 리소스 로드)
                 );
     
-                // ✅ 응답 상태 체크 (200 OK 여부 확인)
+                // ✅ 응답 상태 체크 (200 OK 확인)
                 if (response == null || response.status() != 200) {
                     System.out.println("🚨 [경고] 응답 상태 오류: " + (response != null ? response.status() : "NULL"));
                     retryCount++;
@@ -68,57 +101,75 @@ public class CoupangCrawlerService {
                 }
     
                 // ✅ `about:blank` 상태인지 확인 후 새로고침
-                if (detailPage.url().equals("about:blank")) {
-                    System.out.println("🚨 [경고] `about:blank` 감지됨. 2초 대기 후 새로고침...");
-                    detailPage.waitForTimeout(2000);
-                    detailPage.reload();
+                if (detailPage.url().equals("about:blank") || detailPage.title().isEmpty()) {
+                    System.out.println("🚨 [경고] `about:blank` 감지됨. 페이지 재시작...");
+                    if (!detailPage.isClosed()) {
+                        detailPage.close(); // ✅ 현재 페이지 닫기
+                    }
+                    detailPage = context.newPage(); // ✅ 새로운 페이지 생성
+                    detailPage.navigate(detailUrl, new Page.NavigateOptions()
+                        .setTimeout(90000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED)
+                    );
                 }
-
+                
     
-                // ✅ `iframe` 감지 및 크롤링
-                FrameLocator iframeLocator = detailPage.frameLocator("iframe");
-
-                // ✅ `iframe`이 존재하는지 확인
-                boolean hasIframe = iframeLocator.locator("body").isVisible(); // 🔥 `count()` 없이 iframe 확인!
-
-                if (hasIframe) {  
+                // ✅ 상품 제목 변수 미리 선언
+                String productTitle = null;
+    
+                // ✅ **iframe 탐색 (디버깅 추가)**
+                List<Frame> frames = detailPage.frames();
+                Frame targetFrame = null;
+    
+                for (Frame frame : frames) {
+                    System.out.println("📌 [디버깅] iframe URL: " + frame.url());
+                    if (frame.url().contains("coupang.com")) {
+                        targetFrame = frame;
+                        break;
+                    }
+                }
+    
+                if (targetFrame != null) {
                     System.out.println("📌 [경고] iframe 감지됨. iframe 내부에서 직접 크롤링 시도...");
-
+                    targetFrame.waitForLoadState(LoadState.LOAD);
+                    targetFrame.waitForTimeout(2000);
+    
                     // ✅ iframe 내부에서 제목 크롤링
-                    Locator iframeTitleLocator = iframeLocator.first().locator("h1.prod-buy-header__title");
+                    Locator iframeTitleLocator = targetFrame.locator("h1.prod-buy-header__title");
                     if (iframeTitleLocator.isVisible()) {
-                        System.out.println("✅ [성공] iframe 내부에서 상품 제목 크롤링 완료: " + iframeTitleLocator.textContent());
+                        productTitle = iframeTitleLocator.textContent().trim();
+                        System.out.println("✅ [성공] iframe 내부에서 상품 제목 크롤링 완료: " + productTitle);
                     } else {
                         System.out.println("⚠️ [경고] iframe 내부에서 제목을 찾을 수 없음. 메인 페이지에서 시도...");
                     }
                 }
-
-                // ✅ iframe이 없거나, 내부에서 제목을 찾지 못하면 메인 페이지에서 진행
-                Locator mainTitleLocator = detailPage.locator("h1.prod-buy-header__title");
-                if (mainTitleLocator.isVisible()) {
-                    System.out.println("✅ [성공] 메인 페이지에서 상품 제목 크롤링 완료: " + mainTitleLocator.textContent());
-                } else {
-                    System.out.println("🚨 [오류] 상품 제목을 찾을 수 없음!");
+    
+                // ✅ iframe이 없거나 실패하면 메인 페이지에서 크롤링
+                if (productTitle == null || productTitle.isEmpty()) {
+                    Locator mainTitleLocator = detailPage.locator("h1.prod-buy-header__title");
+                    if (mainTitleLocator.isVisible()) {
+                        productTitle = mainTitleLocator.textContent().trim();
+                        System.out.println("✅ [성공] 메인 페이지에서 상품 제목 크롤링 완료: " + productTitle);
+                    } else {
+                        System.out.println("🚨 [오류] 상품 제목을 찾을 수 없음! 크롤링 건너뜀.");
+                        return null;
+                    }
                 }
     
-                // // ✅ 스크롤 최적화 (3단계)
-                // for (int i = 0; i < 3; i++) {
-                //     detailPage.evaluate("window.scrollBy(0, document.body.scrollHeight / 3)");
-                //     detailPage.waitForTimeout(1000);
-                // }
-                // ✅ waitForSelector 적용
-                detailPage.waitForSelector(
-                    "div.prod-option, ul.Image_Select__items, div.tab-selector__tab",
-                    new Page.WaitForSelectorOptions().setTimeout(10000)
-                );
-
-                success = true; // ✅ 성공적으로 페이지가 로드되었으면 종료
+                // ✅ 마지막으로 productTitle이 비었으면 강제 가져오기
+                if (productTitle.isEmpty()) {
+                    productTitle = detailPage.innerText("h1").trim();
+                    System.out.println("✅ [추가 시도] innerText로 제목 가져오기: " + productTitle);
+                }
+    
+                // ✅ 크롤링 성공 처리
+                success = true;
                 System.out.println("✅ [성공] 상세 페이지 로딩 완료: " + detailPage.url());
     
             } catch (PlaywrightException e) {
                 System.out.println("🚨 [경고] 페이지 로드 실패: " + e.getMessage());
                 retryCount++;
-                detailPage.waitForTimeout(3000); // ✅ 3초 대기 후 재시도
+                detailPage.waitForTimeout(3000);
             }
         }
     
@@ -134,8 +185,6 @@ public class CoupangCrawlerService {
         return detailPage;
     }
     
-    
-
     public void crawlAllCategories() {
         System.out.println("🚀 [테스트] 모든 카테고리에서 상품 크롤링 시작!");
         List<Category> categories = categoryRepository.findAll();
@@ -154,21 +203,22 @@ public class CoupangCrawlerService {
     public void crawlProductsByCategory(Category category) {
         String categoryUrl = "https://www.coupang.com" + category.getUrl();
 
-        try (Playwright playwright = Playwright.create()) {
-            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-            .setHeadless(false)
-            .setArgs(List.of(
-                "--disable-http2",  // ✅ HTTP/2 비활성화 (중요)
-                "--disable-blink-features=AutomationControlled",
-                "--disable-gpu",
-                "--disable-dev-shm-usage", // ✅ 메모리 부족 해결
-                "--disable-web-security" // ✅ 크로스 도메인 차단 해제
-            )));
+            try (Playwright playwright = Playwright.create()) {
+                Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
+                .setHeadless(false)
+                .setArgs(List.of(
+                    "--disable-http2",  // ✅ HTTP/2 비활성화 (중요)
+                    "--disable-blink-features=AutomationControlled",
+                    "--disable-gpu",
+                    "--disable-dev-shm-usage", // ✅ 메모리 부족 해결
+                    "--disable-web-security" // ✅ 크로스 도메인 차단 해제
+                )));
+
+        
             Map<String, String> headers = new HashMap<>();
             headers.put("Upgrade-Insecure-Requests", "1");
             headers.put("Connection", "keep-alive");
 
-            
 
             BrowserContext context = browser.newContext(new Browser.NewContextOptions()
             .setIgnoreHTTPSErrors(true) // HTTPS 오류 무시
@@ -208,7 +258,7 @@ public class CoupangCrawlerService {
 
             int count = 0;
             for (ElementHandle productElement : productElements) {
-                if (count >= 10) break;
+                if (count >= 30) break;
 
                 ElementHandle nameElement = productElement.querySelector("div.name");
                 String name = (nameElement != null) ? nameElement.innerText().trim() : "알 수 없음";
@@ -223,16 +273,6 @@ public class CoupangCrawlerService {
                     System.out.println("🚨 [오류] 상품 상세 페이지를 열 수 없어 크롤링 건너뜀.");
                     continue;
                 }
-
-                // ✅ Coupang 트래킹 요청 차단
-                detailPage.route("**/*", route -> {
-                    String url = route.request().url();
-                    if (url.contains("analytics") || url.contains("tracking") || url.contains("adservice")) {
-                        route.abort();  // ✅ 광고 및 추적 차단
-                    } else {
-                        route.resume();
-                    }
-                });
 
                 
                 // ✅ 상품 제목 크롤링
@@ -295,6 +335,20 @@ public class CoupangCrawlerService {
 
                     // ✅ `optionWrapper` 내부 옵션 체크
                     Locator optionWrapper = detailPage.locator("#optionWrapper");
+
+                    // ✅ 옵션이 있는지 먼저 확인
+                    if (optionWrapper.count() > 0) {
+                        Locator optionLocator = optionWrapper.locator("li");
+                        if (optionLocator.count() > 0) {
+                            for (Locator option : optionLocator.all()) {
+                                String optionText = option.textContent().trim();
+                                if (!optionText.isEmpty() && !optionSet.contains(optionText)) {
+                                    optionSet.add(optionText);
+                                    optionList.add(new OptionDto("OPTION", optionText));
+                                }
+                            }
+                        }
+                    }
 
                     // ✅ `optionWrapper`가 존재하는지 먼저 확인
                     // ✅ 옵션 요소가 존재하는지 확인한 후 `waitForSelector` 실행

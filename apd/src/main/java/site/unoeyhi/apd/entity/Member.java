@@ -18,25 +18,28 @@ public class Member {
     @Column(name = "member_id")
     private Long memberId;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "kakao_id", unique = true)
+    private Long kakaoId;  // ✅ 카카오 로그인 시 저장될 카카오 ID
+
+    @Column(name = "name")
     private String name;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(name = "password") //, nullable = false
     private String password;
 
-    @Column(name = "nickname", nullable = false, unique = true)
+    @Column(name = "nickname", unique = true)
     private String nickname;
 
-    @Column(name = "phone_number", nullable = false, unique = true)
+    @Column(name = "phone_number")
     private String phoneNumber;
 
-    @Column(name = "address", nullable = false)
+    @Column(name = "address")
     private String address;
 
-    @Column(name = "detail_address", nullable = false)
+    @Column(name = "detail_address")
     private String detailAddress;
 
     @Enumerated(EnumType.STRING)
@@ -61,11 +64,11 @@ public class Member {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @Column(name = "last_password_change", nullable = false)
+    @Column(name = "last_password_change")
     @Builder.Default
     private LocalDateTime lastPass = LocalDateTime.now();
 
@@ -85,14 +88,7 @@ public class Member {
         INACTIVE  // 이메일 인증 미완료 (또는 제제 및 정지 비활성 계정)
     }
 
-    // kakao 유저 전용
-    public Member(String email, String nickname, AuthType authType) {
-        this.email = email;
-        this.nickname = nickname;
-        this.authType = authType;
-        this.password = null;  // ✅ 카카오는 비밀번호 없음
-        this.createdAt = LocalDateTime.now();
-    }
+
 
     // ✅ 자동으로 createdAt 설정 (최초 등록 시)
     @PrePersist

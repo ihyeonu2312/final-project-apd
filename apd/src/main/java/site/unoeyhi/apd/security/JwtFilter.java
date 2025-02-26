@@ -62,27 +62,28 @@ public class JwtFilter extends OncePerRequestFilter {
             log.debug("✅ JWT 토큰 감지: {}", token); // ✅ 토큰 값 로그 출력
 
             try {
-                if (jwtUtil.validateToken(token)) { // 🔥 토큰 검증 추가
-                    String email = jwtUtil.extractEmail(token); // 🔥 이메일 추출
-                    log.info("🔐 인증된 사용자 이메일: {}", email);
-
-                    // 🔹 사용자 정보 로드 (DB에서 가져오기)
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-                    // 🔥 Spring Security 인증 객체 생성
+                if (jwtUtil.validateToken(token)) {
+                    log.info("✅ JWT 토큰 검증 성공: " + token);
+                    String subject = jwtUtil.extractSubject(token);
+                    String authType = jwtUtil.extractAuthType(token);
+                    
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(subject);
+        
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-                    SecurityContextHolder.getContext().setAuthentication(authentication); // 🔥 인증 정보 저장
-                    log.info("✅ SecurityContext에 사용자 등록 완료!");
+        
+                    SecurityContextHolder.getContext().setAuthentication(authentication); // 인증 정보 저장
                 } else {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
                     log.warn("🚨 JWT 검증 실패: 유효하지 않은 토큰");
                 }
             } catch (Exception e) {
                 log.error("❌ JWT 필터에서 오류 발생: ", e);
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
             }
         } else {
             log.warn("🚨 Authorization 헤더 없음 또는 형식 오류");
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
         }
 
         chain.doFilter(request, response);

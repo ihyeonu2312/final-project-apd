@@ -5,8 +5,10 @@ import site.unoeyhi.apd.entity.Member;
 
 import java.util.Optional;
 
+
 public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByEmail(String email);
     Optional<Member> findByNickname(String nickname);
     Optional<Member> findByPhoneNumber(String phoneNumber);
+    Optional<Member> findByKakaoId(Long kakaoId);
 }

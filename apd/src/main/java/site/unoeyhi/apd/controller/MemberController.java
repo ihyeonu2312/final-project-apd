@@ -8,9 +8,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 import java.util.Optional;
 
+@Log4j2
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor  // 🔥 경로 변경: /api/user 로 설정
@@ -32,12 +34,20 @@ public class MemberController {
         if (authentication == null || authentication.getName() == null) {
             return ResponseEntity.status(401).build();  // 인증되지 않은 경우 401 반환
         }
-
-        String email = authentication.getName();  // 현재 로그인한 사용자의 이메일 가져오기
-        Optional<Member> member = memberService.findByEmail(email);
-
+    
+        String subject = authentication.getName();  // 🔥 JWT의 subject(email 또는 kakaoId) 가져오기
+        log.info("🔍 현재 로그인한 사용자: {}", subject);
+    
+        Optional<Member> member;
+        
+        if (subject.contains("@")) { // 🔥 이메일 형식이면 일반 로그인
+            member = memberService.findByEmail(subject);
+        } else { // 🔥 숫자이면 카카오 로그인 (kakaoId)
+            member = memberService.findByKakaoId(Long.parseLong(subject));
+        }
+    
         return member.map(ResponseEntity::ok)
-                     .orElse(ResponseEntity.notFound().build()); // 회원이 존재하지 않으면 404 반환
+                     .orElse(ResponseEntity.status(404).build()); // 회원이 없으면 404 반환
     }
 
  

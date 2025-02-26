@@ -3,24 +3,20 @@ package site.unoeyhi.apd.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import jakarta.servlet.http.HttpServletResponse;
 import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.dto.AuthResponse;
 import site.unoeyhi.apd.dto.EmailVerificationRequest;
@@ -57,7 +53,7 @@ public class AuthController {
   private final MemberRepository memberRepository;
   private final KakaoAuthService kakaoAuthService;
 
-  // ✅ 로그인 API (JWT 발급)
+  // ✅ 로그인 API (JWT 발급) 이메일기반
   @PostMapping("/login")
   public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
     try {
@@ -146,30 +142,36 @@ public class AuthController {
 
   // ✅ 카카오 로그인 콜백 처리 (인가 코드 → 액세스 토큰 요청)
   @GetMapping("/kakao/callback")
-  public ResponseEntity<?> kakaoCallback(@RequestParam("code") String code) {
+  public void kakaoCallback(@RequestParam("code") String code, HttpServletResponse response) throws IOException {
     log.info("🔥 카카오 로그인 코드 수신: {}", code);
-
-    try {
-      // ✅ 카카오에서 액세스 토큰 및 리프레시 토큰 가져오기
-      Map<String, String> tokens = kakaoAuthService.getTokensFromKakao(code);
-      String accessToken = tokens.get("access_token");
-      String refreshToken = tokens.get("refresh_token"); // ✅ 리프레시 토큰 추가
-
-      log.info("🔥 카카오 액세스 토큰: {}", accessToken);
-      log.info("🔥 카카오 리프레시 토큰: {}", refreshToken);
-
-      // ✅ 액세스 토큰과 리프레시 토큰을 사용해 사용자 정보 가져오기
-      Member member = kakaoAuthService.getOrCreateKakaoUser(accessToken, refreshToken);
-
-      // ✅ JWT 토큰 생성 (회원 로그인)
-      String jwtToken = jwtUtil.generateToken(member.getMemberId().toString());
-      Map<String, String> response = new HashMap<>();
-      response.put("token", jwtToken);
-
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      log.error("❌ 카카오 로그인 처리 중 오류 발생", e);
-      return ResponseEntity.status(500).body("카카오 로그인 실패: " + e.getMessage());
-    }
+  
+      try {
+          log.info("🔍 카카오 API에 액세스 토큰 요청 시작...");
+  
+          // ✅ 카카오에서 액세스 토큰 및 리프레시 토큰 가져오기
+          Map<String, String> tokens = kakaoAuthService.getTokensFromKakao(code);
+  
+          log.info("✅ 카카오 API 응답 수신 완료: {}", tokens);
+  
+          String accessToken = tokens.get("access_token");
+          String refreshToken = tokens.get("refresh_token");
+  
+          log.info("🔥 카카오 액세스 토큰: {}", accessToken);
+          log.info("🔥 카카오 리프레시 토큰: {}", refreshToken);
+  
+          log.info("🔍 카카오 사용자 정보 조회 시작...");
+          Member member = kakaoAuthService.getOrCreateKakaoUser(accessToken, refreshToken);
+          log.info("✅ 사용자 정보 조회 완료: {}", member);
+  
+          // ✅ JWT 토큰 생성 (회원 로그인)
+          String jwtToken = jwtUtil.generateTokenForKakao(member.getKakaoId());
+ 
+          log.info("✅ JWT 발급 완료: {}", jwtToken);
+          // ✅ 프론트엔드 `/kakao/callback?token=JWT값`으로 리디렉트
+          response.sendRedirect("http://localhost:5173/kakao/callback?token=" + jwtToken);
+      } catch (Exception e) {
+          log.error("❌ 카카오 로그인 처리 중 오류 발생", e);
+          response.sendRedirect("http://localhost:5173/login?error=카카오 로그인 실패");
+      }
   }
 }

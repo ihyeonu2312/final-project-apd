@@ -41,6 +41,11 @@ public class MemberService {
         return memberRepository.findByEmail(email);
     }
 
+    //kakao 회원찾기
+    public Optional<Member> findByKakaoId(Long kakaoId) {
+        return memberRepository.findByKakaoId(kakaoId);
+    }
+
     // ✅ 회원가입 (비밀번호 암호화 및 검증 강화)
     @Transactional
     public Member registerMember(String name, String email, String password, String nickname, String phoneNumber, String address, String detailAddress, AuthType authType) {
@@ -98,7 +103,7 @@ public class MemberService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다.");
         }
 
-        return jwtUtil.generateToken(email); // JWT 토큰 생성 후 반환
+        return jwtUtil.generateToken(member.getEmail()); // JWT 토큰 생성 후 반환
     }
 
     // ✅ 회원 저장

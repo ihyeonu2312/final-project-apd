@@ -9,7 +9,6 @@ import lombok.*;
 @Builder
 public class CrawledData {
     private String name;
-    private String description;
     private double price;
     private int stockQuantity;
     private String imageUrl;

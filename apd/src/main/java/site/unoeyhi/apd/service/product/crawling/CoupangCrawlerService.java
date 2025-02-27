@@ -1,8 +1,11 @@
 package site.unoeyhi.apd.service.product.crawling;
 
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.WaitUntilState;
+
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import site.unoeyhi.apd.dto.product.OptionDto;
 import site.unoeyhi.apd.dto.product.ProductDto;
@@ -12,17 +15,22 @@ import site.unoeyhi.apd.repository.CategoryRepository;
 import site.unoeyhi.apd.service.product.DiscountService;
 import site.unoeyhi.apd.service.product.ProductService;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Service
+@EnableAsync
 public class CoupangCrawlerService {
+
+    private static final Path COOKIE_PATH = Paths.get("cookies.json");
 
     private final CategoryRepository categoryRepository;
     private final ProductService productService;
@@ -34,15 +42,26 @@ public class CoupangCrawlerService {
         this.productService = productService;
         this.discountService = discountService;
     }
+
+    private void performLogin(BrowserContext context) {
+        Page loginPage = context.newPage();
+        loginPage.navigate("https://login.coupang.com/login/login.pang");
     
-    private String generateRandomIP() {
-        Random random = new Random();
-        return random.nextInt(256) + "." + 
-            random.nextInt(256) + "." + 
-            random.nextInt(256) + "." + 
-            random.nextInt(256);
+        // ✅ 로그인 정보 입력 (아이디/비밀번호 직접 입력)
+        loginPage.fill("#login-email-input", "tkddnjs3351@naver.com"); // 🛑 아이디 입력
+        loginPage.fill("#login-password-input", "as940926!"); // 🛑 비밀번호 입력
+        loginPage.click("#login-button"); // ✅ 로그인 버튼 클릭
+    
+        // ✅ 로그인 완료될 때까지 대기
+        loginPage.waitForSelector("#user-menu", new Page.WaitForSelectorOptions().setTimeout(10000));
+    
+        // ✅ 로그인 후 쿠키 저장
+        context.storageState(new BrowserContext.StorageStateOptions().setPath(Paths.get("cookies.json")));
+    
+        System.out.println("✅ [로그인 완료] 쿠키 저장됨.");
     }
     
+
     private Page openDetailPage(BrowserContext context, String detailUrl) {
         Page detailPage = context.newPage();
         int retryCount = 0;
@@ -57,20 +76,23 @@ public class CoupangCrawlerService {
     
                 // ✅ 페이지 이동
                 Response response = detailPage.navigate(detailUrl, new Page.NavigateOptions()
-                    .setTimeout(120000)
-                    .setWaitUntil(WaitUntilState.NETWORKIDLE)
+                    .setTimeout(60000)  // ✅ 타임아웃을 60초로 조정
+                    .setWaitUntil(WaitUntilState.LOAD)
                 );
     
-                // ✅ 응답 상태 체크 (200 OK 확인)
-                if (response == null || response.status() != 200) {
+                if (response == null || response.status() != 200) { // ✅ 올바른 변수명 사용
                     System.out.println("🚨 [경고] 응답 상태 오류: " + (response != null ? response.status() : "NULL"));
                     retryCount++;
                     continue;
                 }
     
+                System.out.println("✅ [성공] 페이지 이동 완료: " + detailPage.url());
+    
                 // ✅ `about:blank` 상태인지 확인 후 새로고침 시도
                 if (detailPage.url().equals("about:blank") || detailPage.title().isEmpty()) {
                     System.out.println("🚨 [경고] `about:blank` 감지됨. 5초 대기 후 다시 확인...");
+                    detailPage.waitForTimeout(5000);
+                    detailPage.reload();
                     detailPage.waitForTimeout(5000);
                     if (detailPage.title().isEmpty()) {
                         System.out.println("🚨 [실패] `about:blank` 상태 지속. 페이지 로드 실패.");
@@ -79,22 +101,7 @@ public class CoupangCrawlerService {
                     }
                 }
     
-                // ✅ 상품 제목 크롤링
-                String productTitle = "상품명 없음";
-                Locator mainTitleLocator = detailPage.locator("h1.prod-buy-header__title");
-                if (mainTitleLocator.isVisible()) {
-                    productTitle = mainTitleLocator.textContent().trim();
-                    System.out.println("✅ [성공] 상품 제목 크롤링 완료: " + productTitle);
-                }
-    
-                // ✅ 상품 가격 크롤링
-                String priceText = detailPage.locator("span.total-price").textContent().trim();
-                double productPrice = Double.parseDouble(priceText.replaceAll("[^0-9]", ""));
-    
-                // ✅ 상품 이미지 크롤링
-                String imageUrl = detailPage.locator("div.prod-image img").first().getAttribute("src");
-    
-                System.out.println("✅ [최종 상품 정보] 제목: " + productTitle + " | 가격: " + productPrice + " | 이미지: " + imageUrl);
+                System.out.println("✅ [성공] 페이지 제목: " + detailPage.title());
     
                 success = true;
     
@@ -117,77 +124,73 @@ public class CoupangCrawlerService {
     }
     
     
-    
-    public void crawlAllCategories() {
-        System.out.println("🚀 [테스트] 모든 카테고리에서 상품 크롤링 시작!");
+    @Async
+    public CompletableFuture<Void> crawlAllCategories() {
+        System.out.println("🚀 [크롤링 시작] 모든 카테고리 크롤링");
+
         List<Category> categories = categoryRepository.findAll();
         if (categories.isEmpty()) {
             System.out.println("🚨 [크롤링 중단] 크롤링할 카테고리가 없습니다!");
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Category category : categories) {
             System.out.println("📌 [카테고리] ID: " + category.getCategoryId() + " | Name: " + category.getCategoryName());
-            crawlProductsByCategory(category);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> crawlProductsByCategory(category));
+            futures.add(future);
         }
-        System.out.println("✅ [크롤링 완료]");
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
-    public void crawlProductsByCategory(Category category) {
-        String categoryUrl = "https://www.coupang.com" + category.getUrl();
+    /**
+     * ✅ 개별 카테고리 크롤링
+     */
+        public void crawlProductsByCategory(Category category) {
+            String categoryUrl = "https://www.coupang.com" + category.getUrl();
 
-            try (Playwright playwright = Playwright.create()) {
-                Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                .setHeadless(false)
-                .setArgs(List.of(
-                    "--disable-http2",  // ✅ HTTP/2 비활성화 (중요)
-                    "--disable-blink-features=AutomationControlled",
-                    "--disable-gpu",
-                    "--disable-dev-shm-usage", // ✅ 메모리 부족 해결
-                    "--disable-web-security" // ✅ 크로스 도메인 차단 해제
-                )));
+        try (Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(false));
+            BrowserContext context = createOrLoadContext(browser);
 
-        
-            Map<String, String> headers = new HashMap<>();
-            headers.put("Upgrade-Insecure-Requests", "1");
-            headers.put("Connection", "keep-alive");
-
-
-            BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-            .setIgnoreHTTPSErrors(true) // HTTPS 오류 무시
-            .setJavaScriptEnabled(true) // JavaScript 활성화
-            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36") // ✅ 최신 버전 반영
-            .setExtraHTTPHeaders(Map.of(
-                "Accept-Language", "ko-KR,ko;q=0.9",
-                "Referer", "https://www.coupang.com/",
-                "X-Forwarded-For", generateRandomIP() // ✅ 무작위 IP 적용        
-            ))
-        );
-        
-        // ✅ Playwright 봇 감지 방지 코드 추가
-        context.addInitScript("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });");
-        context.addInitScript("window.navigator.chrome = { runtime: {} };");
-        context.addInitScript("Object.defineProperty(navigator, 'languages', { get: () => ['ko-KR', 'ko'] });");
-        context.addInitScript("Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });");
-        context.addInitScript("Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 4 });");
-        context.addInitScript("Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });");
-        context.addInitScript("Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 1 });");
-        context.addInitScript("Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' });");
-        context.addInitScript("Object.defineProperty(navigator, 'userAgentData', { get: () => undefined });");
-
-        // ✅ Coupang의 `canvas fingerprinting` 탐지를 우회
-        context.addInitScript("HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,FAKE_IMAGE';");
-        context.addInitScript("WebGLRenderingContext.prototype.getParameter = () => 'FAKE_WEBGL';");
-        context.addInitScript("RTCPeerConnection = function() { return {}; };");
-
-            Page currentPage = context.newPage();
-            currentPage.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(120000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
-
-            List<ElementHandle> productElements = currentPage.querySelectorAll("li.baby-product.renew-badge");
-            if (productElements.isEmpty()) {
-                System.out.println("🚨 상품 없음 (선택자 확인 필요)");
+            if (context == null) {
+                System.out.println("🚨 [오류] `context` 초기화 실패, 크롤링을 중단합니다.");
                 return;
             }
+
+            System.out.println("🚀 [크롤링 시작] 쿠키가 적용되었습니다. 크롤링을 진행합니다.");
+            
+            // ✅ 상품 크롤링을 진행하는 메서드 호출 (자기 자신을 다시 호출하면 안 됨)
+            crawlProducts(context, categoryUrl);
+            
+    
+        
+
+                if (context == null) {
+                    System.out.println("🚨 [오류] `context`가 초기화되지 않음. 크롤링을 중단합니다.");
+                    return;
+            }
+                
+            /**
+         * ✅ 상품 크롤링 메서드 (crawlProductsByCategory에서 호출됨)
+         */
+        private void crawlProducts(BrowserContext context, String categoryUrl, Category category) {
+            Page page = context.newPage();
+            page.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+
+            if (page.url().equals("about:blank") || page.title().isEmpty()) {
+                System.out.println("🚨 [경고] 페이지 로드 실패! 크롤링 중단");
+                return;
+            }
+
+            List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
+            if (productElements.isEmpty()) {
+                System.out.println("🚨 [경고] 상품이 없음! 크롤링 중단.");
+                return;
+            }
+
+            System.out.println("📦 [총 상품 개수] 이 페이지에서 크롤링할 상품 개수: " + productElements.size());
 
             int count = 0;
             for (ElementHandle productElement : productElements) {
@@ -195,11 +198,10 @@ public class CoupangCrawlerService {
 
                 ElementHandle nameElement = productElement.querySelector("div.name");
                 String name = (nameElement != null) ? nameElement.innerText().trim() : "알 수 없음";
-                System.out.println("🏷️ [디버깅] 상품명: " + name);
+                System.out.println("🏷️ [상품 " + (count + 1) + "] " + name);
 
                 ElementHandle linkElement = productElement.querySelector("a.baby-product-link");
                 String detailUrl = (linkElement != null) ? "https://www.coupang.com" + linkElement.getAttribute("href") : "";
-                System.out.println("🔍 [디버깅] 상품 상세 URL: " + detailUrl);
 
                 Page detailPage = openDetailPage(context, detailUrl);
                 if (detailPage == null) {
@@ -207,7 +209,6 @@ public class CoupangCrawlerService {
                     continue;
                 }
 
-                
                 // ✅ 상품 제목 크롤링
                 Locator productTitleLocator = detailPage.locator("h1.prod-buy-header__title");
                 if (!productTitleLocator.isVisible()) {
@@ -216,7 +217,7 @@ public class CoupangCrawlerService {
                     continue;
                 }
                 System.out.println("✅ [성공] 상품 제목: " + productTitleLocator.textContent());
-               
+
                     
                     System.out.println("✅ [성공] 상세 페이지 크롤링 시작: " + detailUrl);
                     // ✅ 가격 크롤링
@@ -261,39 +262,7 @@ public class CoupangCrawlerService {
                             }
                         }
                     }
-                    // // ✅ 기본 옵션 리스트 생성
-                    // List<OptionDto> optionList = new ArrayList<>();
-                    // Set<String> optionSet = new HashSet<>(); // 중복 방지
-
-                    // // ✅ 옵션 요소 탐색 (optionWrapper 내부)
-                    // Locator optionWrapper = detailPage.locator("#optionWrapper");
-
-                    // if (optionWrapper.count() > 0) {
-                    //     Locator optionLocator = optionWrapper.locator("li");
-                    //     if (optionLocator.count() > 0) {
-                    //         for (Locator option : optionLocator.all()) {
-                    //             String optionText = option.textContent().trim();
-                    //             if (!optionText.isEmpty() && !optionSet.contains(optionText)) {
-                    //                 optionSet.add(optionText);
-                    //                 optionList.add(new OptionDto("OPTION", optionText));
-                    //             }
-                    //         }
-                    //     }
-                    // }
-
-                    // // ✅ 옵션이 없거나 크롤링 실패 시 기본 옵션 추가
-                    // if (optionList.isEmpty()) {
-                    //     System.out.println("⚠️ [옵션 없음] 기본 옵션으로 설정");
-                    //     optionList.add(new OptionDto("기본 옵션", "단일 상품"));
-                    // }
-
-                    // // ✅ 크롤링된 옵션 출력 (디버깅)
-                    // for (OptionDto option : optionList) {
-                    //     System.out.println("🛠 [옵션 크롤링] " + option);
-                    // }
-
-                    
-
+                 
                     // ✅ 기본 옵션 리스트 생성
                     List<OptionDto> optionList = new ArrayList<>();
                     Set<String> optionSet = new HashSet<>(); // 중복 방지
@@ -490,31 +459,95 @@ public class CoupangCrawlerService {
                             .additionalImages(additionalImages)
                             .build();
 
-                    Product savedProduct = productService.saveProduct(productDto);
-                    if (savedProduct == null) {
-                        System.out.println("🚨 [saveProduct] 상품 저장 실패로 크롤링 종료!");
-                        return;
-                    }
+                            Product savedProduct = productService.saveProduct(productDto);
+                            if (savedProduct == null) {
+                                System.out.println("🚨 [saveProduct] 상품 저장 실패로 크롤링 종료!");
+                                return;
+                            } else {
+                                System.out.println("✅ [상품 저장 성공] ID: " + savedProduct.getProductId() + " | 이름: " + savedProduct.getName());
+                            }
+                            
 
                     // ✅ 할인 정보 저장
                     if (originalPrice > discountPrice) {
                         discountService.saveDiscount(savedProduct, "PERCENT", (originalPrice - discountPrice) / originalPrice * 100);
                     }
-
-                // ✅ finally 블록을 올바르게 정리
-                try {
-                    if (detailPage == null || detailPage.isClosed()) {
-                        System.out.println("🚨 [경고] detailPage가 null이거나 닫혀 있습니다. 새 페이지를 생성합니다.");
-                        detailPage = context.newPage();
+                    saveCookies(context);
+                    count++;
+                    try {
+                        // 크롤링 로직 실행
+                    } catch (Exception e) {
+                        System.out.println("🚨 [오류 발생] " + e.getMessage());
+                    } finally {
+                        // ✅ 자원 정리 (예외 발생 여부와 관계없이 실행)
+                        if (context != null) {
+                            try {
+                                context.close();
+                                System.out.println("✅ [컨텍스트 종료]");
+                            } catch (Exception e) {
+                                System.out.println("🚨 [컨텍스트 닫기 실패] " + e.getMessage());
+                            }
+                        }
+                        
+                        if (browser != null) {
+                            try {
+                                browser.close();
+                                System.out.println("✅ [브라우저 종료]");
+                            } catch (Exception e) {
+                                System.out.println("🚨 [브라우저 닫기 실패] " + e.getMessage());
+                            }
+                        }
                     }
-                } finally {
-                    detailPage.close();
+                    
+    
+        /**
+         * ✅ 쿠키 기반 로그인 유지
+         */
+        private BrowserContext createOrLoadContext(Browser browser) {
+            BrowserContext context;
+            if (Files.exists(COOKIE_PATH)) {
+                System.out.println("✅ [쿠키 로드 성공] " + COOKIE_PATH.toAbsolutePath());
+                context = browser.newContext(new Browser.NewContextOptions().setStorageStatePath(COOKIE_PATH));
+                
+                List<Cookie> cookies = context.cookies(); // ⬅ Cookie 타입을 올바르게 사용
+                boolean isLoggedIn = cookies.stream()
+                    .anyMatch(cookie -> "sid".equals(cookie.name) || "CT_LSID".equals(cookie.name));
+    
+                if (!isLoggedIn) {
+                    System.out.println("🚨 [쿠키 만료] 자동 로그인 진행...");
+                    context = loginAndSaveCookies(browser);
                 }
-
-                count++;
+            } else {
+                System.out.println("🚨 [쿠키 없음] 로그인 필요!");
+                context = loginAndSaveCookies(browser);
             }
-            context.close();
-            browser.close();
+            return context;
+        }
+    
+        /**
+         * ✅ 로그인 후 쿠키 저장
+         */
+        private BrowserContext loginAndSaveCookies(Browser browser) {
+            BrowserContext context = browser.newContext();
+            Page page = context.newPage();
+            page.navigate("https://login.coupang.com/", new Page.NavigateOptions().setTimeout(60000));
+    
+            System.out.println("🛑 [로그인 필요] 브라우저에서 직접 로그인 후 엔터 키를 눌러주세요...");
+            new java.util.Scanner(System.in).nextLine();
+    
+            saveCookies(context);
+            return context;
+        }
+    
+        /**
+         * ✅ 쿠키 저장
+         */
+        private void saveCookies(BrowserContext context) {
+            try {
+                context.storageState(new BrowserContext.StorageStateOptions().setPath(COOKIE_PATH));
+                System.out.println("✅ [쿠키 저장 완료] " + COOKIE_PATH.toAbsolutePath());
+            } catch (Exception e) {
+                System.out.println("🚨 [쿠키 저장 실패] " + e.getMessage());
+            }
         }
     }
-}

@@ -48,8 +48,8 @@ public class CoupangCrawlerService {
         loginPage.navigate("https://login.coupang.com/login/login.pang");
     
         // ✅ 로그인 정보 입력 (아이디/비밀번호 직접 입력)
-        loginPage.fill("#login-email-input", "tkddnjs3351@naver.com"); // 🛑 아이디 입력
-        loginPage.fill("#login-password-input", "as940926!"); // 🛑 비밀번호 입력
+        loginPage.fill("#login-email-input", "@"); // 🛑 아이디 입력
+        loginPage.fill("#login-password-input", "!"); // 🛑 비밀번호 입력
         loginPage.click("#login-button"); // ✅ 로그인 버튼 클릭
     
         // ✅ 로그인 완료될 때까지 대기

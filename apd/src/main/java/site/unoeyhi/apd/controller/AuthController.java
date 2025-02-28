@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +22,7 @@ import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.dto.AuthResponse;
 import site.unoeyhi.apd.dto.EmailVerificationRequest;
 import site.unoeyhi.apd.dto.LoginRequest;
+import site.unoeyhi.apd.dto.ResetPasswordRequestDto;
 import site.unoeyhi.apd.dto.SignupRequest;
 import site.unoeyhi.apd.entity.EmailVerification;
 import site.unoeyhi.apd.entity.Member;
@@ -125,6 +127,28 @@ public class AuthController {
       return ResponseEntity.badRequest().body("유효하지 않거나 만료된 인증 코드입니다.");
     }
   }
+
+  // 비밀번호 재설정
+  @PostMapping("/reset-password")
+  public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequestDto request) {
+      Optional<Member> memberOpt = memberRepository.findByEmail(request.getEmail());
+  
+      if (memberOpt.isEmpty()) {
+          return ResponseEntity.status(HttpStatus.NOT_FOUND).body("사용자를 찾을 수 없습니다.");
+      }
+  
+      Member member = memberOpt.get();
+  
+      try {
+          memberService.updatePassword(member, request.getNewPassword()); // ✅ 이메일 인증 확인 후 비밀번호 변경
+          return ResponseEntity.ok("비밀번호 변경 성공!");
+      } catch (IllegalStateException e) {
+          return ResponseEntity.status(HttpStatus.FORBIDDEN).body("이메일 인증이 완료되지 않았습니다.");
+      }
+  }
+  
+
+
 
   // ✅ 프론트에서 카카오 로그인 URL 요청 시 실행
   @GetMapping("/kakao/login")

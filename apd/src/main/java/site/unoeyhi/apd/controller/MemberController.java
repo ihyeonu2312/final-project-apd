@@ -2,7 +2,10 @@ package site.unoeyhi.apd.controller;
 
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.repository.MemberRepository;
+import site.unoeyhi.apd.service.EmailService;
 import site.unoeyhi.apd.service.MemberService;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +22,7 @@ import java.util.Optional;
 public class MemberController {
     private final MemberService memberService;
     private final MemberRepository memberRepository;
+    private final EmailService emailService;
 
     // ✅ 특정 회원 조회 (기존 코드)
     @GetMapping("/{id}")
@@ -51,6 +55,13 @@ public class MemberController {
     }
 
  
+        @GetMapping("/check-email")
+        public ResponseEntity<String> checkEmailExists(@RequestParam String email) {
+        boolean exists = emailService.checkEmailExists(email);
+        return exists ? ResponseEntity.ok("EXISTS") : ResponseEntity.ok("NOT_EXISTS");
+    }
+
+
     // ✅ 닉네임 중복 확인 API
      @GetMapping("/check-nickname")
      public ResponseEntity<String> checkNickname(@RequestParam String nickname) {

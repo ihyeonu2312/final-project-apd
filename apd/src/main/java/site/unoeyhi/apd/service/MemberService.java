@@ -106,11 +106,31 @@ public class MemberService {
         return jwtUtil.generateToken(member.getEmail()); // JWT 토큰 생성 후 반환
     }
 
+    @Transactional
+    public void updatePassword(Member member, String newPassword) {
+        // ✅ 이메일 인증 상태 확인
+        Optional<EmailVerification> emailVerificationOpt = emailVerificationRepository.findByEmail(member.getEmail());
+    
+        if (emailVerificationOpt.isEmpty() || emailVerificationOpt.get().getStatus() != EmailVerificationStatus.VERIFIED) {
+            throw new IllegalStateException("이메일 인증이 완료되지 않았습니다.");
+        }
+    
+        // ✅ 새 비밀번호 암호화 후 저장
+        String encryptedPassword = passwordEncoder.encode(newPassword);
+        member.setPassword(encryptedPassword);
+        member.setUpdatedAt(LocalDateTime.now());
+    
+        memberRepository.save(member);
+    }
+    
+    
+
     // ✅ 회원 저장
     public Member save(Member member) {
         log.info("Saving member with ID: {}", member.getMemberId());
         return memberRepository.save(member);
     }
+
 
     // 🔹 중복 회원 체크 로직
     private void validateDuplicateMember(String email, String nickname, String phoneNumber) {

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.unoeyhi.apd.entity.EmailVerification;
@@ -35,13 +36,28 @@ public class EmailService {
         return String.format("%06d", random.nextInt(1000000)); // 6자리 숫자 코드 생성
     }
 
-    
+        
+        // ✅ 이메일 존재 여부 확인 (가입된 이메일인지 체크)
+    public boolean checkEmailExists(String email) {
+        return memberRepository.findByEmail(email).isPresent();
+    }
+
+
+    @Scheduled(fixedRate = 3600000) // 1시간마다 이메일인증테이블 데이터 정리 실행 (3600000ms = 1시간)
+    @Transactional
+    public void deleteExpiredEmailVerifications() {
+        int deletedCount = emailVerificationRepository.deleteByExpiredAtBefore(LocalDateTime.now());
+        if (deletedCount > 0) {
+            log.info("🗑 삭제된 만료된 이메일 인증 데이터: {}개", deletedCount);
+        }
+    }
+
 
     // ✅ 이메일 인증 요청 (이메일 기준 저장)
     @Transactional
     public String sendVerificationEmail(String email) {
         String verificationCode = generateVerificationCode();
-        LocalDateTime expiredAt = LocalDateTime.now().plusMinutes(10);
+        LocalDateTime expiredAt = LocalDateTime.now().plusMinutes(3);
     
         // ✅ 기존 인증 정보 조회
         Optional<EmailVerification> existingOpt = emailVerificationRepository.findByEmail(email);
@@ -82,7 +98,7 @@ public class EmailService {
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
     
         helper.setTo(toEmail);
-        helper.setSubject("회원가입 이메일 인증 코드");
+        helper.setSubject("알팡당 이메일 인증 코드");
         helper.setText("<h2>이메일 인증 코드</h2>" +
                 "<p>아래 인증 코드를 입력하세요:</p>" +
                 "<h3>" + verificationCode + "</h3>", true);
@@ -98,20 +114,23 @@ public class EmailService {
         if (verificationOpt.isPresent()) {
             EmailVerification verification = verificationOpt.get();
 
-            if (verification.getExpiredAt().isAfter(LocalDateTime.now())) {
-                verification.setStatus(EmailVerificationStatus.VERIFIED); // ✅ 인증 완료
-                emailVerificationRepository.save(verification); // 인증 완료 후 코드 삭제
-                log.info("✅ 이메일 인증 성공 - 인증 코드: {}", token);
-                return true;
-            } else {
-                verification.setStatus(EmailVerificationStatus.EXPIRED);
-                emailVerificationRepository.save(verification); // ✅ 만료 상태
+            if (verification.getExpiredAt().isBefore(LocalDateTime.now())) {
+                verification.setStatus(EmailVerificationStatus.EXPIRED); // ✅ 만료 상태 변경
+                emailVerificationRepository.save(verification); // ✅ DB 업데이트
                 log.warn("⚠ 인증 코드 만료 - 코드: {}", token);
+                return false; // ❌ 만료된 코드
             }
+
+            // ✅ 인증 성공
+            verification.setStatus(EmailVerificationStatus.VERIFIED);
+            emailVerificationRepository.save(verification);
+            log.info("✅ 이메일 인증 성공 - 인증 코드: {}", token);
+            return true;
         } else {
             log.warn("⚠ 유효하지 않은 인증 코드 - 코드: {}", token);
         }
         return false;
     }
+
     
 }

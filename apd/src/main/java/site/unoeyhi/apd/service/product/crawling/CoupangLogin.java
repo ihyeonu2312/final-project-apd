@@ -25,8 +25,8 @@ public class CoupangLogin {
             page.navigate("https://login.coupang.com/login/login.pang");
 
             // ✅ 아이디 & 비밀번호 입력
-            page.fill("#login-email-input", "tkddnjs3351@naver.com"); 
-            page.fill("#login-password-input", "as940926!");
+            page.fill("#login-email-input", "@.com"); 
+            page.fill("#login-password-input", "");
 
             // ✅ 로그인 버튼 클릭
             page.click("#login-button");

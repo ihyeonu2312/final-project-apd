@@ -55,17 +55,39 @@ public class ProductServiceImpl implements ProductService {
     public Product saveProduct(ProductDto productDto) {
         System.out.println("🚀 [saveProduct] 상품 저장 시작: " + productDto.getName());
 
-         // ✅ 옵션이 null이거나 비어있다면 기본값 추가
-    if (productDto.getOptions() == null || productDto.getOptions().isEmpty()) {
-        System.out.println("⚠️ [saveProduct] 옵션이 비어있음! 기본값 설정 진행...");
-        productDto.setOptions(new ArrayList<>()); // ✅ 빈 리스트 추가
-    }
-    
-    System.out.println("📌 [saveProduct] `saveProduct()`에 전달된 옵션 개수: " + productDto.getOptions().size());
+        // ✅ 데이터 검증: 상품명, 가격, 이미지가 존재하는지 체크
+        if (productDto.getName() == null || productDto.getName().isEmpty()) {
+            System.out.println("🚨 [saveProduct] 상품 이름이 비어 있음! 저장 불가.");
+            return null;
+        }
+        if (productDto.getPrice() <= 0) {
+            System.out.println("🚨 [saveProduct] 상품 가격이 0원 이하! 저장 불가.");
+            return null;
+        }
+        if (productDto.getImageUrl() == null || productDto.getImageUrl().isEmpty()) {
+            System.out.println("🚨 [saveProduct] 상품 이미지가 없음! 저장 불가.");
+            return null;
+        }
+
+        // ✅ 옵션이 null이거나 비어있다면 기본값 추가
+        if (productDto.getOptions() == null || productDto.getOptions().isEmpty()) {
+            System.out.println("⚠️ [saveProduct] 옵션이 비어있음! 기본값 설정 진행...");
+            productDto.setOptions(new ArrayList<>());
+        }
+        System.out.println("📌 [saveProduct] `saveProduct()`에 전달된 옵션 개수: " + productDto.getOptions().size());
+
         try {
             // ✅ 카테고리 찾기
+            System.out.println("🔍 [saveProduct] 카테고리 ID: " + productDto.getCategoryId());
             Category category = categoryRepository.findById(productDto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("잘못된 카테고리 ID: " + productDto.getCategoryId()));
+
+            // ✅ 저장할 상품 데이터 출력
+            System.out.println("🛠 [saveProduct] 저장할 상품 데이터:");
+            System.out.println("   🔹 상품명: " + productDto.getName());
+            System.out.println("   🔹 가격: " + productDto.getPrice());
+            System.out.println("   🔹 카테고리: " + category.getCategoryName());
+            System.out.println("   🔹 이미지: " + productDto.getImageUrl());
 
             // ✅ 상품 저장
             Product product = Product.builder()
@@ -79,15 +101,23 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
             Product savedProduct = productRepository.save(product);
-            System.out.println("✅ [saveProduct] 저장된 상품 ID: " + savedProduct.getProductId());
+            entityManager.flush();
+            if (savedProduct == null) {
+                System.out.println("🚨 [saveProduct] productRepository.save() 실패! 저장 안됨.");
+                return null;
+            } else {
+                System.out.println("✅ [saveProduct] 저장된 상품 ID: " + savedProduct.getProductId());
+            }
 
             // ✅ 추가 이미지 저장
+            System.out.println("🖼 [saveProduct] 추가 이미지 저장 시작...");
             saveProductImages(savedProduct, productDto.getAdditionalImages());
 
             // ✅ 옵션 저장 (여기서 한 번 더 검증)
             if (productDto.getOptions().isEmpty()) {
                 System.out.println("⚠️ [saveProduct] 옵션이 비어있음! 기본값으로 빈 옵션 리스트 처리...");
             }
+            System.out.println("🛠 [saveProduct] 옵션 저장 시작...");
             saveProductOptions(savedProduct, productDto.getOptions());
 
             System.out.println("✅ [saveProduct] 상품, 이미지, 옵션 최종 저장 완료");
@@ -96,9 +126,10 @@ public class ProductServiceImpl implements ProductService {
         } catch (Exception e) {
             System.out.println("🚨 [saveProduct] 상품 저장 실패: " + e.getMessage());
             e.printStackTrace();
-            throw e; //트랜잭션 자동 롤백
+            return null;
         }
     }
+
 
     // ✅ 추가 이미지 저장을 별도의 메서드로 분리
     private void saveProductImages(Product savedProduct, List<String> additionalImages) {
@@ -177,12 +208,11 @@ public class ProductServiceImpl implements ProductService {
             // ✅ Batch Insert 적용 (옵션 리스트 한 번에 저장)
             if (!productOptionList.isEmpty()) {
                 productOptionRepository.saveAll(productOptionList);
+                entityManager.flush();  // ✅ 옵션 저장 후 flush로 강제 반영
+                entityManager.clear();  // ✅ 메모리 초기화 (대량 저장 시 성능 최적화)
                 System.out.println("✅ [Batch Insert] " + productOptionList.size() + "개 옵션 한 번에 저장 완료.");
             }
     
-            // ✅ 중간 flush()로 메모리 비우기 (옵션 개수가 많을 때)
-            entityManager.flush();
-            entityManager.clear();
         }
     
 

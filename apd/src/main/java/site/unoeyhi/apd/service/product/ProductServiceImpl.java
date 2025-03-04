@@ -54,6 +54,8 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public Product saveProduct(ProductDto productDto) {
         System.out.println("🚀 [saveProduct] 상품 저장 시작: " + productDto.getName());
+        System.out.println("📌 [saveProduct] 전달된 상품 DTO: " + productDto);
+
 
         // ✅ 데이터 검증: 상품명, 가격, 이미지가 존재하는지 체크
         if (productDto.getName() == null || productDto.getName().isEmpty()) {
@@ -100,8 +102,11 @@ public class ProductServiceImpl implements ProductService {
                 .detailUrl(productDto.getDetailUrl())
                 .build();
 
+            System.out.println("🔄 [saveProduct] 저장할 상품 객체: " + product);
+
             Product savedProduct = productRepository.save(product);
             entityManager.flush();
+            entityManager.clear();
             if (savedProduct == null) {
                 System.out.println("🚨 [saveProduct] productRepository.save() 실패! 저장 안됨.");
                 return null;

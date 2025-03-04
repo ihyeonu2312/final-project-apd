@@ -68,9 +68,7 @@ spring:
     open-in-view: false  # 🔹 추가됨: View에서 JPA 세션 사용 방지
     properties:
       hibernate:
-        format_sql: true
-        use_sql_comments: true
-        generate_statistics: true
+        format_sql: false
         dialect: org.hibernate.dialect.MariaDBDialect
 
   thymeleaf:

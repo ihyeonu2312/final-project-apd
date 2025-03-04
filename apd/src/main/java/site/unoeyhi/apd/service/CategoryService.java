@@ -21,7 +21,7 @@ public class CategoryService {
         return categoryRepository.findAll();
     }
     public Optional<Category> getCategoryById(Long categoryId) {
-        return categoryRepository.findByCategoryId(categoryId);  
+        return categoryRepository.findById(categoryId);  
     }
     @Transactional
     public void saveCategories(List<Category> categories) {

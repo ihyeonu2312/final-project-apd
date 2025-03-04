@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service 
@@ -41,75 +42,112 @@ public class ProductCrawler {
             return;
         }
     
-        // ✅ 상품명 크롤링 (locator 사용)
-        Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
-
-        // ✅ `productTitle`을 미리 선언
-        String productTitle = null;
-
-        if (titleLocator.count() > 0 && titleLocator.isVisible()) {
-            productTitle = titleLocator.textContent().trim();
-            System.out.println("✅ [DEBUG] 상품 제목 크롤링 결과 (locator 방식): " + productTitle);
-        } else {
-            System.out.println("🚨 [오류] 상품 제목을 찾을 수 없어 크롤링 건너뜀.");
-            return; // 상품 제목이 없으면 크롤링 중단
+        try {
+            // ✅ 상품명 크롤링
+            Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
+            if (titleLocator.count() == 0 || !titleLocator.isVisible()) {
+                throw new Exception("🚨 [오류] 상품 제목을 찾을 수 없어 크롤링 건너뜀.");
+            }
+    
+            String productTitle = titleLocator.textContent().trim();
+            System.out.println("🛒 [상품명] " + productTitle);
+    
+            // ✅ 가격 크롤링
+            double originalPrice = extractPrice(detailPage, "span.origin-price");
+            double discountPrice = extractPrice(detailPage, "span.discount-price");
+            double finalPrice = (discountPrice > 0) ? discountPrice : originalPrice;
+    
+            System.out.println("💰 [가격] 원가: " + originalPrice + " | 할인 가격: " + discountPrice + " | 최종 가격: " + finalPrice);
+    
+            // ✅ 이미지 크롤링
+            String imageUrl = detailPage.locator("div.prod-image img").count() > 0 
+                ? detailPage.locator("div.prod-image img").first().getAttribute("src") 
+                : "";
+    
+            // ✅ 옵션 크롤링
+            List<OptionDto> optionList = extractOptions(detailPage);
+    
+            // ✅ 상품 저장
+            ProductDto productDto = ProductDto.builder()
+                    .name(productTitle)
+                    .price(finalPrice)
+                    .stockQuantity(10)
+                    .imageUrl(imageUrl)
+                    .thumbnailImageUrl(imageUrl)
+                    .detailUrl(detailUrl)
+                    .options(optionList)
+                    .build();
+    
+            Product savedProduct = productService.saveProduct(productDto);
+            if (savedProduct == null) {
+                System.out.println("🚨 [상품 저장 실패] 크롤링 종료!");
+            } else {
+                System.out.println("✅ [상품 저장 성공] ID: " + savedProduct.getProductId() + " | 이름: " + savedProduct.getName());
+            }
+    
+        } catch (Exception e) {
+            System.out.println("🚨 [오류 발생] " + e.getMessage());
+        } finally {
+            detailPage.close();
         }
-
-        System.out.println("🛒 [상품명] " + productTitle);
-    
-        // ✅ 가격 크롤링 (String 캐스팅)
-        String originalPriceStr = detailPage.locator("span.origin-price").count() > 0 
-            ? detailPage.locator("span.origin-price").textContent() 
-            : "0";
-
-        String discountPriceStr = detailPage.locator("span.discount-price").count() > 0 
-            ? detailPage.locator("span.discount-price").textContent() 
-            : "0";
-
-
-        double originalPrice = parsePrice(originalPriceStr);
-        double discountPrice = parsePrice(discountPriceStr);
-        double finalPrice = (discountPrice > 0) ? discountPrice : originalPrice;
-    
-        System.out.println("💰 [가격] 원가: " + originalPrice + " | 할인 가격: " + discountPrice + " | 최종 가격: " + finalPrice);
-    
-        // ✅ 이미지 크롤링 (String 캐스팅)
-        String imageUrl = detailPage.locator("div.prod-image img").count() > 0 
-        ? detailPage.locator("div.prod-image img").first().getAttribute("src") 
-        : "";
-
-    
-        // ✅ 추가 이미지 크롤링 (List<String>으로 변환)
-        List<String> additionalImages = (List<String>) detailPage.evaluate("() => Array.from(document.querySelectorAll('div.prod-image img')).map(img => img.src)");
-
-    
-        // ✅ 옵션 크롤링
-        List<OptionDto> optionList = extractOptions(detailPage);
-    
-        System.out.println("🛠 [crawlProductDetail] 상품 저장 시작: " + productTitle);
-    
-        // ✅ 상품 저장
-        ProductDto productDto = ProductDto.builder()
-                .name(productTitle)
-                .price(finalPrice)
-                .stockQuantity(10)
-                .imageUrl(imageUrl)
-                .thumbnailImageUrl(imageUrl)
-                .detailUrl(detailUrl)
-                .options(optionList)
-                .additionalImages(additionalImages)
-                .build();
-    
-        Product savedProduct = productService.saveProduct(productDto);
-        if (savedProduct == null) {
-            System.out.println("🚨 [상품 저장 실패] 크롤링 종료!");
-            return;
-        }
-    
-        System.out.println("✅ [상품 저장 성공] ID: " + savedProduct.getProductId() + " | 이름: " + savedProduct.getName());
-    
-        detailPage.close();
     }
+    
+    /**
+     * ✅ 카테고리 내 모든 상품을 크롤링하고 자동 저장
+     */
+    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl) {
+        System.out.println("🚀 [crawlAllProducts] 카테고리 상품 크롤링 시작: " + categoryUrl);
+    
+        Page page = context.newPage();
+        page.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+    
+        // ✅ 상품 리스트가 로딩될 때까지 대기
+        page.waitForTimeout(3000);
+        page.waitForSelector("li.baby-product.renew-badge", new Page.WaitForSelectorOptions().setTimeout(10000));
+    
+        // ✅ 상품 개수 확인 (디버깅용)
+        int productCount = page.locator("li.baby-product.renew-badge").count();
+        System.out.println("📦 [DEBUG] Playwright가 감지한 상품 개수: " + productCount);
+    
+        // ✅ 상품이 없는 경우 처리
+        if (productCount == 0) {
+            System.out.println("🚨 [경고] 상품이 없음! 페이지 구조 변경 가능성 있음.");
+            System.out.println("📌 현재 페이지 HTML: " + page.content());  
+            return new ArrayList<>();
+        }
+    
+        // ✅ 카테고리 페이지에서 상품 URL 추출
+        List<String> productUrls = new ArrayList<>();
+        List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
+    
+        for (ElementHandle productElement : productElements) {
+            try {
+                String productId = productElement.getAttribute("data-product-id");
+                if (productId != null && !productId.trim().isEmpty()) {
+                    String productUrl = "https://www.coupang.com/vp/products/" + productId;
+                    productUrls.add(productUrl);
+                    System.out.println("🔗 [상품 URL 추가] " + productUrl);
+                }
+            } catch (Exception e) {
+                System.out.println("🚨 [오류 발생] 상품 URL 추출 중 문제 발생: " + e.getMessage());
+            }
+        }
+    
+        System.out.println("📦 [crawlAllProducts] 총 상품 개수: " + productUrls.size());
+    
+        // ✅ 상품 상세 크롤링 & 자동 저장
+        for (String productUrl : productUrls) {
+            System.out.println("🛠 [crawlAllProducts] 상품 상세 크롤링 호출: " + productUrl);
+            crawlProductDetail(context, productUrl);
+        }
+    
+        page.close();
+        return new ArrayList<>();
+    }
+    
+    
+    
+
     
     // ✅ 가격 문자열을 숫자로 변환하는 유틸리티 메서드
     private double parsePrice(String priceStr) {
@@ -126,63 +164,72 @@ public class ProductCrawler {
         while (!success && retryCount < 3) {
             try {
                 System.out.println("🔄 [상품 상세 페이지 로딩] " + detailUrl);
+    
+                // ✅ User-Agent 변경 (봇 감지 우회)
+                context.setExtraHTTPHeaders(Map.of(
+                    "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.142 Safari/537.36",
+                    "Referer", "https://www.coupang.com/",
+                    "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+                    "Connection", "keep-alive",
+                    "Cache-Control", "no-cache"
+                ));
+
                 detailPage.navigate(detailUrl, new Page.NavigateOptions()
-                    .setTimeout(90000)
-                    .setWaitUntil(WaitUntilState.LOAD)  // ✅ 네트워크 완료 대기
-                );
-    
-                // ✅ 현재 URL 및 타이틀 확인
-                System.out.println("✅ [DEBUG] 페이지 로딩 완료: " + detailPage.url());
-                System.out.println("✅ [DEBUG] 페이지 타이틀: " + detailPage.title());
-    
-                // ✅ 페이지가 `about:blank` 상태이면 실패 처리
+                .setTimeout(90000)
+                .setWaitUntil(WaitUntilState.LOAD)  // ✅ 네트워크 완료 대기
+            );
+
+                // ✅ `about:blank` 상태 체크
                 if (detailPage.url().equals("about:blank") || detailPage.title().isEmpty()) {
                     System.out.println("🚨 [경고] `about:blank` 감지됨! 페이지가 제대로 열리지 않음.");
                     detailPage.waitForTimeout(3000);
-                    detailPage.reload();
+                    detailPage.reload();  // ✅ 페이지 새로고침 후 다시 시도
                     continue;
                 }
-    
-                // ✅ Playwright 봇 감지 우회 설정
+
+                // ✅ Playwright 봇 감지 우회
                 detailPage.evaluate("() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); }");
-    
-                // ✅ 페이지 끝까지 스크롤 (Lazy Loading 대응)
+
+                // ✅ Lazy Loading 대응 (스크롤 다운)
                 for (int i = 0; i < 6; i++) {
                     detailPage.mouse().wheel(0, 600);
-                    detailPage.waitForTimeout(1500);
+                    detailPage.waitForTimeout(1000);
                 }
-    
-                // ✅ 페이지가 완전히 로드될 때까지 대기
-                detailPage.waitForLoadState(LoadState.NETWORKIDLE, new Page.WaitForLoadStateOptions().setTimeout(60000));
-    
-                // ✅ 상품 제목 로드 확인
+
+                // ✅ 상품 제목이 제대로 로드되었는지 확인
                 Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
-                System.out.println("✅ [DEBUG] 상품 제목 요소 개수: " + titleLocator.count());
-    
-                if (titleLocator.isVisible()) {
-                    System.out.println("✅ [DEBUG] 상품 제목 감지됨: " + titleLocator.textContent().trim());
+                if (titleLocator.count() > 0) {
                     success = true;
+                    System.out.println("✅ [DEBUG] 상품 제목 감지됨: " + titleLocator.textContent().trim());
                 } else {
                     throw new Exception("상품 제목 감지 실패");
                 }
-    
+
             } catch (Exception e) {
                 retryCount++;
                 System.out.println("🚨 [재시도 " + retryCount + "] 페이지 로딩 실패, 다시 시도...");
-                detailPage.reload();
+                
+                // ✅ 프레임이 삭제된 경우 새로운 페이지에서 다시 로드
+                if (e.getMessage().contains("frame was detached")) {
+                    detailPage.close();
+                    detailPage = context.newPage();
+                } else {
+                    detailPage.reload();
+                }
             }
         }
-    
+
         if (!success) {
             System.out.println("🚨 [실패] 상세 페이지 로드 불가: " + detailUrl);
             detailPage.close();
             return null;
         }
-    
+
         return detailPage;
     }
     
-
+    
+    
 
     /**
      * ✅ 상품 제목 크롤링 (여러 요소 대응)

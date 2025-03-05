@@ -145,58 +145,33 @@ public class ProductCrawler {
         return new ArrayList<>();
     }
     
-    
-    
-
-    
-    // ✅ 가격 문자열을 숫자로 변환하는 유틸리티 메서드
-    private double parsePrice(String priceStr) {
-        if (priceStr == null || priceStr.isEmpty()) return 0.0;
-        return Double.parseDouble(priceStr.replaceAll("[^0-9]", ""));
-    }
-    
     //상품 상세
     private Page openDetailPage(BrowserContext context, String detailUrl) {
-        Page detailPage = context.newPage();
+        Page detailPage = null;
         int retryCount = 0;
         boolean success = false;
     
         while (!success && retryCount < 3) {
             try {
+                if (detailPage != null) {
+                    detailPage.close(); // ✅ 기존 페이지 닫고 새로 열기
+                }
+                detailPage = context.newPage();
                 System.out.println("🔄 [상품 상세 페이지 로딩] " + detailUrl);
     
-                // ✅ User-Agent 변경 (봇 감지 우회)
-                context.setExtraHTTPHeaders(Map.of(
-                    "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.142 Safari/537.36",
-                    "Referer", "https://www.coupang.com/",
-                    "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-                    "Connection", "keep-alive",
-                    "Cache-Control", "no-cache"
-                ));
-
+                // ✅ User-Agent 변경 (Playwright 감지 우회)
                 detailPage.navigate(detailUrl, new Page.NavigateOptions()
-                .setTimeout(90000)
-                .setWaitUntil(WaitUntilState.LOAD)  // ✅ 네트워크 완료 대기
-            );
-
-                // ✅ `about:blank` 상태 체크
-                if (detailPage.url().equals("about:blank") || detailPage.title().isEmpty()) {
-                    System.out.println("🚨 [경고] `about:blank` 감지됨! 페이지가 제대로 열리지 않음.");
-                    detailPage.waitForTimeout(3000);
-                    detailPage.reload();  // ✅ 페이지 새로고침 후 다시 시도
-                    continue;
-                }
-
-                // ✅ Playwright 봇 감지 우회
+                    .setTimeout(120000)  // ✅ 타임아웃을 120초로 증가
+                    .setWaitUntil(WaitUntilState.LOAD)
+                );
+    
+                // ✅ Playwright 자동화 탐지 우회
                 detailPage.evaluate("() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); }");
-
-                // ✅ Lazy Loading 대응 (스크롤 다운)
-                for (int i = 0; i < 6; i++) {
-                    detailPage.mouse().wheel(0, 600);
-                    detailPage.waitForTimeout(1000);
-                }
-
-                // ✅ 상품 제목이 제대로 로드되었는지 확인
+    
+                // ✅ 중요한 요소가 로드될 때까지 대기 (최대 30초)
+                detailPage.waitForSelector("h2.prod-buy-header__title, span.prod-buy-header__product-title", 
+                    new Page.WaitForSelectorOptions().setTimeout(30000));
+    
                 Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
                 if (titleLocator.count() > 0) {
                     success = true;
@@ -204,52 +179,46 @@ public class ProductCrawler {
                 } else {
                     throw new Exception("상품 제목 감지 실패");
                 }
-
+    
             } catch (Exception e) {
                 retryCount++;
                 System.out.println("🚨 [재시도 " + retryCount + "] 페이지 로딩 실패, 다시 시도...");
-                
-                // ✅ 프레임이 삭제된 경우 새로운 페이지에서 다시 로드
-                if (e.getMessage().contains("frame was detached")) {
-                    detailPage.close();
-                    detailPage = context.newPage();
-                } else {
-                    detailPage.reload();
-                }
             }
         }
-
+    
         if (!success) {
             System.out.println("🚨 [실패] 상세 페이지 로드 불가: " + detailUrl);
-            detailPage.close();
+            if (detailPage != null) detailPage.close();
             return null;
         }
-
+    
         return detailPage;
     }
     
     
     
-
-    /**
-     * ✅ 상품 제목 크롤링 (여러 요소 대응)
-     */
-    private String getProductTitle(Page page) {
-        Locator titleLocator = page.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
-
-        try {
-            titleLocator.waitFor(new Locator.WaitForOptions().setTimeout(60000)); // ✅ 기존 50초 → 60초 증가
     
-            if (titleLocator.isVisible()) {
-                return titleLocator.textContent().trim();
-            } else {
-                throw new Exception("상품 제목이 표시되지 않음");
-            }
-        } catch (Exception e) {
-            System.out.println("🚨 [경고] 상품 제목 감지 실패: " + e.getMessage());
-            return null;
-        }
-    }
+    
+
+    // /**
+    //  * ✅ 상품 제목 크롤링 (여러 요소 대응)
+    //  */
+    // private String getProductTitle(Page page) {
+    //     Locator titleLocator = page.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
+
+    //     try {
+    //         titleLocator.waitFor(new Locator.WaitForOptions().setTimeout(60000)); // ✅ 기존 50초 → 60초 증가
+    
+    //         if (titleLocator.isVisible()) {
+    //             return titleLocator.textContent().trim();
+    //         } else {
+    //             throw new Exception("상품 제목이 표시되지 않음");
+    //         }
+    //     } catch (Exception e) {
+    //         System.out.println("🚨 [경고] 상품 제목 감지 실패: " + e.getMessage());
+    //         return null;
+    //     }
+    // }
 
     /**
      * ✅ 가격 크롤링 메서드
@@ -260,19 +229,19 @@ public class ProductCrawler {
         return priceText.isEmpty() ? 0.0 : Double.parseDouble(priceText);
     }
 
-    /**
-     * ✅ 추가 이미지 크롤링
-     */
-    private List<String> extractAdditionalImages(Page page) {
-        List<String> images = new ArrayList<>();
-        for (Locator imgLocator : page.locator("div.prod-image img").all()) {
-            String imgSrc = imgLocator.getAttribute("src");
-            if (imgSrc != null && !imgSrc.trim().isEmpty()) {
-                images.add(imgSrc);
-            }
-        }
-        return images;
-    }
+    // /**
+    //  * ✅ 추가 이미지 크롤링
+    //  */
+    // private List<String> extractAdditionalImages(Page page) {
+    //     List<String> images = new ArrayList<>();
+    //     for (Locator imgLocator : page.locator("div.prod-image img").all()) {
+    //         String imgSrc = imgLocator.getAttribute("src");
+    //         if (imgSrc != null && !imgSrc.trim().isEmpty()) {
+    //             images.add(imgSrc);
+    //         }
+    //     }
+    //     return images;
+    // }
 
     /**
      * ✅ 옵션 크롤링

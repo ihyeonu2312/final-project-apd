@@ -53,30 +53,29 @@ public class BrowserManager {
             System.out.println("🚨 [오류] `browser`가 null입니다. `BrowserContext`를 생성할 수 없습니다.");
             return null;
         }
-
-        // ✅ 현재 Playwright에서 감지된 크롬 버전 가져오기
+    
         String detectedChromeVersion = browser.version();
         String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/"
                 + detectedChromeVersion + " Safari/537.36";
-
+    
         System.out.println("🛠 [디버그] 설정된 User-Agent: " + userAgent);
-
-        BrowserContext context;
-
-        // ✅ 쿠키가 존재하는 경우, 불러오기 시도
+    
+        Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
+            .setUserAgent(userAgent)
+            .setBypassCSP(true)
+            .setExtraHTTPHeaders(Map.of(
+                "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Connection", "keep-alive",
+                "Referer", "https://www.coupang.com/"
+            ));
+    
+        // ✅ `setExtraHTTPHeaders()`를 Context 생성 시점에서 추가!
+        BrowserContext context = browser.newContext(contextOptions);
+    
         if (Files.exists(COOKIE_PATH)) {
             System.out.println("🍪 [쿠키 로드] 기존 쿠키 파일 존재, 불러오기 시도...");
-            context = browser.newContext(new Browser.NewContextOptions()
-                .setUserAgent(userAgent)
-                .setBypassCSP(true)  // ✅ 보안 정책 우회
-                .setStorageStatePath(COOKIE_PATH)
-                .setExtraHTTPHeaders(Map.of(
-                    "Accept-Language", "ko-KR,ko;q=0.9",
-                    "Connection", "keep-alive",
-                    "Referer", "https://www.coupang.com/"
-                ))
-            );
-
+            context.storageState(new BrowserContext.StorageStateOptions().setPath(COOKIE_PATH));
+    
             if (isUserLoggedIn(context)) {
                 System.out.println("✅ [쿠키 로그인 성공] 기존 쿠키 사용.");
                 return context;
@@ -86,11 +85,11 @@ public class BrowserManager {
         } else {
             System.out.println("🚨 [쿠키 없음] 로그인 필요.");
         }
-
-        // ✅ 로그인 후 쿠키 저장 (올바른 Context 전달)
+    
         context = loginAndSaveCookies(browser);
         return context;
     }
+    
 
     /**
      * ✅ 로그인 후 쿠키 저장 (BrowserContext 인자를 받도록 수정)

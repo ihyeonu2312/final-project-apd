@@ -43,6 +43,10 @@ public class ProductCrawler {
         }
     
         try {
+            // ✅ 상세 페이지가 완전히 로드될 때까지 대기
+            detailPage.waitForLoadState(LoadState.DOMCONTENTLOADED);
+            detailPage.waitForLoadState(LoadState.NETWORKIDLE, new Page.WaitForLoadStateOptions().setTimeout(60000));
+    
             // ✅ 상품명 크롤링
             Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
             if (titleLocator.count() == 0 || !titleLocator.isVisible()) {
@@ -52,17 +56,21 @@ public class ProductCrawler {
             String productTitle = titleLocator.textContent().trim();
             System.out.println("🛒 [상품명] " + productTitle);
     
-            // ✅ 가격 크롤링
+            // ✅ 가격 크롤링 (가격이 0이면 오류 로그 추가)
             double originalPrice = extractPrice(detailPage, "span.origin-price");
             double discountPrice = extractPrice(detailPage, "span.discount-price");
             double finalPrice = (discountPrice > 0) ? discountPrice : originalPrice;
     
+            if (finalPrice <= 0) {
+                System.out.println("🚨 [가격 감지 실패] 가격이 0원으로 감지됨. 페이지 구조 변경 가능성 있음.");
+            }
+    
             System.out.println("💰 [가격] 원가: " + originalPrice + " | 할인 가격: " + discountPrice + " | 최종 가격: " + finalPrice);
     
-            // ✅ 이미지 크롤링
-            String imageUrl = detailPage.locator("div.prod-image img").count() > 0 
-                ? detailPage.locator("div.prod-image img").first().getAttribute("src") 
-                : "";
+            // ✅ 이미지 크롤링 (없을 경우 기본 이미지 처리)
+            String imageUrl = detailPage.locator("div.prod-image img").count() > 0
+                ? detailPage.locator("div.prod-image img").first().getAttribute("src")
+                : "https://via.placeholder.com/300";
     
             // ✅ 옵션 크롤링
             List<OptionDto> optionList = extractOptions(detailPage);
@@ -91,6 +99,7 @@ public class ProductCrawler {
             detailPage.close();
         }
     }
+    
     
     /**
      * ✅ 카테고리 내 모든 상품을 크롤링하고 자동 저장
@@ -157,9 +166,18 @@ public class ProductCrawler {
                     detailPage.close(); // ✅ 기존 페이지 닫고 새로 열기
                 }
                 detailPage = context.newPage();
-                System.out.println("🔄 [상품 상세 페이지 로딩] " + detailUrl);
+                System.out.println("🔄 [상품 상세 페이지 로딩 시도] (" + (retryCount + 1) + ") " + detailUrl);
     
-                // ✅ User-Agent 변경 (Playwright 감지 우회)
+                // ✅ User-Agent 변경 (탐지 방지)
+                context.setExtraHTTPHeaders(Map.of(
+                    "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+                    "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+                    "Referer", "https://www.coupang.com/",
+                    "DNT", "1",
+                    "Upgrade-Insecure-Requests", "1"
+                ));
+    
+                // ✅ 페이지 이동
                 detailPage.navigate(detailUrl, new Page.NavigateOptions()
                     .setTimeout(120000)  // ✅ 타임아웃을 120초로 증가
                     .setWaitUntil(WaitUntilState.LOAD)
@@ -169,13 +187,14 @@ public class ProductCrawler {
                 detailPage.evaluate("() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); }");
     
                 // ✅ 중요한 요소가 로드될 때까지 대기 (최대 30초)
-                detailPage.waitForSelector("h2.prod-buy-header__title, span.prod-buy-header__product-title", 
+                detailPage.waitForSelector("h2.prod-buy-header__title, span.prod-buy-header__product-title",
                     new Page.WaitForSelectorOptions().setTimeout(30000));
     
+                // ✅ 상품명 확인
                 Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
                 if (titleLocator.count() > 0) {
                     success = true;
-                    System.out.println("✅ [DEBUG] 상품 제목 감지됨: " + titleLocator.textContent().trim());
+                    System.out.println("✅ [상품 페이지 로딩 완료] 제목: " + titleLocator.textContent().trim());
                 } else {
                     throw new Exception("상품 제목 감지 실패");
                 }
@@ -194,6 +213,8 @@ public class ProductCrawler {
     
         return detailPage;
     }
+    
+    
     
     
     
@@ -225,9 +246,22 @@ public class ProductCrawler {
      */
     private double extractPrice(Page page, String selector) {
         Locator priceLocator = page.locator(selector).first();
-        String priceText = priceLocator.count() > 0 ? priceLocator.textContent().replaceAll("[^0-9]", "") : "";
-        return priceText.isEmpty() ? 0.0 : Double.parseDouble(priceText);
+        if (priceLocator.count() == 0) {
+            return 0.0;  // ✅ 가격 정보가 없으면 0 반환
+        }
+    
+        try {
+            String priceText = priceLocator.textContent().replaceAll("[^0-9,.]", "").trim();
+            if (priceText.contains(",")) {  // ✅ 콤마(,)가 포함되어 있으면 제거
+                priceText = priceText.replace(",", "");
+            }
+            return Double.parseDouble(priceText);
+        } catch (NumberFormatException e) {
+            System.out.println("🚨 [가격 변환 오류] " + e.getMessage());
+            return 0.0;
+        }
     }
+    
 
     // /**
     //  * ✅ 추가 이미지 크롤링

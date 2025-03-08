@@ -83,7 +83,7 @@ public class CoupangCrawlerService {
         System.out.println("🚀 [크롤링 시작] 로그인 & 카테고리 크롤링 진행");
 
         // ✅ 1. 로그인 수행 & 쿠키 저장
-        coupangLogin.loginAndSaveCookies();
+        // coupangLogin.loginAndSaveCookies();
 
         // ✅ 2. 쿠키 파일이 정상적으로 생성되었는지 확인
         if (!Files.exists(Paths.get("cookies.json"))) {

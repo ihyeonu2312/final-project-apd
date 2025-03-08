@@ -43,10 +43,6 @@ public class ProductCrawler {
         }
     
         try {
-            // ✅ 상세 페이지가 완전히 로드될 때까지 대기
-            detailPage.waitForLoadState(LoadState.DOMCONTENTLOADED);
-            detailPage.waitForLoadState(LoadState.NETWORKIDLE, new Page.WaitForLoadStateOptions().setTimeout(60000));
-    
             // ✅ 상품명 크롤링
             Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
             if (titleLocator.count() == 0 || !titleLocator.isVisible()) {
@@ -56,24 +52,27 @@ public class ProductCrawler {
             String productTitle = titleLocator.textContent().trim();
             System.out.println("🛒 [상품명] " + productTitle);
     
-            // ✅ 가격 크롤링 (가격이 0이면 오류 로그 추가)
+            // ✅ 가격 크롤링
             double originalPrice = extractPrice(detailPage, "span.origin-price");
             double discountPrice = extractPrice(detailPage, "span.discount-price");
             double finalPrice = (discountPrice > 0) ? discountPrice : originalPrice;
     
-            if (finalPrice <= 0) {
-                System.out.println("🚨 [가격 감지 실패] 가격이 0원으로 감지됨. 페이지 구조 변경 가능성 있음.");
-            }
-    
             System.out.println("💰 [가격] 원가: " + originalPrice + " | 할인 가격: " + discountPrice + " | 최종 가격: " + finalPrice);
     
-            // ✅ 이미지 크롤링 (없을 경우 기본 이미지 처리)
-            String imageUrl = detailPage.locator("div.prod-image img").count() > 0
-                ? detailPage.locator("div.prod-image img").first().getAttribute("src")
+            // ✅ 이미지 크롤링
+            String imageUrl = detailPage.locator("div.prod-image img").count() > 0 
+                ? detailPage.locator("div.prod-image img").first().getAttribute("src") 
                 : "https://via.placeholder.com/300";
     
             // ✅ 옵션 크롤링
             List<OptionDto> optionList = extractOptions(detailPage);
+    
+            // ✅ 상품 저장 확인 로그
+            System.out.println("🛠 [DEBUG] 저장할 상품 데이터:");
+            System.out.println("   🔹 이름: " + productTitle);
+            System.out.println("   🔹 가격: " + finalPrice);
+            System.out.println("   🔹 이미지: " + imageUrl);
+            System.out.println("   🔹 옵션 개수: " + optionList.size());
     
             // ✅ 상품 저장
             ProductDto productDto = ProductDto.builder()
@@ -99,6 +98,7 @@ public class ProductCrawler {
             detailPage.close();
         }
     }
+    
     
     
     /**

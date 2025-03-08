@@ -56,8 +56,7 @@ public class ProductServiceImpl implements ProductService {
         System.out.println("🚀 [saveProduct] 상품 저장 시작: " + productDto.getName());
         System.out.println("📌 [saveProduct] 전달된 상품 DTO: " + productDto);
 
-
-        // ✅ 데이터 검증: 상품명, 가격, 이미지가 존재하는지 체크
+        // ✅ 상품명, 가격, 이미지 필수 체크
         if (productDto.getName() == null || productDto.getName().isEmpty()) {
             System.out.println("🚨 [saveProduct] 상품 이름이 비어 있음! 저장 불가.");
             return null;
@@ -71,27 +70,13 @@ public class ProductServiceImpl implements ProductService {
             return null;
         }
 
-        // ✅ 옵션이 null이거나 비어있다면 기본값 추가
-        if (productDto.getOptions() == null || productDto.getOptions().isEmpty()) {
-            System.out.println("⚠️ [saveProduct] 옵션이 비어있음! 기본값 설정 진행...");
-            productDto.setOptions(new ArrayList<>());
-        }
-        System.out.println("📌 [saveProduct] `saveProduct()`에 전달된 옵션 개수: " + productDto.getOptions().size());
-
         try {
-            // ✅ 카테고리 찾기
+            // ✅ 카테고리 확인
             System.out.println("🔍 [saveProduct] 카테고리 ID: " + productDto.getCategoryId());
             Category category = categoryRepository.findById(productDto.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("잘못된 카테고리 ID: " + productDto.getCategoryId()));
 
-            // ✅ 저장할 상품 데이터 출력
-            System.out.println("🛠 [saveProduct] 저장할 상품 데이터:");
-            System.out.println("   🔹 상품명: " + productDto.getName());
-            System.out.println("   🔹 가격: " + productDto.getPrice());
-            System.out.println("   🔹 카테고리: " + category.getCategoryName());
-            System.out.println("   🔹 이미지: " + productDto.getImageUrl());
-
-            // ✅ 상품 저장
+            // ✅ 저장할 상품 객체 출력
             Product product = Product.builder()
                 .name(productDto.getName())
                 .price(productDto.getPrice())
@@ -104,9 +89,11 @@ public class ProductServiceImpl implements ProductService {
 
             System.out.println("🔄 [saveProduct] 저장할 상품 객체: " + product);
 
+            // ✅ 상품 저장 실행
             Product savedProduct = productRepository.save(product);
-            entityManager.flush();
-            entityManager.clear();
+            entityManager.flush();  // ✅ DB 즉시 반영
+            entityManager.clear();  // ✅ 메모리 초기화 (중복 방지)
+
             if (savedProduct == null) {
                 System.out.println("🚨 [saveProduct] productRepository.save() 실패! 저장 안됨.");
                 return null;
@@ -114,18 +101,6 @@ public class ProductServiceImpl implements ProductService {
                 System.out.println("✅ [saveProduct] 저장된 상품 ID: " + savedProduct.getProductId());
             }
 
-            // ✅ 추가 이미지 저장
-            System.out.println("🖼 [saveProduct] 추가 이미지 저장 시작...");
-            saveProductImages(savedProduct, productDto.getAdditionalImages());
-
-            // ✅ 옵션 저장 (여기서 한 번 더 검증)
-            if (productDto.getOptions().isEmpty()) {
-                System.out.println("⚠️ [saveProduct] 옵션이 비어있음! 기본값으로 빈 옵션 리스트 처리...");
-            }
-            System.out.println("🛠 [saveProduct] 옵션 저장 시작...");
-            saveProductOptions(savedProduct, productDto.getOptions());
-
-            System.out.println("✅ [saveProduct] 상품, 이미지, 옵션 최종 저장 완료");
             return savedProduct;
 
         } catch (Exception e) {
@@ -134,6 +109,7 @@ public class ProductServiceImpl implements ProductService {
             return null;
         }
     }
+
 
 
     // ✅ 추가 이미지 저장을 별도의 메서드로 분리

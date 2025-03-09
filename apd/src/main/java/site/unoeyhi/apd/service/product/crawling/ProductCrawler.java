@@ -33,7 +33,7 @@ public class ProductCrawler {
     /**
      * ✅ 상품 상세 정보 크롤링
      */
-    public void crawlProductDetail(BrowserContext context, String detailUrl) {
+    public void crawlProductDetail(BrowserContext context, String detailUrl, Long categoryId) {
         System.out.println("🚀 [crawlProductDetail] 상세 상품 크롤링 시작: " + detailUrl);
     
         Page detailPage = openDetailPage(context, detailUrl);
@@ -44,12 +44,8 @@ public class ProductCrawler {
     
         try {
             // ✅ 상품명 크롤링
-            Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
-            if (titleLocator.count() == 0 || !titleLocator.isVisible()) {
-                throw new Exception("🚨 [오류] 상품 제목을 찾을 수 없어 크롤링 건너뜀.");
-            }
-    
-            String productTitle = titleLocator.textContent().trim();
+            Locator titleLocator = detailPage.locator("h1.prod-buy-header__title");
+            String productTitle = titleLocator.all().get(0).textContent().trim();
             System.out.println("🛒 [상품명] " + productTitle);
     
             // ✅ 가격 크롤링
@@ -77,6 +73,7 @@ public class ProductCrawler {
             // ✅ 상품 저장
             ProductDto productDto = ProductDto.builder()
                     .name(productTitle)
+                    .categoryId(categoryId)
                     .price(finalPrice)
                     .stockQuantity(10)
                     .imageUrl(imageUrl)
@@ -104,7 +101,7 @@ public class ProductCrawler {
     /**
      * ✅ 카테고리 내 모든 상품을 크롤링하고 자동 저장
      */
-    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl) {
+    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl, Long categoryId) {
         System.out.println("🚀 [crawlAllProducts] 카테고리 상품 크롤링 시작: " + categoryUrl);
     
         Page page = context.newPage();
@@ -147,7 +144,7 @@ public class ProductCrawler {
         // ✅ 상품 상세 크롤링 & 자동 저장
         for (String productUrl : productUrls) {
             System.out.println("🛠 [crawlAllProducts] 상품 상세 크롤링 호출: " + productUrl);
-            crawlProductDetail(context, productUrl);
+            crawlProductDetail(context, productUrl, categoryId);
         }
     
         page.close();
@@ -168,33 +165,16 @@ public class ProductCrawler {
                 detailPage = context.newPage();
                 System.out.println("🔄 [상품 상세 페이지 로딩 시도] (" + (retryCount + 1) + ") " + detailUrl);
     
-                // ✅ User-Agent 변경 (탐지 방지)
-                context.setExtraHTTPHeaders(Map.of(
-                    "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
-                    "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-                    "Referer", "https://www.coupang.com/",
-                    "DNT", "1",
-                    "Upgrade-Insecure-Requests", "1"
-                ));
-    
                 // ✅ 페이지 이동
-                detailPage.navigate(detailUrl, new Page.NavigateOptions()
-                    .setTimeout(120000)  // ✅ 타임아웃을 120초로 증가
-                    .setWaitUntil(WaitUntilState.LOAD)
-                );
+                detailPage.navigate(detailUrl);
+                detailPage.waitForTimeout(3000);
     
-                // ✅ Playwright 자동화 탐지 우회
-                detailPage.evaluate("() => { Object.defineProperty(navigator, 'webdriver', { get: () => false }); }");
-    
-                // ✅ 중요한 요소가 로드될 때까지 대기 (최대 30초)
-                detailPage.waitForSelector("h2.prod-buy-header__title, span.prod-buy-header__product-title",
-                    new Page.WaitForSelectorOptions().setTimeout(30000));
     
                 // ✅ 상품명 확인
-                Locator titleLocator = detailPage.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
+                Locator titleLocator = detailPage.locator("h1.prod-buy-header__title");
                 if (titleLocator.count() > 0) {
                     success = true;
-                    System.out.println("✅ [상품 페이지 로딩 완료] 제목: " + titleLocator.textContent().trim());
+                    System.out.println("✅ [상품 페이지 로딩 완료] 제목: " + titleLocator.all().get(0).textContent().trim());
                 } else {
                     throw new Exception("상품 제목 감지 실패");
                 }

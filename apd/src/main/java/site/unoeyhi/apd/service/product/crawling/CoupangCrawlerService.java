@@ -19,6 +19,7 @@ import site.unoeyhi.apd.service.product.ProductService;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,32 +50,38 @@ public class CoupangCrawlerService {
      */
     private BrowserContext createBrowserContext() {
         Playwright playwright = Playwright.create();
-        Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-            .setHeadless(false)
-            .setChannel("chrome")
-            .setExecutablePath(Paths.get("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"))
-            .setArgs(List.of(
-                "--disable-blink-features=AutomationControlled",
-                "--disable-http2",
-                "--disable-features=NetworkService,NetworkServiceInProcess"
-            ))
-        );
-    
-        Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
-            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
-            .setExtraHTTPHeaders(Map.of(
-                "Upgrade-Insecure-Requests", "1",
-                "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Referer", "https://www.coupang.com/",
-                "Connection", "keep-alive",
-                "Cache-Control", "no-cache",
-                "DNT", "1"
-            ))
-            .setBypassCSP(true);
-    
-        return browser.newContext(contextOptions);
+        Browser browser = playwright.chromium().launch(
+            new BrowserType.LaunchOptions()
+                    .setHeadless(false)
+                    .setChannel("chrome")
+                    .setArgs(List.of(
+                            "--disable-blink-features=AutomationControlled",
+                            "--disable-features=BlockThirdPartyCookies",
+                            "--disable-web-security"
+                    )));
+        BrowserContext context = getNewBrowserContext(browser);
+        return context;
     }
-    
+    protected BrowserContext getNewBrowserContext(Browser browser) {
+        HashMap<String, String> headers = new HashMap<>();
+        headers.put("Accept-Language", "ko,ko-KR;q=0.9,en-US;q=0.8,en;q=0.7");
+        headers.put("Accept-Encoding", "gzip, deflate, br, zstd");
+        headers.put("Sec-Ch-Ua", "Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24");
+        headers.put("Sec-Ch-Ua-Mobile", "?0");
+        headers.put("Sec-Ch-Ua-Platform", "\"Windows\"");
+        headers.put("Sec-Fetch-Dest", "document");
+        headers.put("Sec-Fetch-User", "?1");
+        headers.put("Upgrade-Insecure-Requests", "1");
+        headers.put("Referer", "https://www.coupang.com/");
+
+        BrowserContext context = browser.newContext(
+                new Browser.NewContextOptions()
+                        .setIsMobile(false)
+                        .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+                        .setExtraHTTPHeaders(headers)
+        );
+        return context;
+    }
 
     /**
      * ✅ 전체 크롤링 실행 (로그인 → 카테고리 → 상품)

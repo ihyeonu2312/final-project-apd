@@ -3,54 +3,38 @@ package site.unoeyhi.apd.service.product.crawling;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Locator;
-import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.*;
 
 import site.unoeyhi.apd.dto.product.ProductDto;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.repository.CategoryRepository;
 import site.unoeyhi.apd.service.product.ProductService;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
 @EnableAsync
 public class CoupangCrawlerService {
 
-    private final CategoryCrawler categoryCrawler;
-    private final CoupangLogin coupangLogin;
-    private final ProductCrawler productCrawler; // ✅ 상품 크롤러 추가
-    private final ProductService productService; // ✅ 상품 저장 서비스 추가
     private final CategoryRepository categoryRepository;
+    private final ProductCrawler productCrawler;
+    private final ProductService productService;
+
+    private final Playwright playwright;
+    private final Browser browser;
+
     @Autowired
-    public CoupangCrawlerService(CategoryCrawler categoryCrawler, CoupangLogin coupangLogin,
-                                 ProductCrawler productCrawler, ProductService productService,
-                                 CategoryRepository categoryRepository) {
-        this.categoryCrawler = categoryCrawler;
-        this.coupangLogin = coupangLogin;
+    public CoupangCrawlerService(CategoryRepository categoryRepository, 
+                                 ProductCrawler productCrawler, 
+                                 ProductService productService) {
+        this.categoryRepository = categoryRepository;
         this.productCrawler = productCrawler;
         this.productService = productService;
-        this.categoryRepository = categoryRepository;
-    }
 
-    /**
-     * ✅ Playwright 브라우저 컨텍스트 생성 메서드
-     */
-    private BrowserContext createBrowserContext() {
-        Playwright playwright = Playwright.create();
-        Browser browser = playwright.chromium().launch(
+        // ✅ Playwright & Browser 인스턴스를 한 번만 생성 (메모리 누수 방지)
+        this.playwright = Playwright.create();
+        this.browser = playwright.chromium().launch(
             new BrowserType.LaunchOptions()
                     .setHeadless(false)
                     .setChannel("chrome")
@@ -58,108 +42,143 @@ public class CoupangCrawlerService {
                             "--disable-blink-features=AutomationControlled",
                             "--disable-features=BlockThirdPartyCookies",
                             "--disable-web-security"
-                    )));
-        BrowserContext context = getNewBrowserContext(browser);
-        return context;
-    }
-    protected BrowserContext getNewBrowserContext(Browser browser) {
-        HashMap<String, String> headers = new HashMap<>();
-        headers.put("Accept-Language", "ko,ko-KR;q=0.9,en-US;q=0.8,en;q=0.7");
-        headers.put("Accept-Encoding", "gzip, deflate, br, zstd");
-        headers.put("Sec-Ch-Ua", "Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24");
-        headers.put("Sec-Ch-Ua-Mobile", "?0");
-        headers.put("Sec-Ch-Ua-Platform", "\"Windows\"");
-        headers.put("Sec-Fetch-Dest", "document");
-        headers.put("Sec-Fetch-User", "?1");
-        headers.put("Upgrade-Insecure-Requests", "1");
-        headers.put("Referer", "https://www.coupang.com/");
-
-        BrowserContext context = browser.newContext(
-                new Browser.NewContextOptions()
-                        .setIsMobile(false)
-                        .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-                        .setExtraHTTPHeaders(headers)
+                    ))
         );
-        return context;
+    }
+
+    private static final int MAX_CATEGORY_CRAWL = 15; // ✅ 최대 15개 카테고리 크롤링
+    private static final int MAX_PRODUCTS_PER_CATEGORY = 10; // ✅ 각 카테고리당 10개 상품만 크롤링
+
+    // ✅ URL 기반으로 카테고리 ID 매핑
+    private static final Map<String, Long> CATEGORY_MAP = Map.ofEntries(
+        Map.entry("/fashion/", 1L),
+        Map.entry("/electronics/", 2L),
+        Map.entry("/beauty/", 3L),
+        Map.entry("/home/", 4L),
+        Map.entry("/sports/", 5L),
+        Map.entry("/automotive/", 6L),
+        Map.entry("/baby/", 7L),
+        Map.entry("/books/", 8L),
+        Map.entry("/food/", 9L),
+        Map.entry("/health/", 10L),
+        Map.entry("/toys/", 11L),
+        Map.entry("/office/", 12L),
+        Map.entry("/pet/", 13L),
+        Map.entry("/music/", 14L),
+        Map.entry("/movies/", 15L)
+    );
+
+
+    /**
+     * ✅ Playwright 브라우저 컨텍스트 생성 메서드
+     */
+    private BrowserContext createBrowserContext() {
+        return browser.newContext(new Browser.NewContextOptions()
+                .setIsMobile(false)
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+                .setExtraHTTPHeaders(Map.of(
+                        "Accept-Language", "ko,ko-KR;q=0.9,en-US;q=0.8,en;q=0.7",
+                        "Accept-Encoding", "gzip, deflate, br, zstd",
+                        "Sec-Ch-Ua", "Google Chrome\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24",
+                        "Sec-Ch-Ua-Mobile", "?0",
+                        "Sec-Ch-Ua-Platform", "\"Windows\"",
+                        "Sec-Fetch-Dest", "document",
+                        "Sec-Fetch-User", "?1",
+                        "Upgrade-Insecure-Requests", "1",
+                        "Referer", "https://www.coupang.com/"
+                ))
+        );
     }
 
     /**
-     * ✅ 전체 크롤링 실행 (로그인 → 카테고리 → 상품)
+     * ✅ 카테고리 URL을 기반으로 `categoryId` 찾기
+     */
+    private Long getCategoryIdFromUrl(String categoryUrl) {
+        return categoryRepository.findByUrl(categoryUrl)
+                .map(Category::getCategoryId)
+                .orElse(0L); // ✅ 매칭 실패 시 기본값 반환
+    }
+
+    /**
+     * ✅ 카테고리 크롤링 후 상품 크롤링 & 저장 실행
      */
     public CompletableFuture<Void> startCrawling() {
-        System.out.println("🚀 [크롤링 시작] 로그인 & 카테고리 크롤링 진행");
+        System.out.println("🚀 [크롤링 시작] 카테고리 크롤링 진행");
 
-        // ✅ 1. 로그인 수행 & 쿠키 저장
-        // coupangLogin.loginAndSaveCookies();
-
-        // ✅ 2. 쿠키 파일이 정상적으로 생성되었는지 확인
-        if (!Files.exists(Paths.get("cookies.json"))) {
-            System.out.println("🚨 [오류] 로그인 후 쿠키 파일이 생성되지 않음. 크롤링 중단.");
-            return CompletableFuture.completedFuture(null);
-        }
-
-        // ✅ 3. 카테고리 크롤링 실행 후 상품 크롤링 & 저장 실행
         return crawlAllCategories()
-        .thenComposeAsync(optionalCategoryUrls -> CompletableFuture.runAsync(() -> {
-            BrowserContext context = createBrowserContext();  // ✅ Playwright 브라우저 컨텍스트 생성
-            
-            // ✅ Optional에서 값 꺼내기 (값이 없으면 빈 리스트 반환)
-            List<String> categoryList = optionalCategoryUrls.orElse(List.of());
+            .thenComposeAsync(optionalCategoryUrls -> CompletableFuture.runAsync(() -> {
+                List<String> categoryList = optionalCategoryUrls.orElse(List.of());
 
-            for (String categoryUrl : categoryList) {
-                System.out.println("🔗 [CoupangCrawler] 크롤링할 카테고리: " + categoryUrl);
-                crawlAndSaveProducts(context, categoryUrl);
-            }
-        }));
+                for (String categoryUrl : categoryList) {
+                    System.out.println("🔗 [CoupangCrawler] 크롤링할 카테고리: " + categoryUrl);
+
+                    // ✅ 각 카테고리마다 새로운 BrowserContext 생성
+                    BrowserContext context = createBrowserContext();
+                    crawlAndSaveProducts(context, categoryUrl);
+                    context.close(); // ✅ 메모리 관리를 위해 Context 닫기
+                }
+            }));
     }
 
     /**
-     * ✅ 쿠팡 카테고리 크롤링 (전체 카테고리 URL 가져오기)
+     * ✅ 카테고리 목록 가져오기
      */
     public CompletableFuture<Optional<List<String>>> crawlAllCategories() {
         return CompletableFuture.supplyAsync(() -> {
-            System.out.println("🚀 [크롤링 시작] 모든 카테고리 크롤링");
-    
-            // ✅ 기존 DB에서 카테고리 조회crawlProductsByCategory
+            System.out.println("🚀 [카테고리 크롤링 시작]");
+
             List<Category> categories = categoryRepository.findAll();
-    
+
             if (categories.isEmpty()) {
                 System.out.println("🚨 [크롤링 중단] 크롤링할 카테고리가 없습니다!");
                 return Optional.empty();
             }
-    
+
+            // ✅ 최대 MAX_CATEGORY_CRAWL 개수만 선택
+            int limit = Math.min(categories.size(), MAX_CATEGORY_CRAWL);
+            List<Category> selectedCategories = categories.subList(0, limit);
+
             List<String> categoryUrls = new ArrayList<>();
-            for (Category category : categories) {
-                String categoryUrl = "https://www.coupang.com" + category.getUrl();
-                categoryUrls.add(categoryUrl);
-                System.out.println("🔗 [CoupangCrawler] 카테고리 URL 발견: " + categoryUrl);
+            for (Category category : selectedCategories) {
+                categoryUrls.add("https://www.coupang.com" + category.getUrl()); // ✅ category.getCategoryUrl()로 변경
             }
-    
-            System.out.println("📦 [CoupangCrawler] 최종 크롤링된 카테고리 개수: " + categoryUrls.size());
+
             return Optional.of(categoryUrls);
         });
     }
-    
-    
 
     /**
-     * ✅ 상품 크롤링 후 자동 저장
+     * ✅ 상품 크롤링 후 저장
      */
     private void crawlAndSaveProducts(BrowserContext context, String categoryUrl) {
         System.out.println("🚀 [CoupangCrawler] 카테고리 상품 크롤링 시작: " + categoryUrl);
-
-        List<ProductDto> products = productCrawler.crawlAllProducts(context, categoryUrl); // ✅ 카테고리 전체 상품 크롤링 실행
-
+    
+        List<ProductDto> products = productCrawler.crawlAllProducts(context, categoryUrl, MAX_PRODUCTS_PER_CATEGORY);
+    
         if (products.isEmpty()) {
-            System.out.println("🚨 [CoupangCrawler] 크롤링된 상품 없음! 저장 중단.");
+            System.out.println("🚨 [크롤링된 상품 없음] 저장 중단.");
             return;
         }
-
-        for (ProductDto productDto : products) {
-            System.out.println("📦 [CoupangCrawler] 상품 저장 시도: " + productDto.getName());
-            productService.saveProduct(productDto);  // ✅ 크롤링된 상품을 DB에 저장
+    
+        // ✅ DB에서 categoryUrl을 기반으로 categoryId 가져오기
+        Long categoryId = getCategoryIdFromUrl(categoryUrl);
+    
+        if (categoryId == 0L) {
+            System.out.println("🚨 [경고] 카테고리 매칭 실패: " + categoryUrl);
+            return;
         }
-
-        System.out.println("✅ [CoupangCrawler] 상품 저장 완료!");
+    
+        for (ProductDto productDto : products) {
+            System.out.println("📦 [상품 저장 시도]: " + productDto.getName());
+    
+            // ✅ categoryId를 설정하여 저장
+            ProductDto savedProductDto = productDto.toBuilder()
+                    .categoryId(categoryId)
+                    .build();
+    
+            productService.saveProduct(savedProductDto);
+        }
+    
+        System.out.println("✅ [상품 저장 완료] 카테고리 ID: " + categoryId);
     }
-}
+}    

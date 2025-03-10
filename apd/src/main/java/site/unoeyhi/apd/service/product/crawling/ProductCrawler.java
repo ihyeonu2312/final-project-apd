@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Locale.Category;
 
 @Service 
 public class ProductCrawler {
@@ -73,7 +74,7 @@ public class ProductCrawler {
             // ✅ 상품 저장
             ProductDto productDto = ProductDto.builder()
                     .name(productTitle)
-                    .categoryId(1L) // 여기에 올바른 categoryId 넣어주면 됩니다.
+                    .categoryId(categoryId) // 여기에 올바른 categoryId 넣어주면 됩니다.
                     .price(finalPrice)
                     .stockQuantity(10)
                     .imageUrl(imageUrl)
@@ -97,35 +98,31 @@ public class ProductCrawler {
     }
   
     
-    //✅ 카테고리 내 모든 상품을 크롤링하고 자동 저장
-    // ✅ 크롤링할 최대 상품 개수
-    private static final int MAX_CRAWL_COUNT = 30; // 갯수 제한
-
-    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl) {
+    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl, int maxProducts) {
         System.out.println("🚀 [crawlAllProducts] 카테고리 상품 크롤링 시작: " + categoryUrl);
-
+    
         Page page = context.newPage();
         page.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
-
+    
         // ✅ 상품 리스트가 로딩될 때까지 대기
         page.waitForTimeout(3000);
         page.waitForSelector("li.baby-product.renew-badge", new Page.WaitForSelectorOptions().setTimeout(10000));
-
+    
         // ✅ 상품 개수 확인
         List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
-
+    
         int totalProducts = productElements.size();
         System.out.println("📦 [DEBUG] Playwright가 감지한 상품 개수: " + totalProducts);
-
+    
         if (totalProducts == 0) {
             System.out.println("🚨 [경고] 상품이 없음! 페이지 구조 변경 가능성 있음.");
             return new ArrayList<>();
         }
-
-        // ✅ 상품 개수 제한 적용 (최대 MAX_CRAWL_COUNT개까지만 가져오기)
-        int crawlCount = Math.min(MAX_CRAWL_COUNT, totalProducts);
+    
+        // ✅ 상품 개수 제한 적용 (최대 maxProducts개까지만 가져오기)
+        int crawlCount = Math.min(maxProducts, totalProducts);
         List<String> productUrls = new ArrayList<>();
-
+    
         for (int i = 0; i < crawlCount; i++) {
             try {
                 String productId = productElements.get(i).getAttribute("data-product-id");
@@ -138,19 +135,21 @@ public class ProductCrawler {
                 System.out.println("🚨 [오류 발생] 상품 URL 추출 중 문제 발생: " + e.getMessage());
             }
         }
-
+    
         System.out.println("📦 [crawlAllProducts] 최종 크롤링 상품 개수: " + productUrls.size());
-
+    
         // ✅ 크롤링한 상품들 상세 크롤링 진행
         List<ProductDto> productList = new ArrayList<>();
         for (String productUrl : productUrls) {
             System.out.println("🛠 [crawlAllProducts] 상품 상세 크롤링 호출: " + productUrl);
             crawlProductDetail(context, productUrl);
         }
-
+    
         page.close();
         return productList;
     }
+    
+    
 
     
     //상품 상세

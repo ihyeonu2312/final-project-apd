@@ -28,45 +28,56 @@ public class CategoryCrawler {
         this.productCrawler = productCrawler;
     }
 
+    private static final int MAX_CATEGORY_CRAWL = 15; // ✅ 최대 크롤링할 카테고리 개수
+
     @Async
     public CompletableFuture<Void> crawlAllCategories() {
         System.out.println("🚀 [크롤링 시작] 모든 카테고리 크롤링");
     
         List<Category> categories = categoryRepository.findAll();
+    
         if (categories.isEmpty()) {
             System.out.println("🚨 [크롤링 중단] 크롤링할 카테고리가 없습니다!");
             return CompletableFuture.completedFuture(null);
         }
     
+        // ✅ 최대 MAX_CATEGORY_CRAWL 개수까지만 크롤링
+        int limit = Math.min(categories.size(), MAX_CATEGORY_CRAWL);
+        List<Category> selectedCategories = categories.subList(0, limit);
+    
         List<CompletableFuture<Void>> futures = new ArrayList<>();
     
         try (Playwright playwright = Playwright.create()) {
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-            .setExecutablePath(Paths.get("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")) // ✅ 크롬 직접 지정
-            .setHeadless(false));
+                    .setExecutablePath(Paths.get("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")) // ✅ 크롬 직접 지정
+                    .setHeadless(false));
     
-            for (Category category : categories) {
+            for (Category category : selectedCategories) { // ✅ 선택된 카테고리만 크롤링
                 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                     BrowserContext context = browser.newContext(); // ✅ BrowserContext 생성
-                    productCrawler.crawlAllProducts(context, "https://www.coupang.com" + category.getUrl());
+    
+                    // ✅ 각 카테고리에서 상품 10개씩만 가져오도록 설정
+                    productCrawler.crawlAllProducts(context, "https://www.coupang.com" + category.getUrl(), 10);
+    
                     context.close(); // ✅ 크롤링 후 context 닫기 (메모리 관리)
                 }, executorService);
                 futures.add(future);
             }
     
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenRun(() -> {
-                    executorService.shutdown();
-                    if (browser != null) {
-                        System.out.println("🛑 [브라우저 종료] 크롤링 완료 후 브라우저 닫음");
-                        browser.close();
-                    }
-                });
+                    .thenRun(() -> {
+                        executorService.shutdown();
+                        if (browser != null) {
+                            System.out.println("🛑 [브라우저 종료] 크롤링 완료 후 브라우저 닫음");
+                            browser.close();
+                        }
+                    });
         } catch (Exception e) {
             System.out.println("🚨 [오류 발생] " + e.getMessage());
             return CompletableFuture.completedFuture(null);
         }
     }
+    
 
 
 

@@ -95,40 +95,40 @@ public class ProductCrawler {
             detailPage.close();
         }
     }
+  
     
-    
-    
-    /**
-     * ✅ 카테고리 내 모든 상품을 크롤링하고 자동 저장
-     */
+    //✅ 카테고리 내 모든 상품을 크롤링하고 자동 저장
+    // ✅ 크롤링할 최대 상품 개수
+    private static final int MAX_CRAWL_COUNT = 30; // 갯수 제한
+
     public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl) {
         System.out.println("🚀 [crawlAllProducts] 카테고리 상품 크롤링 시작: " + categoryUrl);
-    
+
         Page page = context.newPage();
         page.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
-    
+
         // ✅ 상품 리스트가 로딩될 때까지 대기
         page.waitForTimeout(3000);
         page.waitForSelector("li.baby-product.renew-badge", new Page.WaitForSelectorOptions().setTimeout(10000));
-    
-        // ✅ 상품 개수 확인 (디버깅용)
-        int productCount = page.locator("li.baby-product.renew-badge").count();
-        System.out.println("📦 [DEBUG] Playwright가 감지한 상품 개수: " + productCount);
-    
-        // ✅ 상품이 없는 경우 처리
-        if (productCount == 0) {
+
+        // ✅ 상품 개수 확인
+        List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
+
+        int totalProducts = productElements.size();
+        System.out.println("📦 [DEBUG] Playwright가 감지한 상품 개수: " + totalProducts);
+
+        if (totalProducts == 0) {
             System.out.println("🚨 [경고] 상품이 없음! 페이지 구조 변경 가능성 있음.");
-            System.out.println("📌 현재 페이지 HTML: " + page.content());  
             return new ArrayList<>();
         }
-    
-        // ✅ 카테고리 페이지에서 상품 URL 추출
+
+        // ✅ 상품 개수 제한 적용 (최대 MAX_CRAWL_COUNT개까지만 가져오기)
+        int crawlCount = Math.min(MAX_CRAWL_COUNT, totalProducts);
         List<String> productUrls = new ArrayList<>();
-        List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
-    
-        for (ElementHandle productElement : productElements) {
+
+        for (int i = 0; i < crawlCount; i++) {
             try {
-                String productId = productElement.getAttribute("data-product-id");
+                String productId = productElements.get(i).getAttribute("data-product-id");
                 if (productId != null && !productId.trim().isEmpty()) {
                     String productUrl = "https://www.coupang.com/vp/products/" + productId;
                     productUrls.add(productUrl);
@@ -138,18 +138,20 @@ public class ProductCrawler {
                 System.out.println("🚨 [오류 발생] 상품 URL 추출 중 문제 발생: " + e.getMessage());
             }
         }
-    
-        System.out.println("📦 [crawlAllProducts] 총 상품 개수: " + productUrls.size());
-    
-        // ✅ 상품 상세 크롤링 & 자동 저장
+
+        System.out.println("📦 [crawlAllProducts] 최종 크롤링 상품 개수: " + productUrls.size());
+
+        // ✅ 크롤링한 상품들 상세 크롤링 진행
+        List<ProductDto> productList = new ArrayList<>();
         for (String productUrl : productUrls) {
             System.out.println("🛠 [crawlAllProducts] 상품 상세 크롤링 호출: " + productUrl);
             crawlProductDetail(context, productUrl);
         }
-    
+
         page.close();
-        return new ArrayList<>();
+        return productList;
     }
+
     
     //상품 상세
     private Page openDetailPage(BrowserContext context, String detailUrl) {
@@ -157,12 +159,13 @@ public class ProductCrawler {
         int retryCount = 0;
         boolean success = false;
     
-        while (!success && retryCount < 3) {
+        while (!success && retryCount < 3) {          
             try {
                 if (detailPage != null) {
                     detailPage.close(); // ✅ 기존 페이지 닫고 새로 열기
                 }
                 detailPage = context.newPage();
+                detailPage.waitForTimeout(3000);
                 System.out.println("🔄 [상품 상세 페이지 로딩 시도] (" + (retryCount + 1) + ") " + detailUrl);
     
                 // ✅ 페이지 이동

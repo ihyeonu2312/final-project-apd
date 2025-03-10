@@ -2,11 +2,13 @@ package site.unoeyhi.apd.service.product.crawling;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.repository.CategoryRepository;
+import org.springframework.context.annotation.Lazy;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -23,7 +25,7 @@ public class CategoryCrawler {
     private final ExecutorService executorService = Executors.newFixedThreadPool(3); // ✅ 동시 실행 개수 제한
 
     @Autowired
-    public CategoryCrawler(CategoryRepository categoryRepository, ProductCrawler productCrawler) {
+    public CategoryCrawler(CategoryRepository categoryRepository, @Lazy ProductCrawler productCrawler) {
         this.categoryRepository = categoryRepository;
         this.productCrawler = productCrawler;
     }
@@ -57,7 +59,7 @@ public class CategoryCrawler {
                     BrowserContext context = browser.newContext(); // ✅ BrowserContext 생성
     
                     // ✅ 각 카테고리에서 상품 10개씩만 가져오도록 설정
-                    productCrawler.crawlAllProducts(context, "https://www.coupang.com" + category.getUrl(), 10);
+                    productCrawler.crawlAllProducts(context, "https://www.coupang.com" + category.getUrl(), 10,category.getCategoryId());
     
                     context.close(); // ✅ 크롤링 후 context 닫기 (메모리 관리)
                 }, executorService);
@@ -156,7 +158,7 @@ public class CategoryCrawler {
             System.out.println("🔗 [상품 URL] " + detailUrl);
     
             System.out.println("🛠 [crawlProductsByCategory] 상품 상세 크롤링 호출: " + detailUrl);
-            productCrawler.crawlProductDetail(context, detailUrl);
+            productCrawler.crawlProductDetail(context, detailUrl,category.getCategoryId());
         }
     
         page.close();

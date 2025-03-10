@@ -90,14 +90,14 @@ public class CoupangCrawlerService {
         );
     }
 
-    /**
-     * ✅ 카테고리 URL을 기반으로 `categoryId` 찾기
-     */
-    private Long getCategoryIdFromUrl(String categoryUrl) {
-        return categoryRepository.findByUrl(categoryUrl)
-                .map(Category::getCategoryId)
-                .orElse(0L); // ✅ 매칭 실패 시 기본값 반환
-    }
+    // /**
+    //  * ✅ 카테고리 URL을 기반으로 `categoryId` 찾기
+    //  */
+    // private Long getCategoryIdFromUrl(String categoryUrl) {
+    //     Optional<Category> categoryOpt = categoryRepository.findByUrl(categoryUrl); // ✅ DB에서 검색
+    //     return categoryOpt.map(Category::getCategoryId).orElse(0L); // ✅ 없으면 기본값 반환
+    // }
+
 
     /**
      * ✅ 카테고리 크롤링 후 상품 크롤링 & 저장 실행
@@ -105,73 +105,70 @@ public class CoupangCrawlerService {
     public CompletableFuture<Void> startCrawling() {
         System.out.println("🚀 [크롤링 시작] 카테고리 크롤링 진행");
 
-        return crawlAllCategories()
-            .thenComposeAsync(optionalCategoryUrls -> CompletableFuture.runAsync(() -> {
-                List<String> categoryList = optionalCategoryUrls.orElse(List.of());
+            return crawlAllCategories()
+            .thenComposeAsync(optionalCategoryMap -> CompletableFuture.runAsync(() -> {
+                Map<String, Long> categoryMap = optionalCategoryMap.orElse(Map.of());
+                BrowserContext context = createBrowserContext();
 
-                for (String categoryUrl : categoryList) {
-                    System.out.println("🔗 [CoupangCrawler] 크롤링할 카테고리: " + categoryUrl);
+                for (Map.Entry<String, Long> entry : categoryMap.entrySet()) {
+                    String categoryUrl = entry.getKey();
+                    Long categoryId = entry.getValue();
+                    System.out.println("🔗 [크롤링할 카테고리] " + categoryUrl + " | ID: " + categoryId);
 
-                    // ✅ 각 카테고리마다 새로운 BrowserContext 생성
-                    BrowserContext context = createBrowserContext();
-                    crawlAndSaveProducts(context, categoryUrl);
-                    context.close(); // ✅ 메모리 관리를 위해 Context 닫기
+                    crawlAndSaveProducts(context, categoryUrl, categoryId);
                 }
+
+                context.close();
             }));
     }
 
     /**
      * ✅ 카테고리 목록 가져오기
      */
-    public CompletableFuture<Optional<List<String>>> crawlAllCategories() {
+    public CompletableFuture<Optional<Map<String, Long>>> crawlAllCategories() {
         return CompletableFuture.supplyAsync(() -> {
             System.out.println("🚀 [카테고리 크롤링 시작]");
-
+    
             List<Category> categories = categoryRepository.findAll();
-
             if (categories.isEmpty()) {
                 System.out.println("🚨 [크롤링 중단] 크롤링할 카테고리가 없습니다!");
                 return Optional.empty();
             }
-
+    
             // ✅ 최대 MAX_CATEGORY_CRAWL 개수만 선택
             int limit = Math.min(categories.size(), MAX_CATEGORY_CRAWL);
             List<Category> selectedCategories = categories.subList(0, limit);
-
-            List<String> categoryUrls = new ArrayList<>();
+    
+            // ✅ 카테고리 URL과 categoryId를 Map으로 저장
+            Map<String, Long> categoryMap = new HashMap<>();
             for (Category category : selectedCategories) {
-                categoryUrls.add("https://www.coupang.com" + category.getUrl()); // ✅ category.getCategoryUrl()로 변경
+                String fullUrl = "https://www.coupang.com" + category.getUrl();
+                categoryMap.put(fullUrl, category.getCategoryId());
+                System.out.println("🔗 [카테고리] " + fullUrl + " | ID: " + category.getCategoryId());
             }
-
-            return Optional.of(categoryUrls);
+    
+            return Optional.of(categoryMap);
         });
     }
+    
 
     /**
      * ✅ 상품 크롤링 후 저장
      */
-    private void crawlAndSaveProducts(BrowserContext context, String categoryUrl) {
-        System.out.println("🚀 [CoupangCrawler] 카테고리 상품 크롤링 시작: " + categoryUrl);
+    private void crawlAndSaveProducts(BrowserContext context, String categoryUrl, Long categoryId) {
+        System.out.println("🚀 [CoupangCrawler] 카테고리 상품 크롤링 시작: " + categoryUrl + " | 카테고리 ID: " + categoryId);
     
-        List<ProductDto> products = productCrawler.crawlAllProducts(context, categoryUrl, MAX_PRODUCTS_PER_CATEGORY);
-    
+        List<ProductDto> products = productCrawler.crawlAllProducts(context, categoryUrl, MAX_PRODUCTS_PER_CATEGORY, categoryId);
+        
         if (products.isEmpty()) {
             System.out.println("🚨 [크롤링된 상품 없음] 저장 중단.");
-            return;
-        }
-    
-        // ✅ DB에서 categoryUrl을 기반으로 categoryId 가져오기
-        Long categoryId = getCategoryIdFromUrl(categoryUrl);
-    
-        if (categoryId == 0L) {
-            System.out.println("🚨 [경고] 카테고리 매칭 실패: " + categoryUrl);
             return;
         }
     
         for (ProductDto productDto : products) {
             System.out.println("📦 [상품 저장 시도]: " + productDto.getName());
     
-            // ✅ categoryId를 설정하여 저장
+            // ✅ categoryId 설정 후 저장
             ProductDto savedProductDto = productDto.toBuilder()
                     .categoryId(categoryId)
                     .build();
@@ -181,4 +178,6 @@ public class CoupangCrawlerService {
     
         System.out.println("✅ [상품 저장 완료] 카테고리 ID: " + categoryId);
     }
+    
+
 }    

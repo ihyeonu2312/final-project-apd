@@ -26,7 +26,7 @@ public class ProductCrawler {
     private final DiscountService discountService;
 
     @Autowired
-    public ProductCrawler(ProductService productService, DiscountService discountService) {
+    public ProductCrawler(ProductService productService, DiscountService discountService ) {
         this.productService = productService;
         this.discountService = discountService;
     }
@@ -34,8 +34,9 @@ public class ProductCrawler {
     /**
      * ✅ 상품 상세 정보 크롤링
      */
-    public void crawlProductDetail(BrowserContext context, String detailUrl) {
+    public void crawlProductDetail(BrowserContext context, String detailUrl, Long categoryId) {
         System.out.println("🚀 [crawlProductDetail] 상세 상품 크롤링 시작: " + detailUrl);
+        System.out.println("📂 [DEBUG] 상품의 카테고리 ID: " + categoryId);
     
         Page detailPage = openDetailPage(context, detailUrl);
         if (detailPage == null) {
@@ -69,6 +70,7 @@ public class ProductCrawler {
             System.out.println("   🔹 이름: " + productTitle);
             System.out.println("   🔹 가격: " + finalPrice);
             System.out.println("   🔹 이미지: " + imageUrl);
+            System.out.println("   🔹 카테고리 ID: " + categoryId); // ✅ categoryId 로그 추가
             System.out.println("   🔹 옵션 개수: " + optionList.size());
     
             // ✅ 상품 저장
@@ -98,8 +100,9 @@ public class ProductCrawler {
     }
   
     
-    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl, int maxProducts) {
+    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl, int maxProducts, Long categoryId) {
         System.out.println("🚀 [crawlAllProducts] 카테고리 상품 크롤링 시작: " + categoryUrl);
+        System.out.println("📂 [DEBUG] 카테고리 ID 확인: " + categoryId); // ✅ 카테고리 ID 로그 추가
     
         Page page = context.newPage();
         page.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
@@ -112,7 +115,7 @@ public class ProductCrawler {
         List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
     
         int totalProducts = productElements.size();
-        System.out.println("📦 [DEBUG] Playwright가 감지한 상품 개수: " + totalProducts);
+        System.out.println("📦 [DEBUG] 감지된 상품 개수: " + totalProducts);
     
         if (totalProducts == 0) {
             System.out.println("🚨 [경고] 상품이 없음! 페이지 구조 변경 가능성 있음.");
@@ -138,16 +141,16 @@ public class ProductCrawler {
     
         System.out.println("📦 [crawlAllProducts] 최종 크롤링 상품 개수: " + productUrls.size());
     
-        // ✅ 크롤링한 상품들 상세 크롤링 진행
-        List<ProductDto> productList = new ArrayList<>();
+        // ✅ 상품 상세 크롤링 시 categoryId를 전달
         for (String productUrl : productUrls) {
-            System.out.println("🛠 [crawlAllProducts] 상품 상세 크롤링 호출: " + productUrl);
-            crawlProductDetail(context, productUrl);
+            System.out.println("🛠 [DEBUG] 상품 상세 크롤링 호출: " + productUrl + " | 카테고리 ID: " + categoryId);
+            crawlProductDetail(context, productUrl, categoryId);
         }
     
         page.close();
-        return productList;
+        return new ArrayList<>();
     }
+    
     
     
 

@@ -33,7 +33,7 @@ public class ProductCrawler {
     /**
      * ✅ 상품 상세 정보 크롤링
      */
-    public void crawlProductDetail(BrowserContext context, String detailUrl, Long categoryId) {
+    public void crawlProductDetail(BrowserContext context, String detailUrl) {
         System.out.println("🚀 [crawlProductDetail] 상세 상품 크롤링 시작: " + detailUrl);
     
         Page detailPage = openDetailPage(context, detailUrl);
@@ -73,7 +73,7 @@ public class ProductCrawler {
             // ✅ 상품 저장
             ProductDto productDto = ProductDto.builder()
                     .name(productTitle)
-                    .categoryId(categoryId)
+                    .categoryId(1L) // 여기에 올바른 categoryId 넣어주면 됩니다.
                     .price(finalPrice)
                     .stockQuantity(10)
                     .imageUrl(imageUrl)
@@ -101,7 +101,7 @@ public class ProductCrawler {
     /**
      * ✅ 카테고리 내 모든 상품을 크롤링하고 자동 저장
      */
-    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl, Long categoryId) {
+    public List<ProductDto> crawlAllProducts(BrowserContext context, String categoryUrl) {
         System.out.println("🚀 [crawlAllProducts] 카테고리 상품 크롤링 시작: " + categoryUrl);
     
         Page page = context.newPage();
@@ -144,7 +144,7 @@ public class ProductCrawler {
         // ✅ 상품 상세 크롤링 & 자동 저장
         for (String productUrl : productUrls) {
             System.out.println("🛠 [crawlAllProducts] 상품 상세 크롤링 호출: " + productUrl);
-            crawlProductDetail(context, productUrl, categoryId);
+            crawlProductDetail(context, productUrl);
         }
     
         page.close();

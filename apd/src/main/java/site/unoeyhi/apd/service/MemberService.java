@@ -128,31 +128,36 @@ public class MemberService {
     public boolean updateUser(String email, UpdateUserRequest request) {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("해당 이메일의 회원을 찾을 수 없습니다."));
-
-        // ✅ 이메일 변경 시 중복 확인 (기존 이메일과 다를 경우)
+    
+        // ✅ 기존 상태 유지
+        MemberStatus currentStatus = member.getStatus();
+    
+        // ✅ 이메일 변경 시 중복 확인
         if (!member.getEmail().equals(request.getEmail()) && memberRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("이미 가입된 이메일입니다.");
         }
-
-        // ✅ 기존 닉네임 & 전화번호 중복 체크 유지
+    
+        // ✅ 기존 닉네임 중복 체크 유지
         if (!member.getNickname().equals(request.getNickname()) && memberRepository.findByNickname(request.getNickname()).isPresent()) {
             throw new RuntimeException("이미 사용 중인 닉네임입니다.");
         }
-
-        if (!member.getPhoneNumber().equals(request.getPhoneNumber()) && memberRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
-            throw new RuntimeException("이미 등록된 전화번호입니다.");
-        }
-
+    
         // ✅ 회원 정보 업데이트
         member.setName(request.getName());
-        member.setEmail(request.getEmail()); // 이메일 변경 가능하도록 유지
+        member.setEmail(request.getEmail());
         member.setNickname(request.getNickname());
         member.setPhoneNumber(request.getPhoneNumber());
         member.setAddress(request.getAddress());
         member.setDetailAddress(request.getDetailAddress());
-
-        return true;
+    
+        // ✅ 기존 상태 유지
+        member.setStatus(currentStatus);
+    
+        memberRepository.save(member); // 변경 사항 저장
+    
+        return true; // ✅ 항상 true 반환하도록 보장
     }
+    
     
     
 

@@ -91,6 +91,21 @@ public class ProductCrawler {
             } else {
                 System.out.println("✅ [상품 저장 성공] ID: " + savedProduct.getProductId() + " | 이름: " + savedProduct.getName());
             }
+
+             // ✅ 옵션 저장
+        for (OptionDto option : optionList) {
+            productService.saveProductOption(savedProduct.getProductId(), option);
+        }
+
+        // ✅ 할인 저장
+        discountService.saveDiscount(savedProduct, "fixed", discountPrice);
+
+
+        // ✅ 추가 이미지 저장
+        List<String> additionalImages = extractAdditionalImages(detailPage);
+        for (String imgUrl : additionalImages) {
+            productService.saveProductImage(savedProduct.getProductId(), imgUrl, false);
+        }
     
         } catch (Exception e) {
             System.out.println("🚨 [오류 발생] " + e.getMessage());
@@ -106,6 +121,9 @@ public class ProductCrawler {
     
         Page page = context.newPage();
         page.navigate(categoryUrl, new Page.NavigateOptions().setTimeout(60000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+
+        // ✅ 랜덤 스크롤 적용
+        randomScroll(page);
     
         // ✅ 상품 리스트가 로딩될 때까지 대기
         page.waitForTimeout(3000);
@@ -198,34 +216,7 @@ public class ProductCrawler {
     
         return detailPage;
     }
-    
-    
-    
-    
-    
-    
-    
-
-    // /**
-    //  * ✅ 상품 제목 크롤링 (여러 요소 대응)
-    //  */
-    // private String getProductTitle(Page page) {
-    //     Locator titleLocator = page.locator("h2.prod-buy-header__title, span.prod-buy-header__product-title");
-
-    //     try {
-    //         titleLocator.waitFor(new Locator.WaitForOptions().setTimeout(60000)); // ✅ 기존 50초 → 60초 증가
-    
-    //         if (titleLocator.isVisible()) {
-    //             return titleLocator.textContent().trim();
-    //         } else {
-    //             throw new Exception("상품 제목이 표시되지 않음");
-    //         }
-    //     } catch (Exception e) {
-    //         System.out.println("🚨 [경고] 상품 제목 감지 실패: " + e.getMessage());
-    //         return null;
-    //     }
-    // }
-
+ 
     /**
      * ✅ 가격 크롤링 메서드
      */
@@ -246,22 +237,28 @@ public class ProductCrawler {
             return 0.0;
         }
     }
+
+    /**
+     * ✅ 상품 상세 페이지에서 추가 이미지 크롤링
+     */
+    private List<String> extractAdditionalImages(Page page) {
+        List<String> images = new ArrayList<>();
+        
+        // ✅ 상품 상세 페이지에서 이미지 태그를 모두 찾음
+        List<Locator> imgLocators = page.locator("div.prod-image img").all();
+
+        for (Locator imgLocator : imgLocators) {
+            String imgSrc = imgLocator.getAttribute("src");
+            if (imgSrc != null && !imgSrc.trim().isEmpty()) {
+                images.add(imgSrc);
+            }
+        }
+        
+        System.out.println("📸 [추가 이미지 크롤링 완료] 총 " + images.size() + "개 이미지 발견");
+        return images;
+    }
+
     
-
-    // /**
-    //  * ✅ 추가 이미지 크롤링
-    //  */
-    // private List<String> extractAdditionalImages(Page page) {
-    //     List<String> images = new ArrayList<>();
-    //     for (Locator imgLocator : page.locator("div.prod-image img").all()) {
-    //         String imgSrc = imgLocator.getAttribute("src");
-    //         if (imgSrc != null && !imgSrc.trim().isEmpty()) {
-    //             images.add(imgSrc);
-    //         }
-    //     }
-    //     return images;
-    // }
-
     /**
      * ✅ 옵션 크롤링
      */
@@ -282,4 +279,27 @@ public class ProductCrawler {
 
         return optionList;
     }
+    private void randomScroll(Page page) {
+        int scrollTimes = (int) (Math.random() * 5) + 3; // 3~7번 랜덤 스크롤
+        int scrollDelay = (int) (Math.random() * 1000) + 500; // 500~1500ms 랜덤 딜레이
+    
+        for (int i = 0; i < scrollTimes; i++) {
+            boolean scrollUp = Math.random() < 0.3; // 30% 확률로 위로 스크롤
+            int scrollAmount = (int) (Math.random() * 400) + 300; // 300~700px 랜덤 이동
+    
+            try {
+                if (scrollUp) {
+                    page.evaluate("window.scrollBy(0, -" + scrollAmount + ")");
+                    System.out.println("📜 [스크롤] 위로 " + scrollAmount + "px 이동");
+                } else {
+                    page.evaluate("window.scrollBy(0, " + scrollAmount + ")");
+                    System.out.println("📜 [스크롤] 아래로 " + scrollAmount + "px 이동");
+                }
+                page.waitForTimeout(scrollDelay);
+            } catch (Exception e) {
+                System.out.println("🚨 [스크롤 오류] " + e.getMessage());
+            }
+        }
+    }
+    
 }

@@ -12,6 +12,7 @@ import lombok.*;
 public class ProductDto {
     private String name;                 // 상품명
     private Double price;                // 가격
+    private Double discountPrice;        // 할인 가격
     private Integer stockQuantity;       // 재고 수량
     private Long categoryId;             // 카테고리 ID
     private String imageUrl;             // 상품 이미지 URL

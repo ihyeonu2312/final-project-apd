@@ -93,7 +93,7 @@ public class CategoryCrawler {
     
         // ✅ 새로운 BrowserContext 생성 (User-Agent 변경, HTTP/1.1 강제)
         BrowserContext context = browser.newContext(new Browser.NewContextOptions()
-            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
+            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.6998.36 Safari/537.36")
             .setExtraHTTPHeaders(Map.of(
                 "Upgrade-Insecure-Requests", "1",  // ✅ HTTP/1.1 강제 사용
                 "Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",

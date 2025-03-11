@@ -101,14 +101,15 @@ public class ProductCrawler {
             Product savedProduct = productService.saveProduct(productDto);
             if (savedProduct == null) {
                 System.out.println("🚨 [상품 저장 실패] 크롤링 종료!");
+                return;
             } else {
                 System.out.println("✅ [상품 저장 성공] ID: " + savedProduct.getProductId() + " | 이름: " + savedProduct.getName());
             }
 
              // ✅ 옵션 저장
-        for (OptionDto option : optionList) {
-            productService.saveProductOption(savedProduct.getProductId(), option);
-        }
+             for (OptionDto option : optionList) {
+                productService.saveProductOption(savedProduct.getProductId(), option);
+            }
 
         // ✅ 할인 값 계산
         double discountValue = originalPrice - finalPrice;
@@ -146,16 +147,23 @@ public class ProductCrawler {
 
         // ✅ 랜덤 스크롤 적용
         randomScroll(page);
-    
+        page.waitForTimeout(5000); // 5초 대기
+
         // ✅ 상품 리스트가 로딩될 때까지 대기
+        System.out.println("📌 [DEBUG] crawlAllProducts() 호출 시 maxProducts: " + maxProducts);
+
         page.waitForTimeout(3000);
-        page.waitForSelector("li.baby-product.renew-badge", new Page.WaitForSelectorOptions().setTimeout(10000));
+        page.waitForSelector("li.baby-product.renew-badge", new Page.WaitForSelectorOptions().setTimeout(15000));
     
         // ✅ 상품 개수 확인
         List<ElementHandle> productElements = page.querySelectorAll("li.baby-product.renew-badge");
+
+        
     
         int totalProducts = productElements.size();
         System.out.println("📦 [DEBUG] 감지된 상품 개수: " + totalProducts);
+        System.out.println("📌 [DEBUG] maxProducts: " + maxProducts);
+
     
         if (totalProducts == 0) {
             System.out.println("🚨 [경고] 상품이 없음! 페이지 구조 변경 가능성 있음.");
@@ -163,7 +171,11 @@ public class ProductCrawler {
         }
     
         // ✅ 상품 개수 제한 적용 (최대 maxProducts개까지만 가져오기)
+        maxProducts = 60;
+        System.out.println("📌 [DEBUG] maxProducts 강제 설정: " + maxProducts);
+
         int crawlCount = Math.min(maxProducts, totalProducts);
+        System.out.println("📌 [DEBUG] crawlCount: " + crawlCount);
         List<String> productUrls = new ArrayList<>();
     
         for (int i = 0; i < crawlCount; i++) {

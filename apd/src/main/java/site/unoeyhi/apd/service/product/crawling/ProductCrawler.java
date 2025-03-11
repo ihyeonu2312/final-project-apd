@@ -13,6 +13,7 @@ import site.unoeyhi.apd.service.product.DiscountService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -262,23 +263,128 @@ public class ProductCrawler {
     /**
      * ✅ 옵션 크롤링
      */
-    private List<OptionDto> extractOptions(Page page) {
+    private List<OptionDto> extractOptions(Page detailPage) {
         List<OptionDto> optionList = new ArrayList<>();
         Set<String> optionSet = new HashSet<>();
-
-        for (Locator option : page.locator("ul.prod-option__item li").all()) {
-            String optionText = option.textContent().trim();
-            if (!optionText.isEmpty() && optionSet.add(optionText)) {
-                optionList.add(new OptionDto("드롭다운 옵션", optionText));
+    
+        System.out.println("🔍 [옵션 크롤링 시작]");
+    
+        // ✅ `optionWrapper` 내부 옵션 체크
+        Locator optionWrapper = detailPage.locator("#optionWrapper");
+        if (optionWrapper.count() > 0) {
+            extractListOptions(optionWrapper.locator("li"), "TEXT 옵션", optionList, optionSet);
+        }
+    
+        // ✅ 추가적인 옵션 컨테이너 탐색
+        List<String> optionSelectors = Arrays.asList(
+            "div.prod-option", "ul.Image_Select__items", "div.tab-selector__tab"
+        );
+    
+        for (String selector : optionSelectors) {
+            if (detailPage.locator(selector).count() > 0) {
+                detailPage.waitForSelector(selector, new Page.WaitForSelectorOptions().setTimeout(5000));
             }
         }
-
+    
+        // ✅ 옵션 크롤링 (드롭다운, 이미지, 라디오, 셀렉트박스 등)
+        extractListOptions(detailPage.locator("ul.prod-option__item li"), "드롭다운 옵션", optionList, optionSet);
+        extractAttributeOptions(detailPage.locator("ul.Image_Select__items li"), "data-thumbnail-image-url", "이미지 옵션", optionList, optionSet);
+        extractAttributeOptions(detailPage.locator("ul.Image_Select__items li"), "data-origin-image-url", "이미지 옵션", optionList, optionSet);
+        extractListOptions(detailPage.locator("div.tab-selector__tab div.tab-selector__tab-title"), "탭 옵션", optionList, optionSet);
+        optionList.removeIf(option -> option.getOptionValue().matches(".*(전체|검색|Only|전문관).*"));
+        extractTableOptions(detailPage.locator("div.prod-option tr"), optionList, optionSet);
+        extractListOptions(detailPage.locator("div.bundle-option"), "번들 옵션", optionList, optionSet);
+        extractAttributeOptions(detailPage.locator("input[type='radio']"), "value", "라디오 버튼 옵션", optionList, optionSet);
+        extractListOptions(detailPage.locator("select option"), "셀렉트 옵션", optionList, optionSet);
+        extractInputOptions(detailPage.locator("input[type='text']"), optionList, optionSet);
+        extractPriceChangeOptions(detailPage.locator("span.price-change"), optionList, optionSet);
+    
+        // ✅ 옵션이 없는 경우 기본 옵션 추가
         if (optionList.isEmpty()) {
             optionList.add(new OptionDto("기본 옵션", "단일 상품"));
+            System.out.println("⚠️ [기본 옵션 추가] 옵션이 없어 기본 옵션 저장");
         }
-
+    
+        // ✅ 크롤링된 옵션 출력
+        System.out.println("🛠 [옵션 크롤링 완료] 크롤링된 옵션 개수: " + optionList.size());
         return optionList;
     }
+
+
+
+    //옵션 메서드 정리
+    private void extractListOptions(Locator locator, String optionType, List<OptionDto> optionList, Set<String> optionSet) {
+        List<String> excludedKeywords = Arrays.asList(
+            "전체", "패션의류/잡화", "뷰티", "출산/유아동", "식품", "주방용품", "생활용품", "홈인테리어", 
+            "가전디지털", "스포츠/레저", "자동차용품", "도서/음반/DVD", "완구/취미", "문구/오피스", 
+            "반려동물용품", "헬스/건강식품", "국내여행", "해외여행", "R.LUX", "로켓설치", "쿠팡 프리미엄", 
+            "공간별 집꾸미기", "헬스케어 전문관", "쿠팡 Only", "싱글라이프", "악기전문관", "결혼준비", 
+            "아트/공예", "미세먼지용품", "홈카페", "실버스토어", "로켓펫닥터", "상품평을 검색해보세요."
+        );
+    
+        for (Locator option : locator.all()) {
+            String optionText = option.textContent().trim();
+            
+            // ✅ 필터링: 불필요한 키워드 포함 시 제외
+            if (optionText.isEmpty() || excludedKeywords.contains(optionText)) {
+                continue;
+            }
+    
+            if (optionSet.add(optionText)) {
+                optionList.add(new OptionDto(optionType, optionText));
+            }
+        }
+    }
+    
+    
+    private void extractTableOptions(Locator locator, List<OptionDto> optionList, Set<String> optionSet) {
+        for (Locator row : locator.all()) {
+            String optionTitle = row.locator("span.title").textContent().trim();
+            String optionValue = row.locator("span.value").textContent().trim();
+            if (!optionTitle.isEmpty() && !optionValue.isEmpty() && optionSet.add(optionValue)) {
+                optionList.add(new OptionDto(optionTitle, optionValue));
+            }
+        }
+    }
+    private void extractInputOptions(Locator locator, List<OptionDto> optionList, Set<String> optionSet) {
+        for (Locator input : locator.all()) {
+            String placeholder = input.getAttribute("placeholder");
+            String value = input.getAttribute("value");
+            String finalValue = (value != null) ? value : placeholder;
+    
+            if (finalValue != null && optionSet.add(finalValue)) {
+                optionList.add(new OptionDto("텍스트 입력 옵션", finalValue));
+            }
+        }
+    }
+    private void extractPriceChangeOptions(Locator locator, List<OptionDto> optionList, Set<String> optionSet) {
+        for (Locator option : locator.all()) {
+            String priceText = option.textContent().trim();
+            Locator parentOption = option.locator(".."); // 부모 요소에서 옵션 이름 찾기
+            String optionName = parentOption.textContent().trim();
+    
+            if (!priceText.isEmpty() && optionSet.add(priceText)) {
+                String finalText = optionName + " (" + priceText + ")";
+                optionList.add(new OptionDto("옵션별 가격 변동", finalText));
+            }
+        }
+    }
+    
+    
+    
+
+    private void extractAttributeOptions(Locator locator, String attributeName, String optionType, List<OptionDto> optionList, Set<String> optionSet) {
+    for (Locator option : locator.all()) {
+        String optionValue = option.getAttribute(attributeName);
+        if (optionValue != null && optionSet.add(optionValue)) {
+            optionList.add(new OptionDto(optionType, optionValue));
+        }
+    }
+}
+
+
+  
+    // 랜덤 스크롤 메서드
     private void randomScroll(Page page) {
         int scrollTimes = (int) (Math.random() * 5) + 3; // 3~7번 랜덤 스크롤
         int scrollDelay = (int) (Math.random() * 1000) + 500; // 500~1500ms 랜덤 딜레이

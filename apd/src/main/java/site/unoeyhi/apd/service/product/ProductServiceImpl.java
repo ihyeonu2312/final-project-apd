@@ -83,7 +83,12 @@ public class ProductServiceImpl implements ProductService {
 
             // ✅ 할인 저장
             double discountPrice = (productDto.getDiscountPrice() != null) ? productDto.getDiscountPrice() : 0.0;
-            saveProductDiscount(savedProduct, "fixed", discountPrice);
+            if (discountPrice > 0) {
+                saveProductDiscount(savedProduct, "fixed", discountPrice);
+            } else {
+                System.out.println("⚠️ [saveProduct] 할인 없음 → 저장 스킵");
+            }
+
 
 
             return savedProduct;
@@ -124,7 +129,12 @@ public class ProductServiceImpl implements ProductService {
     // ✅ 할인 정보 저장
     @Override
     public void saveProductDiscount(Product product, String discountType, double discountPrice) {
-        if (discountPrice == 0) return;
+        if (discountPrice <= 0) {
+            System.out.println("⚠️ [saveProductDiscount] 할인 없음 → 저장하지 않음.");
+            return;
+        }
+        
+        
 
         Discount discount = Discount.builder()
                 .product(product)

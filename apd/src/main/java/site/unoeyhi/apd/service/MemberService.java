@@ -51,7 +51,7 @@ public class MemberService {
     @Transactional
     public Member registerMember(String name, String email, String password, String nickname, String phoneNumber, String address, String detailAddress, AuthType authType) {
         // 중복 체크
-        validateDuplicateMember(email, nickname, phoneNumber);
+        validateDuplicateMember(email, nickname);
 
         // 필수 입력값 검증
         validateInputFields(name, email, password, detailAddress);
@@ -164,7 +164,7 @@ public class MemberService {
 
 
     // 🔹 중복 회원 체크 로직
-    private void validateDuplicateMember(String email, String nickname, String phoneNumber) {
+    private void validateDuplicateMember(String email, String nickname ) {
         if (memberRepository.findByEmail(email).isPresent()) {
             log.warn("❌ 중복된 이메일로 회원가입 시도: {}", email);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 가입된 이메일입니다.");
@@ -172,10 +172,6 @@ public class MemberService {
         if (memberRepository.findByNickname(nickname).isPresent()) {
             log.warn("❌ 중복된 닉네임으로 회원가입 시도: {}", nickname);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.");
-        }
-        if (memberRepository.findByPhoneNumber(phoneNumber).isPresent()) {
-            log.warn("❌ 중복된 전화번호로 회원가입 시도: {}", phoneNumber);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 사용 중인 전화번호입니다.");
         }
     }
 

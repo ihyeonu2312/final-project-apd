@@ -12,6 +12,7 @@ public interface ProductService {
     List<ProductDto> getAllProducts();
     Optional<Product> findByTitle(String title);
     List<Product> getProductsByCategoryId(Long categoryId);
+    List<ProductDto> getProductsByCategory(Long categoryId);
 
     void saveProductOption(Long productId, OptionDto optionDto); // ✅ 옵션 저장
     void saveProductImage(Long productId, String imageUrl, boolean isThumbnail); // ✅ 추가 이미지 저장

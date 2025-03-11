@@ -5,6 +5,6 @@ import site.unoeyhi.apd.dto.product.ReviewDto;
 
 public interface ReviewService {
     List<ReviewDto> getReviewsByProductId(Long productId);
-    Double getAverageRatingByProductId(Long productId);
+    Double getAverageRating(Long productId); // ✅ 평균 평점 가져오기
     ReviewDto addReview(ReviewDto reviewDto);
 }

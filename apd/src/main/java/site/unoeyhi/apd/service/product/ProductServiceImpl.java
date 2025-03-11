@@ -3,7 +3,8 @@ package site.unoeyhi.apd.service.product;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+
 import site.unoeyhi.apd.dto.product.OptionDto;
 import site.unoeyhi.apd.dto.product.ProductDto;
 import site.unoeyhi.apd.entity.Category;
@@ -13,6 +14,7 @@ import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.entity.ProductImage;
 import site.unoeyhi.apd.entity.ProductOption;
 import site.unoeyhi.apd.repository.CategoryRepository;
+
 import site.unoeyhi.apd.repository.product.ProductImageRepository;
 import site.unoeyhi.apd.repository.product.ProductRepository;
 import site.unoeyhi.apd.repository.product.ReviewRepository;
@@ -197,7 +199,7 @@ public class ProductServiceImpl implements ProductService {
 
         return products.stream()
                 .map(product -> {
-                    Double avgRating = reviewRepository.getAverageRatingByProductId(product.getProductId());
+                    Double avgRating = reviewRepository.findAverageRatingByProductId(product.getProductId());
                     return new ProductDto(
                             product.getProductId(),
                             product.getName(),
@@ -208,6 +210,28 @@ public class ProductServiceImpl implements ProductService {
                 })
                 .collect(Collectors.toList());
     }
+     // ✅ 카테고리별 상품 조회 (List<Product> → List<ProductDto>)
+     @Transactional(readOnly = true)
+     @Override
+     public List<ProductDto> getProductsByCategory(Long categoryId) {
+         return productRepository.findByCategoryCategoryId(categoryId)
+                 .stream()
+                 .map(this::convertToDto) // ✅ DTO 변환 추가
+                 .collect(Collectors.toList());
+     }
+ 
+     // ✅ 엔티티 → DTO 변환 메서드 추가
+     private ProductDto convertToDto(Product product) {
+        Double averageRating = reviewRepository.findAverageRatingByProductId(product.getProductId()); // ✅ 리뷰에서 평균 평점 가져오기
+
+        return new ProductDto(
+            product.getProductId(),
+            product.getName(),
+            product.getPrice(),
+            product.getThumbnailImageUrl(),
+            averageRating // ✅ 리뷰에서 가져온 평균 평점
+        );
+     }
 
 
 

@@ -9,6 +9,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Review {
 
     @Id
@@ -19,7 +20,7 @@ public class Review {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(name = "review_member_id", nullable = false) // 🔹 작성한 회원 ID
+    @Column(name = "review_member_id", nullable = false) // 🔹 작성한 회원 ID (객체가 아닌 ID 직접 저장)
     private Long memberId;
 
     @Column(nullable = false)
@@ -32,5 +33,5 @@ public class Review {
     private String reviewImageUrl; // 🔹 리뷰 이미지 (선택사항)
 
     @Column(nullable = false, updatable = false)
-    private String createdAt; // 🔹 리뷰 작성 날짜
+    private String createdAt; // 🔹 리뷰 작성 날짜 (String 타입)
 }

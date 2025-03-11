@@ -8,26 +8,23 @@ import site.unoeyhi.apd.dto.product.ReviewDto;
 import site.unoeyhi.apd.service.product.ReviewService;
 
 @RestController
-@RequestMapping("/api/reviews")
+@RequestMapping("/api/reviews") // ✅ 기본 URL 설정 확인
 @RequiredArgsConstructor
 public class ReviewController {
 
     private final ReviewService reviewService;
 
-    // 🔹 특정 상품의 리뷰 리스트 조회
-    @GetMapping("/{productId}")
+    @GetMapping("/product/{productId}") // ✅ 상품별 리뷰 목록 조회
     public ResponseEntity<List<ReviewDto>> getReviewsByProductId(@PathVariable Long productId) {
         return ResponseEntity.ok(reviewService.getReviewsByProductId(productId));
     }
 
-    // 🔹 특정 상품의 평균 별점 조회
-    @GetMapping("/{productId}/rating")
+    @GetMapping("/product/{productId}/rating") // ✅ 평균 평점 조회
     public ResponseEntity<Double> getAverageRating(@PathVariable Long productId) {
-        return ResponseEntity.ok(reviewService.getAverageRatingByProductId(productId));
+        return ResponseEntity.ok(reviewService.getAverageRating(productId));
     }
 
-    // 🔹 리뷰 추가
-    @PostMapping
+    @PostMapping // ✅ 리뷰 추가
     public ResponseEntity<ReviewDto> addReview(@RequestBody ReviewDto reviewDto) {
         return ResponseEntity.ok(reviewService.addReview(reviewDto));
     }

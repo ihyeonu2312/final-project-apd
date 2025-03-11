@@ -3,6 +3,8 @@ package site.unoeyhi.apd.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,6 +15,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @Table(name = "category")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "products"})  // ✅ Lazy 로딩 문제 해결
 public class Category {
 
     @Id

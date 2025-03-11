@@ -15,11 +15,13 @@ import site.unoeyhi.apd.entity.ProductOption;
 import site.unoeyhi.apd.repository.CategoryRepository;
 import site.unoeyhi.apd.repository.product.ProductImageRepository;
 import site.unoeyhi.apd.repository.product.ProductRepository;
+import site.unoeyhi.apd.repository.product.ReviewRepository;
 import site.unoeyhi.apd.repository.product.DiscountRepository;
 import site.unoeyhi.apd.repository.product.OptionRepository;
 import site.unoeyhi.apd.repository.product.ProductOptionRepository;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -34,17 +36,22 @@ public class ProductServiceImpl implements ProductService {
     private final OptionRepository optionRepository;
     private final ProductOptionRepository productOptionRepository;
     private final DiscountRepository discountRepository;
+    private final ReviewRepository reviewRepository;
 
     public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository,
                               ProductImageRepository productImageRepository, OptionRepository optionRepository,
-                              ProductOptionRepository productOptionRepository, DiscountRepository discountRepository) {
+                              ProductOptionRepository productOptionRepository, DiscountRepository discountRepository,
+                              ReviewRepository reviewRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.productImageRepository = productImageRepository;
         this.optionRepository = optionRepository;
         this.productOptionRepository = productOptionRepository;
         this.discountRepository = discountRepository;
+        this.reviewRepository = reviewRepository;
     }
+
+    
 
     @Override
     public Product saveProduct(ProductDto productDto) {
@@ -183,10 +190,26 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
+    // 📌 상품 목록 조회 (변환 추가)
     @Override
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<ProductDto> getAllProducts() {
+        List<Product> products = productRepository.findAll();
+
+        return products.stream()
+                .map(product -> {
+                    Double avgRating = reviewRepository.getAverageRatingByProductId(product.getProductId());
+                    return new ProductDto(
+                            product.getProductId(),
+                            product.getName(),
+                            product.getPrice(),
+                            product.getThumbnailImageUrl(),
+                            avgRating != null ? avgRating : 0.0  // ✅ `null` 방지!
+                    );
+                })
+                .collect(Collectors.toList());
     }
+
+
 
     @Override
     public Optional<Product> findByTitle(String title) {

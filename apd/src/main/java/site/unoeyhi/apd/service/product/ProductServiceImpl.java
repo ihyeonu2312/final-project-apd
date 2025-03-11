@@ -157,10 +157,13 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없음: " + productId));
 
         Option option = optionRepository.findByOptionValueTypeAndOptionValue(optionDto.getOptionValueType(), optionDto.getOptionValue())
-                .orElseGet(() -> optionRepository.save(Option.builder()
-                        .optionValueType(optionDto.getOptionValueType())
-                        .optionValue(optionDto.getOptionValue())
-                        .build()));
+                .orElseGet(() -> {
+                    System.out.println("🆕 새로운 옵션 저장: " + optionDto.getOptionValueType() + " - " + optionDto.getOptionValue());
+                    return optionRepository.save(Option.builder()
+                            .optionValueType(optionDto.getOptionValueType())
+                            .optionValue(optionDto.getOptionValue())
+                            .build());
+                });
 
         ProductOption productOption = ProductOption.builder()
                 .product(product)
@@ -168,6 +171,7 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         productOptionRepository.save(productOption);
+        System.out.println("✅ [옵션 저장 완료] 상품 ID: " + productId + " | 옵션: " + optionDto.getOptionValueType() + " - " + optionDto.getOptionValue());
     }
 
     private void saveProductOptions(Product savedProduct, List<OptionDto> optionDtos) {

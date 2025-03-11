@@ -58,8 +58,8 @@ public class CategoryCrawler {
                 CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                     BrowserContext context = browser.newContext(); // ✅ BrowserContext 생성
     
-                    // ✅ 각 카테고리에서 상품 10개씩만 가져오도록 설정
-                    productCrawler.crawlAllProducts(context, "https://www.coupang.com" + category.getUrl(), 10,category.getCategoryId());
+                    // ✅ 각 카테고리에서 상품 n개씩만 가져오도록 설정
+                    productCrawler.crawlAllProducts(context, "https://www.coupang.com" + category.getUrl(), 60,category.getCategoryId());
     
                     context.close(); // ✅ 크롤링 후 context 닫기 (메모리 관리)
                 }, executorService);

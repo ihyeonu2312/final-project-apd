@@ -31,6 +31,7 @@ public class ProductCrawler {
         this.productService = productService;
         this.discountService = discountService;
     }
+    
 
     /**
      * ✅ 상품 상세 정보 크롤링
@@ -52,12 +53,23 @@ public class ProductCrawler {
             System.out.println("🛒 [상품명] " + productTitle);
     
             // ✅ 가격 크롤링
-            double originalPrice = extractPrice(detailPage, "span.origin-price");
-            double discountPrice = extractPrice(detailPage, "span.discount-price");
-            double finalPrice = (discountPrice > 0) ? discountPrice : originalPrice;
-    
+            double originalPrice = extractPrice(detailPage, "span.origin-price"); // ✅ 원가 크롤링
+            double discountRate = extractDiscountRate(detailPage, "span.discount-rate"); // ✅ 할인율 크롤링
+            double discountPrice = extractPrice(detailPage, "div.prod-coupon-price"); // ✅ 할인가 크롤링
+            double finalPrice = extractPrice(detailPage, "span.total-price"); // ✅ 최종 가격 크롤링
+
+            // ✅ 할인율이 존재할 경우, 할인가 직접 계산 (할인가가 없을 때)
+            if (discountRate > 0 && discountPrice == 0) {
+                discountPrice = originalPrice * ((100 - discountRate) / 100);
+            }
+
+            // ✅ 원가가 비정상적으로 크롤링될 경우 최종 가격을 원가로 대체
+            if (originalPrice == 0 || originalPrice < finalPrice) {
+                originalPrice = finalPrice;
+            }
+            
             System.out.println("💰 [가격] 원가: " + originalPrice + " | 할인 가격: " + discountPrice + " | 최종 가격: " + finalPrice);
-    
+
             // ✅ 이미지 크롤링
             String imageUrl = detailPage.locator("div.prod-image img").count() > 0 
                 ? detailPage.locator("div.prod-image img").first().getAttribute("src") 
@@ -70,7 +82,7 @@ public class ProductCrawler {
             System.out.println("🛠 [DEBUG] 저장할 상품 데이터:");
             System.out.println("   🔹 이름: " + productTitle);
             System.out.println("   🔹 가격: " + finalPrice);
-            System.out.println("   🔹 이미지: " + imageUrl);
+            // System.out.println("   🔹 이미지: " + imageUrl);
             System.out.println("   🔹 카테고리 ID: " + categoryId); // ✅ categoryId 로그 추가
             System.out.println("   🔹 옵션 개수: " + optionList.size());
     
@@ -98,8 +110,17 @@ public class ProductCrawler {
             productService.saveProductOption(savedProduct.getProductId(), option);
         }
 
-        // ✅ 할인 저장
-        discountService.saveDiscount(savedProduct, "fixed", discountPrice);
+        // ✅ 할인 값 계산
+        double discountValue = originalPrice - finalPrice;
+
+        // ✅ 할인율이 존재하는 경우만 저장
+        if (discountValue > 0) {
+            discountService.saveDiscount(savedProduct, "fixed", discountValue);
+            System.out.println("✅ [할인 저장 완료] 원가: " + originalPrice + " | 최종 가격: " + finalPrice + " | 할인 값: " + discountValue);
+        } else {
+            System.out.println("⚠️ [할인 없음] 원가와 최종 가격 동일 → 할인 정보 저장 안 함");
+        }
+
 
 
         // ✅ 추가 이미지 저장
@@ -169,11 +190,7 @@ public class ProductCrawler {
         page.close();
         return new ArrayList<>();
     }
-    
-    
-    
 
-    
     //상품 상세
     private Page openDetailPage(BrowserContext context, String detailUrl) {
         Page detailPage = null;
@@ -224,20 +241,49 @@ public class ProductCrawler {
     private double extractPrice(Page page, String selector) {
         Locator priceLocator = page.locator(selector).first();
         if (priceLocator.count() == 0) {
+            System.out.println("⚠️ [경고] " + selector + " 가격 정보 없음. 0 반환");
             return 0.0;  // ✅ 가격 정보가 없으면 0 반환
         }
-    
+
         try {
-            String priceText = priceLocator.textContent().replaceAll("[^0-9,.]", "").trim();
-            if (priceText.contains(",")) {  // ✅ 콤마(,)가 포함되어 있으면 제거
-                priceText = priceText.replace(",", "");
+            String priceText = priceLocator.textContent().replaceAll("[^0-9]", "").trim(); // ✅ 숫자만 추출
+            if (priceText.isEmpty()) {
+                System.out.println("⚠️ [가격 변환 오류] " + selector + " 값이 비어 있음");
+                return 0.0;
             }
+
             return Double.parseDouble(priceText);
         } catch (NumberFormatException e) {
             System.out.println("🚨 [가격 변환 오류] " + e.getMessage());
             return 0.0;
         }
     }
+
+    /**
+     * ✅ 할인율 크롤링 메서드
+     */
+    private double extractDiscountRate(Page page, String selector) {
+        Locator discountLocator = page.locator(selector).first();
+        if (discountLocator.count() == 0) {
+            return 0.0;  // ✅ 할인율 정보가 없으면 0 반환
+        }
+
+        try {
+            // ✅ 숫자만 추출하여 할인율 가져오기 (예: "48%" → 48.0)
+            String discountText = discountLocator.textContent().replaceAll("[^0-9]", "").trim();
+            if (discountText.isEmpty()) {
+                return 0.0;
+            }
+            return Double.parseDouble(discountText);
+        } catch (NumberFormatException e) {
+            System.out.println("🚨 [할인율 변환 오류] " + e.getMessage());
+            return 0.0;
+        }
+    }
+
+
+
+    
 
     /**
      * ✅ 상품 상세 페이지에서 추가 이미지 크롤링
@@ -255,7 +301,7 @@ public class ProductCrawler {
             }
         }
         
-        System.out.println("📸 [추가 이미지 크롤링 완료] 총 " + images.size() + "개 이미지 발견");
+        // System.out.println("📸 [추가 이미지 크롤링 완료] 총 " + images.size() + "개 이미지 발견");
         return images;
     }
 
@@ -298,43 +344,68 @@ public class ProductCrawler {
         extractListOptions(detailPage.locator("select option"), "셀렉트 옵션", optionList, optionSet);
         extractInputOptions(detailPage.locator("input[type='text']"), optionList, optionSet);
         extractPriceChangeOptions(detailPage.locator("span.price-change"), optionList, optionSet);
-    
-        // ✅ 옵션이 없는 경우 기본 옵션 추가
-        if (optionList.isEmpty()) {
-            optionList.add(new OptionDto("기본 옵션", "단일 상품"));
-            System.out.println("⚠️ [기본 옵션 추가] 옵션이 없어 기본 옵션 저장");
-        }
-    
-        // ✅ 크롤링된 옵션 출력
-        System.out.println("🛠 [옵션 크롤링 완료] 크롤링된 옵션 개수: " + optionList.size());
-        return optionList;
+
+        // ✅ 드롭다운 옵션 크롤링 추가
+        List<Locator> dropdownOptions = detailPage.locator("li.prod-option-dropdown-item").all();
+            for (Locator option : dropdownOptions) {
+                String optionText = option.textContent().trim();
+
+                // ✅ 옵션 값이 비어있지 않은지 확인 후 저장
+                if (!optionText.isEmpty() && optionSet.add(optionText)) {
+                    optionList.add(new OptionDto("드롭다운 옵션", optionText));
+                    System.out.println("🛠 [옵션 추가] 드롭다운 옵션: " + optionText);
+                }
+            }
+
+        
+            // ✅ 옵션이 없는 경우 기본 옵션 추가
+            if (optionList.isEmpty()) {
+                optionList.add(new OptionDto("기본 옵션", "단일 상품"));
+                System.out.println("⚠️ [기본 옵션 추가] 옵션이 없어 기본 옵션 저장");
+            }
+        
+        
+            // ✅ 크롤링된 옵션 출력
+            System.out.println("🛠 [옵션 크롤링 완료] 크롤링된 옵션 개수: " + optionList.size());
+            return optionList;
     }
+    
 
 
 
     //옵션 메서드 정리
     private void extractListOptions(Locator locator, String optionType, List<OptionDto> optionList, Set<String> optionSet) {
         List<String> excludedKeywords = Arrays.asList(
-            "전체", "패션의류/잡화", "뷰티", "출산/유아동", "식품", "주방용품", "생활용품", "홈인테리어", 
-            "가전디지털", "스포츠/레저", "자동차용품", "도서/음반/DVD", "완구/취미", "문구/오피스", 
-            "반려동물용품", "헬스/건강식품", "국내여행", "해외여행", "R.LUX", "로켓설치", "쿠팡 프리미엄", 
-            "공간별 집꾸미기", "헬스케어 전문관", "쿠팡 Only", "싱글라이프", "악기전문관", "결혼준비", 
-            "아트/공예", "미세먼지용품", "홈카페", "실버스토어", "로켓펫닥터", "상품평을 검색해보세요."
+            "전체", "상품평을 검색해보세요.", "패션의류/잡화", "뷰티", "출산/유아동", "식품", 
+            "주방용품", "생활용품", "홈인테리어", "가전디지털", "스포츠/레저", "자동차용품", 
+            "도서/음반/DVD", "완구/취미", "문구/오피스", "반려동물용품", "헬스/건강식품", 
+            "국내여행", "해외여행", "R.LUX", "로켓설치", "쿠팡 프리미엄", "공간별 집꾸미기", 
+            "헬스케어 전문관", "쿠팡 Only", "싱글라이프", "악기전문관", "결혼준비", 
+            "아트/공예", "미세먼지용품", "홈카페", "실버스토어", "로켓펫닥터"
         );
     
         for (Locator option : locator.all()) {
             String optionText = option.textContent().trim();
-            
-            // ✅ 필터링: 불필요한 키워드 포함 시 제외
-            if (optionText.isEmpty() || excludedKeywords.contains(optionText)) {
+            if (optionText.isEmpty()) continue;
+    
+            // **소문자로 변환 후 정확한 일치 검사**
+            boolean isExcluded = excludedKeywords.stream().anyMatch(ex -> optionText.equalsIgnoreCase(ex));
+    
+            if (isExcluded) {
+                System.out.println("🚫 [필터링됨] 옵션 제외: " + optionText);
                 continue;
             }
     
+            // ✅ 중복 방지 후 추가
             if (optionSet.add(optionText)) {
                 optionList.add(new OptionDto(optionType, optionText));
+                System.out.println("✅ 옵션 추가됨: " + optionType + " - " + optionText);
             }
         }
     }
+    
+    
+    
     
     
     private void extractTableOptions(Locator locator, List<OptionDto> optionList, Set<String> optionSet) {

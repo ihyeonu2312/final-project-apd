@@ -129,23 +129,25 @@ public class ProductServiceImpl implements ProductService {
     // ✅ 할인 정보 저장
     @Override
     public void saveProductDiscount(Product product, String discountType, double discountPrice) {
-        if (discountPrice <= 0) {
+        if (discountPrice == 0 || discountPrice >= product.getPrice()) {
             System.out.println("⚠️ [saveProductDiscount] 할인 없음 → 저장하지 않음.");
-            return;
+            return; // ✅ 할인율이 0%라면 저장하지 않음
         }
-        
-        
+
+        double discountRate = ((product.getPrice() - discountPrice) / product.getPrice()) * 100;
 
         Discount discount = Discount.builder()
                 .product(product)
                 .discountType(discountType)
-                .discountValue(discountPrice)
+                .discountValue(discountRate)
                 .startDate(LocalDate.now())
                 .endDate(LocalDate.now().plusDays(30))
                 .build();
 
         discountRepository.save(discount);
+        System.out.println("✅ [saveProductDiscount] 할인 저장 완료 → 상품 ID: " + product.getProductId() + " | 할인율: " + discountRate + "%");
     }
+
 
 
     // ✅ 옵션 저장

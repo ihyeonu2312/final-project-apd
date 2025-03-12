@@ -198,17 +198,13 @@ public class ProductServiceImpl implements ProductService {
         List<Product> products = productRepository.findAll();
 
         return products.stream()
-                .map(product -> {
-                    Double avgRating = reviewRepository.findAverageRatingByProductId(product.getProductId());
-                    return new ProductDto(
-                            product.getProductId(),
-                            product.getName(),
-                            product.getPrice(),
-                            product.getThumbnailImageUrl(),
-                            avgRating != null ? avgRating : 0.0  // ✅ `null` 방지!
-                    );
-                })
-                .collect(Collectors.toList());
+        .map(product -> {
+            Double avgRating = reviewRepository.findAverageRatingByProductId(product.getProductId());
+            Discount discount = discountRepository.findByProduct_ProductId(product.getProductId()); // ✅ 할인 정보 가져오기
+            return new ProductDto(product, avgRating, discount); // ✅ 할인 정보 포함
+        })
+        .collect(Collectors.toList());
+
     }
      // ✅ 카테고리별 상품 조회 (List<Product> → List<ProductDto>)
      @Transactional(readOnly = true)
@@ -220,19 +216,14 @@ public class ProductServiceImpl implements ProductService {
                  .collect(Collectors.toList());
      }
  
-     // ✅ 엔티티 → DTO 변환 메서드 추가
-     private ProductDto convertToDto(Product product) {
-        Double averageRating = reviewRepository.findAverageRatingByProductId(product.getProductId()); // ✅ 리뷰에서 평균 평점 가져오기
+            // ✅ 엔티티 → DTO 변환 메서드 추가
+        private ProductDto convertToDto(Product product) {
+            Double avgRating = reviewRepository.findAverageRatingByProductId(product.getProductId());
+            Discount discount = discountRepository.findByProduct_ProductId(product.getProductId()); // ✅ 할인 정보 가져오기
+            return new ProductDto(product, avgRating, discount); // ✅ avgRating 추가!
+        }
 
-        return new ProductDto(
-            product.getProductId(),
-            product.getName(),
-            product.getPrice(),
-            product.getThumbnailImageUrl(),
-            averageRating // ✅ 리뷰에서 가져온 평균 평점
-        );
-     }
-
+    
 
 
     @Override

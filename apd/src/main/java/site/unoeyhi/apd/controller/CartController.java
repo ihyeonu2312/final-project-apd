@@ -1,26 +1,25 @@
 package site.unoeyhi.apd.controller;
 
-import jakarta.validation.Valid;
-import site.unoeyhi.apd.dto.CartItemDto;
-import site.unoeyhi.apd.dto.CartRequestDto;
-import site.unoeyhi.apd.service.CartService;
-
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import lombok.RequiredArgsConstructor;
+import site.unoeyhi.apd.dto.cart.CartRequestDto;
+import site.unoeyhi.apd.service.cart.CartService;
 
 @RestController
-@RequestMapping("/api/cart")
+@RequestMapping("/cart")
+@RequiredArgsConstructor
 public class CartController {
 
-    private final CartService cartService;
-
-    public CartController(CartService cartService) {
-        this.cartService = cartService;
-    }
+    private final CartService cartService; // 인터페이스 주입
 
     @PostMapping("/add")
-    public ResponseEntity<CartItemDto> addItemToCart(@Valid @RequestBody CartRequestDto cartRequest) {
-        return cartService.addItemToCart(cartRequest);
+    public ResponseEntity<String> addToCart(@RequestBody CartRequestDto request) {
+        cartService.addToCart(request.getMemberId(), request.getProductId(), request.getQuantity());
+        return ResponseEntity.ok("상품이 장바구니에 추가되었습니다.");
     }
 }
-

@@ -1,4 +1,4 @@
-package site.unoeyhi.apd.dto;
+package site.unoeyhi.apd.dto.cart;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

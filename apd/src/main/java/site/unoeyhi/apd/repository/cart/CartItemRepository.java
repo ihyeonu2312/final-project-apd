@@ -1,5 +1,4 @@
-package site.unoeyhi.apd.repository;
-
+package site.unoeyhi.apd.repository.cart;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +15,9 @@ import site.unoeyhi.apd.entity.Product;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     Optional<CartItem> findByCartAndProduct(Cart cart, Product product);
-    List<CartItem> findByCart_CartId(Long cartId); // ✅ 사용 가능
-    List<CartItem> findByCart(Cart cart); // ✅ 추가 필요
+
+     // 특정 장바구니에 포함된 모든 장바구니 아이템 조회
+     List<CartItem> findByCart(Cart cart);
 }
+
 

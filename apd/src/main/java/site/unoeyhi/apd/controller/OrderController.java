@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
+import site.unoeyhi.apd.dto.cart.OrderResponseDto;
 import site.unoeyhi.apd.entity.Order;
 import site.unoeyhi.apd.entity.Payment;
 import site.unoeyhi.apd.eums.PaymentMethod;
@@ -31,9 +32,9 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrder(@PathVariable Long orderId) {
+    public ResponseEntity<OrderResponseDto> getOrder(@PathVariable Long orderId) {
         Order order = orderService.getOrder(orderId);
-        return ResponseEntity.ok(order);
+        return ResponseEntity.ok(new OrderResponseDto(order));
     }
 
     @PostMapping("/{orderId}/pay")

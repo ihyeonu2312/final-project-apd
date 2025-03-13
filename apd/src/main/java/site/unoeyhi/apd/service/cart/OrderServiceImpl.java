@@ -111,10 +111,18 @@ public class OrderServiceImpl implements OrderService {
 
         // 주문 결제 상태 업데이트
         order.setPaymentStatus(PaymentStatus.PAID);
-
-        orderRepository.save(order); // ✅ 변경된 주문 저장
+        order.setOrderStatus(OrderStatus.PROCESSING);  //주문 상태 업데이트
+        orderRepository.save(order); //변경된 주문 저장
 
         return payment;
 
+    }
+    @Override
+    public void updateOrderStatus(Long orderId, OrderStatus status) {
+        Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("주문이 존재하지 않습니다."));
+
+        order.setOrderStatus(status);  // 🔹 주문 상태 업데이트
+        orderRepository.save(order);   // 🔹 변경된 주문 저장
     }
 }

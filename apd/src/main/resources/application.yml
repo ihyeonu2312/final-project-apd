@@ -61,6 +61,14 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: 1148753  # ✅ 필수
 
+  nicepay:
+    api:
+      url: ${nicepay.client.url}
+    client:
+      id: ${nicepay.client.id}
+      secret: ${nicepay.client.secret}
+              
+
   jpa:
     hibernate:
       ddl-auto: none

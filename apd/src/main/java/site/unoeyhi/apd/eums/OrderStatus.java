@@ -4,5 +4,6 @@ public enum OrderStatus {
     READY,       // 주문 준비 완료
     PROCESSING,  // 주문 처리 중
     SHIPPED,     // 배송됨
-    DELIVERED    // 고객에게 도착
+    DELIVERED,   // 고객에게 도착
+    PAID         // 결제 완료 상태
 }

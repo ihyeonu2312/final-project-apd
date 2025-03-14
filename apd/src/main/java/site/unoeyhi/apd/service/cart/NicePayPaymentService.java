@@ -11,8 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import java.util.Base64;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import site.unoeyhi.apd.dto.cart.PaymentRequestDto;
 import site.unoeyhi.apd.dto.cart.PaymentResponseDto;
@@ -23,6 +23,7 @@ import site.unoeyhi.apd.eums.PaymentMethod;
 import site.unoeyhi.apd.eums.PaymentStatus;
 import site.unoeyhi.apd.repository.cart.OrderRepository;
 import site.unoeyhi.apd.repository.cart.PaymentRepository;
+import site.unoeyhi.apd.service.cart.NicePayAuthService;
 
 @Service
 @RequiredArgsConstructor
@@ -31,33 +32,43 @@ public class NicePayPaymentService implements PaymentService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final RestTemplate restTemplate;
+    private final NicePayAuthService authService;
 
-    @Value("${nicepay.api.url}")
+    @Value("${nicepay.api.auth-url}")
     private String nicePayApiUrl;
 
-    @Value("${nicepay.client.id}")
+    @Value("${nicepay.client.id:}")
     private String clientId;
 
-    @Value("${nicepay.client.secret}")
+    @Value("${nicepay.client.secret:}")
     private String clientSecret;
 
+    @PostConstruct
+    public void checkConfig() {
+        System.out.println("✅ NicePay API URL: " + nicePayApiUrl);
+        System.out.println("✅ NicePay Client ID: " + clientId);
+        System.out.println("✅ NicePay Client Secret: " + (clientSecret.isEmpty() ? "❌ 설정 안됨" : "✅ 설정됨"));
+    }
+    
     @Override
     public PaymentResponseDto processPayment(Long orderId, PaymentRequestDto requestDto) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // 1️⃣ NICE API에 보낼 결제 요청 데이터 생성
+        // ✅ Access Token 가져오기
+        String accessToken = authService.getAccessToken();
+
+        // ✅ NICE API에 보낼 결제 요청 데이터 생성
         Map<String, Object> paymentRequest = new HashMap<>();
-        paymentRequest.put("clientId", clientId);
         paymentRequest.put("orderId", order.getOrderId());
         paymentRequest.put("amount", order.getTotalAmount());
         paymentRequest.put("paymentMethod", requestDto.getPaymentMethod().name());
         paymentRequest.put("returnUrl", "http://localhost:8080/order/payment/complete");
 
-        // 2️⃣ NICE API로 결제 요청 보내기
+        // ✅ Access Token을 사용한 인증 방식 적용
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Authorization", "Basic " + Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes()));
+        headers.set("Authorization", "Bearer " + accessToken);
 
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(paymentRequest, headers);
 
@@ -68,14 +79,13 @@ public class NicePayPaymentService implements PaymentService {
             PaymentResponseDto.class
         );
 
-
-        // 3️⃣ 응답을 기반으로 결제 상태 저장
+        // ✅ 응답을 기반으로 결제 상태 저장
         PaymentResponseDto paymentResponse = response.getBody();
         if (paymentResponse == null || !"SUCCESS".equals(paymentResponse.getPaymentStatus())) {
             throw new RuntimeException("Payment failed");
         }
 
-        // 4️⃣ 결제 정보 DB 저장
+        // ✅ 결제 정보 DB 저장
         Payment payment = new Payment();
         payment.setOrder(order);
         payment.setPaymentMethod(PaymentMethod.valueOf(paymentResponse.getPaymentMethod()));
@@ -84,7 +94,7 @@ public class NicePayPaymentService implements PaymentService {
         payment.setPaymentDate(paymentResponse.getPaymentDate());
         paymentRepository.save(payment);
 
-        // 5️⃣ 주문 상태 업데이트
+        // ✅ 주문 상태 업데이트
         order.setOrderStatus(OrderStatus.PROCESSING);
         orderRepository.save(order);
 

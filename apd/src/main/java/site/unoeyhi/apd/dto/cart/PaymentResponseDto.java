@@ -19,9 +19,10 @@ public class PaymentResponseDto {
     public PaymentResponseDto(Payment payment) {
         this.paymentId = payment.getPaymentId();
         this.orderId = payment.getOrder().getOrderId();
-        this.paymentMethod = payment.getPaymentMethod().name();
-        this.paymentStatus = payment.getPaymentStatus().name();
+        this.paymentMethod = (payment.getPaymentMethod() != null) ? payment.getPaymentStatus().name() : null;
+        this.paymentStatus = (payment.getPaymentStatus() != null) ? payment.getPaymentStatus().name() : null;
         this.amount = payment.getAmount();
-        this.paymentDate = payment.getPaymentDate();
+        this.paymentDate = (payment.getPaymentDate() != null) ? payment.getPaymentDate() : LocalDateTime.now();
+
     }
 }

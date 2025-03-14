@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import site.unoeyhi.apd.eums.OrderStatus;
 import site.unoeyhi.apd.eums.PaymentStatus;
+import site.unoeyhi.apd.eums.ShippingStatus;
 
 @Entity
 @Table(name = "`order`")
@@ -56,7 +57,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus shippingStatus = OrderStatus.READY; // 배송 상태
+    private ShippingStatus shippingStatus = ShippingStatus.PENDING; // 배송 상태
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderItem> orderItems = new ArrayList<>();

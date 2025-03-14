@@ -63,10 +63,11 @@ spring:
 
   nicepay:
     api:
-      url: ${nicepay.client.url}
+      auth-url: https://api.nicepay.co.kr/v1/access-token
     client:
       id: ${nicepay.client.id}
       secret: ${nicepay.client.secret}
+
               
 
   jpa:

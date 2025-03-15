@@ -15,9 +15,10 @@ import site.unoeyhi.apd.entity.Product;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     Optional<CartItem> findByCartAndProduct(Cart cart, Product product);
+    void deleteAllByCart(Cart cart);
 
-     // 특정 장바구니에 포함된 모든 장바구니 아이템 조회
-     List<CartItem> findByCart(Cart cart);
+    // 특정 장바구니의 모든 아이템 조회
+    List<CartItem> findByCart(Cart cart);
 }
 
 

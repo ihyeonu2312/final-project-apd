@@ -30,10 +30,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         Member foundMember = member.orElseThrow(() -> 
             new UsernameNotFoundException("해당 사용자 정보를 찾을 수 없습니다: " + identifier));
     
-        return User.builder()
-                .username(foundMember.getEmail() != null ? foundMember.getEmail() : String.valueOf(foundMember.getKakaoId()))
-                .password(foundMember.getPassword() != null ? foundMember.getPassword() : "")
-                .roles(foundMember.getRole().name())
-                .build();
+        //return User.builder()
+               // .username(foundMember.getEmail() != null ? foundMember.getEmail() : String.valueOf(foundMember.getKakaoId()))
+               // .password(foundMember.getPassword() != null ? foundMember.getPassword() : "")
+               // .roles(foundMember.getRole().name())
+               // .build();
+               return member.map(CustomUserDetails::new)
+               .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + identifier));
     }
 }

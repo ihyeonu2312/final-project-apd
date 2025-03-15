@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.dto.AuthResponse;
 import site.unoeyhi.apd.dto.EmailVerificationRequest;
 import site.unoeyhi.apd.dto.LoginRequest;
+import site.unoeyhi.apd.dto.MemberDto;
 import site.unoeyhi.apd.dto.ResetPasswordRequestDto;
 import site.unoeyhi.apd.dto.SignupRequest;
 import site.unoeyhi.apd.entity.EmailVerification;
@@ -30,6 +32,7 @@ import site.unoeyhi.apd.entity.EmailVerification.EmailVerificationStatus;
 import site.unoeyhi.apd.entity.Member.AuthType;
 import site.unoeyhi.apd.repository.EmailVerificationRepository;
 import site.unoeyhi.apd.repository.MemberRepository;
+import site.unoeyhi.apd.security.CustomUserDetails;
 import site.unoeyhi.apd.service.EmailService;
 import site.unoeyhi.apd.service.KakaoAuthService;
 import site.unoeyhi.apd.service.MemberService;
@@ -197,5 +200,13 @@ public class AuthController {
           log.error("❌ 카카오 로그인 처리 중 오류 발생", e);
           response.sendRedirect("http://localhost:5173/login?error=카카오 로그인 실패");
       }
+  }
+  @GetMapping("/me") // ✅ 최종 엔드포인트는 "/api/auth/me"
+  public ResponseEntity<MemberDto> getCurrentUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
+      if (userDetails == null) {
+          return ResponseEntity.status(401).build(); // 로그인되지 않은 경우 401 응답
+      }
+      MemberDto response = new MemberDto(userDetails.getMemberId(), userDetails.getEmail(), userDetails.getRole());
+      return ResponseEntity.ok(response);
   }
 }

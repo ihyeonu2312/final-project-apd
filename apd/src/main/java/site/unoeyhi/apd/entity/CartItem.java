@@ -45,4 +45,13 @@ public class CartItem {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+     public CartItem(Cart cart, Product product, int quantity, double price) {
+        this.cart = cart;
+        this.product = product;
+        this.quantity = quantity;
+        this.price = price;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 }

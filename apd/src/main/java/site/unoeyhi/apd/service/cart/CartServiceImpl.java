@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import site.unoeyhi.apd.dto.cart.CartResponseDto;
 import site.unoeyhi.apd.entity.Cart;
 import site.unoeyhi.apd.entity.CartItem;
 import site.unoeyhi.apd.entity.Member;
@@ -52,13 +53,60 @@ public class CartServiceImpl implements CartService {
             CartItem cartItem = cartItemOpt.get();
             cartItem.setQuantity(cartItem.getQuantity() + quantity);
         } else {
-            // 새 상품 추가
-            CartItem newCartItem = new CartItem();
-            newCartItem.setCart(cart);
-            newCartItem.setProduct(product);
-            newCartItem.setQuantity(quantity);
-            newCartItem.setPrice(product.getPrice()); // 상품 가격 저장
+            CartItem newCartItem = new CartItem(cart, product, quantity, product.getPrice());
             cartItemRepository.save(newCartItem);
+        }
+    }
+
+    /** 🛒 장바구니 조회 */
+    @Override
+    public CartResponseDto getCart(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+        Cart cart = cartRepository.findByMember(member)
+            .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
+        return CartResponseDto.fromEntity(cart);
+    }
+
+    /** 🛒 특정 상품 장바구니에서 제거 */
+    @Override
+    public void removeFromCart(Long memberId, Long productId) {
+        Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+        Cart cart = cartRepository.findByMember(member)
+            .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 상품이 존재하지 않습니다."));
+        CartItem cartItem = cartItemRepository.findByCartAndProduct(cart, product)
+            .orElseThrow(() -> new IllegalArgumentException("장바구니에 해당 상품이 존재하지 않습니다."));
+        cartItemRepository.delete(cartItem);
+    }
+
+    /** 🛒 장바구니 비우기 */
+    @Override
+    public void clearCart(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+        Cart cart = cartRepository.findByMember(member)
+            .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
+        cartItemRepository.deleteAllByCart(cart);
+    }
+
+    /** 🛒 장바구니 상품 수량 변경 */
+    @Override
+    public void updateQuantity(Long memberId, Long productId, int quantity) {
+        Member member = memberRepository.findById(memberId)
+            .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+        Cart cart = cartRepository.findByMember(member)
+            .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
+        Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 상품이 존재하지 않습니다."));
+        CartItem cartItem = cartItemRepository.findByCartAndProduct(cart, product)
+            .orElseThrow(() -> new IllegalArgumentException("장바구니에 해당 상품이 존재하지 않습니다."));
+        if (quantity > 0) {
+            cartItem.setQuantity(quantity);
+        } else {
+            cartItemRepository.delete(cartItem);
         }
     }
 }

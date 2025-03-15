@@ -28,7 +28,7 @@ public class CartController {
     public ResponseEntity<CartResponseDto> getCart(@AuthenticationPrincipal CustomUserDetails userDetails) {
         Long memberId = userDetails.getMemberId();
         CartResponseDto cartResponse = cartService.getCart(memberId);
-        if (cartResponse.getItems().isEmpty()) {
+        if (cartResponse.getCartItems().isEmpty()) {
             return ResponseEntity.ok(cartResponse); // 빈 장바구니 응답
         }
         return ResponseEntity.ok(cartResponse);

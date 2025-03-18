@@ -1,5 +1,6 @@
 package site.unoeyhi.apd.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -8,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import site.unoeyhi.apd.service.cart.CartService;
 import site.unoeyhi.apd.dto.cart.*;
 import site.unoeyhi.apd.security.CustomUserDetails;
-import site.unoeyhi.apd.security.CustomUserDetailsService;
 
 @RestController
 @RequestMapping("/cart")
@@ -26,13 +26,26 @@ public class CartController {
 
     @GetMapping("")
     public ResponseEntity<CartResponseDto> getCart(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        Long memberId = userDetails.getMemberId();
-        CartResponseDto cartResponse = cartService.getCart(memberId);
-        if (cartResponse.getCartItems().isEmpty()) {
-            return ResponseEntity.ok(cartResponse); // 빈 장바구니 응답
+        if (userDetails == null) {
+            System.out.println("🚨 인증 오류: userDetails가 null임");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null); // 401 Unauthorized 반환
         }
+
+        Long memberId = userDetails.getMemberId();
+        System.out.println("✅ 장바구니 요청 - memberId: " + memberId);
+
+        CartResponseDto cartResponse = cartService.getCart(memberId);
+
+       // ✅ 장바구니 데이터가 null인지 확인
+        if (cartResponse == null) {
+            System.out.println("🚨 CartResponseDto가 null입니다!");
+        } else {
+            System.out.println("✅ CartResponseDto 응답: " + cartResponse);
+        }
+
         return ResponseEntity.ok(cartResponse);
     }
+
 
 
     // ✅ 장바구니에서 상품 삭제 (DELETE)

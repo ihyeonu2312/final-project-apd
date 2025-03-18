@@ -1,11 +1,15 @@
 package site.unoeyhi.apd.service.cart;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import site.unoeyhi.apd.dto.cart.CartItemDto;
 import site.unoeyhi.apd.dto.cart.CartResponseDto;
 import site.unoeyhi.apd.entity.Cart;
 import site.unoeyhi.apd.entity.CartItem;
@@ -63,10 +67,26 @@ public class CartServiceImpl implements CartService {
     public CartResponseDto getCart(Long memberId) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
+        // ✅ 장바구니가 없으면 자동 생성
         Cart cart = cartRepository.findByMember(member)
-            .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
-        return CartResponseDto.fromEntity(cart);
+            .orElseGet(() -> {
+                System.out.println("🚀 장바구니가 존재하지 않아 새로 생성합니다.");
+                Cart newCart = new Cart();
+                newCart.setMember(member);
+                newCart.setCreatedAt(LocalDateTime.now());
+                return cartRepository.save(newCart); // DB에 저장
+            });
+
+        System.out.println("✅ Cart 조회 성공: " + cart.getCartId());
+
+        return new CartResponseDto(
+            cart.getCartId(),
+            cart.getCreatedAt() != null ? cart.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() : null, // ✅ 변환 적용
+            cart.getCartItems() != null ? cart.getCartItems().stream().map(CartItemDto::fromEntity).toList() : new ArrayList<>()
+        );
     }
+
 
     /** 🛒 특정 상품 장바구니에서 제거 */
     @Override

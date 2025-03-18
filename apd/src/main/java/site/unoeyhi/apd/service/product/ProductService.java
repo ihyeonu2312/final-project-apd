@@ -11,6 +11,7 @@ public interface ProductService {
     Product saveProduct(ProductDto productDto);
     List<ProductDto> getAllProducts();
     Optional<Product> findByTitle(String title);
+    Optional<ProductDto> getProductById(Long productId);
     List<Product> getProductsByCategoryId(Long categoryId);
     List<ProductDto> getProductsByCategory(Long categoryId);
 

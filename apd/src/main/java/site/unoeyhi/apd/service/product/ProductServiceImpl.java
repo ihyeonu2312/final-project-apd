@@ -223,7 +223,12 @@ public class ProductServiceImpl implements ProductService {
             return new ProductDto(product, avgRating, discount); // ✅ avgRating 추가!
         }
 
-    
+     // ✅ 특정 상품 조회 구현
+     @Override
+     public Optional<ProductDto> getProductById(Long productId) {
+         return productRepository.findById(productId)
+                 .map(product -> new ProductDto(product, 0.0, null)); // 평점 및 할인 정보는 기본값으로 설정
+     }
 
 
     @Override

@@ -25,5 +25,14 @@ public class ProductController {
     public ResponseEntity<List<ProductDto>> getProductsByCategory(@PathVariable Long categoryId) {
         return ResponseEntity.ok(productService.getProductsByCategory(categoryId));
     }
+
+   // ✅ 특정 상품 조회 추가
+@GetMapping("/{productId}")
+public ResponseEntity<ProductDto> getProductById(@PathVariable Long productId) {
+    return productService.getProductById(productId)
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.notFound().build());
+}
+
 }
 

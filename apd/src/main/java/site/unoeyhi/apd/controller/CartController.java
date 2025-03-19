@@ -20,6 +20,11 @@ public class CartController {
     // ✅ 장바구니에 상품 추가 (POST)
     @PostMapping("/add")
     public ResponseEntity<String> addToCart(@RequestBody CartRequestDto request) {
+
+        if (request.getMemberId() == null || request.getProductId() == null) {
+            return ResponseEntity.badRequest().body("memberId 또는 productId가 null입니다.");
+        }
+
         cartService.addToCart(request.getMemberId(), request.getProductId(), request.getQuantity());
         return ResponseEntity.ok("상품이 장바구니에 추가되었습니다.");
     }

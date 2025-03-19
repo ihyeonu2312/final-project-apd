@@ -61,6 +61,18 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderItem> orderItems = new ArrayList<>();
+
+    public void setOrderItems(List<OrderItem> orderItems) {
+        this.orderItems = orderItems;
+        calculateTotalAmount(); // ✅ 총 주문 금액 다시 계산
+    }
+
+    // ✅ 주문 총 금액 계산 메서드 추가
+    public void calculateTotalAmount() {
+        this.totalAmount = orderItems.stream()
+            .mapToDouble(item -> item.getPrice() * item.getQuantity())
+            .sum();
+    }
     
 }
 

@@ -47,19 +47,25 @@ public class ProductDetailImageCrawler {
     /** ✅ 상세 이미지 추출 */
     public List<String> extractDetailImages(Page detailPage) {
         List<String> images = new ArrayList<>();
-
-        // ✅ 상품 상세 페이지에서 이미지 찾기
-        List<Locator> imgLocators = detailPage.locator("div#productDetail img").all();
-
+    
+        // ✅ 상세 이미지 요소 로딩 대기 (변경됨)
+        detailPage.waitForSelector("div.product-detail-content img", new Page.WaitForSelectorOptions().setTimeout(10000));
+    
+        // ✅ `product-detail-content` 내 모든 이미지 가져오기
+        List<Locator> imgLocators = detailPage.locator("div.product-detail-content img").all();
+    
         for (Locator imgLocator : imgLocators) {
+            imgLocator.scrollIntoViewIfNeeded(); // ✅ 이미지가 보이도록 스크롤
+    
             String imgSrc = imgLocator.getAttribute("src");
             if (imgSrc != null && !imgSrc.trim().isEmpty()) {
                 images.add(imgSrc);
                 System.out.println("✅ [상세 이미지 발견] " + imgSrc);
             }
         }
-
+    
         System.out.println("📸 [상세 이미지 크롤링 완료] 총 " + images.size() + "개 발견");
         return images;
     }
+    
 }

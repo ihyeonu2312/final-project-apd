@@ -23,7 +23,12 @@ public class OrderController {
     /** ✅ 새로운 주문 생성 */
     @PostMapping("/create")
     public ResponseEntity<OrderResponseDto> createOrder(@RequestBody OrderRequestDto request) {
+        System.out.println("✅ 주문 생성 요청 받음 - memberId: " + request.getMemberId());
+
         Order order = orderService.createOrder(request.getMemberId());
+
+        System.out.println("✅ 주문 생성 완료 - orderId: " + order.getOrderId());
+        
         return ResponseEntity.ok(new OrderResponseDto(order));
     }
 

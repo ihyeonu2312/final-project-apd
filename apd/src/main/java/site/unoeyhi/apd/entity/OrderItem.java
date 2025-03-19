@@ -37,4 +37,12 @@ public class OrderItem {
 
     @Column(nullable = false)
     private double price; // 주문 당시 가격 저장
+
+    // ✅ 주문 항목을 생성하는 생성자 추가
+    public OrderItem(Order order, Product product, int quantity, double price) {
+        this.order = order;
+        this.product = product;
+        this.quantity = quantity;
+        this.price = price;
+    }
 }

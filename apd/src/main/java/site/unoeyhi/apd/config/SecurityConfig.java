@@ -66,7 +66,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login","api/auth/kakao/login",
                 "api/auth/kakao/callback", "/api/auth/signup", "/api/auth/send-email",
-                "/api/auth/verify-email", "/api/user/check-email", "api/auth/reset-password","/api/auth/me").permitAll()//로그인 & 회원가입 & 이메일 인증 API 허용
+                "/api/auth/verify-email", "/api/user/check-email", "api/auth/reset-password","/api/auth/me", "/api/cart/**").permitAll()//로그인 & 회원가입 & 이메일 인증 API 허용
                 .requestMatchers("/api/auth/**").authenticated() // 
                 .requestMatchers("/api/reviews/**").permitAll() // 
                 .requestMatchers("/api/user/check-nickname", "/api/user/check-phone").permitAll()
@@ -94,15 +94,16 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // ✅ 정확한 출처 허용
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // ✅ 모든 HTTP 메소드 허용
-        configuration.setAllowedHeaders(List.of("*")); // ✅ 모든 요청 헤더 허용
+        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // ✅ 정확한 프론트엔드 도메인 허용
+        configuration.setAllowedMethods(List.of("OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE")); // ✅ OPTIONS 허용 필수
+        configuration.setAllowedHeaders(List.of("*")); // ✅ 모든 헤더 허용
         configuration.setAllowCredentials(true); // ✅ 인증 정보 포함 허용
-        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie")); // ✅ 클라이언트가 JWT 토큰을 받을 수 있도록 허용
-
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie")); // ✅ 클라이언트에서 JWT, 쿠키 접근 허용
+    
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration); // ✅ 모든 경로에 대해 CORS 적용
         return source;
     }
+    
 
 }

@@ -10,8 +10,9 @@ import site.unoeyhi.apd.service.cart.CartService;
 import site.unoeyhi.apd.dto.cart.*;
 import site.unoeyhi.apd.security.CustomUserDetails;
 
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @RestController
-@RequestMapping("/cart")
+@RequestMapping("/api/cart")
 @RequiredArgsConstructor
 public class CartController {
 
@@ -67,10 +68,16 @@ public class CartController {
         return ResponseEntity.ok("장바구니가 비워졌습니다.");
     }
 
-    // ✅ 장바구니 상품 수량 수정 (PATCH)
-    @PatchMapping("/{memberId}/update")
+    @PatchMapping("/update")
+    @CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
     public ResponseEntity<String> updateQuantity(@RequestBody CartRequestDto request) {
+        if (request == null || request.getMemberId() == null || request.getProductId() == null || request.getQuantity() == null) {
+            return ResponseEntity.badRequest().body("잘못된 요청: 필수 필드가 누락되었습니다.");
+        }
+        
+    
         cartService.updateQuantity(request.getMemberId(), request.getProductId(), request.getQuantity());
         return ResponseEntity.ok("상품 수량이 변경되었습니다.");
     }
+    
 }

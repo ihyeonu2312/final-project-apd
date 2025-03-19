@@ -59,22 +59,29 @@ public class AuthController {
   private final MemberRepository memberRepository;
   private final KakaoAuthService kakaoAuthService;
 
-  // ✅ 로그인 API (JWT 발급) 이메일기반
   @PostMapping("/login")
   public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-    try {
-      Authentication authentication = authenticationManager.authenticate(
-          new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+      try {
+          Authentication authentication = authenticationManager.authenticate(
+              new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+          );
 
-      SecurityContextHolder.getContext().setAuthentication(authentication);
+          SecurityContextHolder.getContext().setAuthentication(authentication);
 
-      // ✅ JWT 생성 후 반환
-      String jwt = jwtUtil.generateToken(authentication.getName());
-      return ResponseEntity.ok(new AuthResponse(jwt));
+          // ✅ JWT 생성
+          String jwt = jwtUtil.generateToken(authentication.getName());
 
-    } catch (Exception e) {
-      return ResponseEntity.badRequest().body(new AuthResponse(null));
-    }
+          // ✅ 로그인한 사용자의 memberId 가져오기
+          Optional<Member> member = memberRepository.findByEmail(authentication.getName());
+
+          if (member.isEmpty()) {
+              return ResponseEntity.badRequest().body(new AuthResponse(null, null)); // 회원 없음
+          }
+
+          return ResponseEntity.ok(new AuthResponse(jwt, member.get().getMemberId())); // ✅ memberId 추가
+      } catch (Exception e) {
+          return ResponseEntity.badRequest().body(new AuthResponse(null, null));
+      }
   }
 
   @PostMapping("/signup")

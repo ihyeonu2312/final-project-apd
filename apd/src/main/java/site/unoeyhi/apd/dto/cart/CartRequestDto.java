@@ -20,5 +20,5 @@ public class CartRequestDto {
     private Long productId;
 
     @Min(value = 1, message = "수량은 1 이상이어야 합니다.")
-    private int quantity;
+    private Integer quantity; // ✅ Wrapper 클래스 Integer로 변경
 }

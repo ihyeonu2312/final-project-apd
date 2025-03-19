@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AuthResponse {
     private String token;  // JWT 토큰 필드
+    private Long memberId; // ✅ memberId 추가
 }

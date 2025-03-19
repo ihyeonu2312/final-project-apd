@@ -22,6 +22,7 @@ public class ProductDetailImageService {
     private final ProductRepository productRepository;
 
     /** ✅ 상세 이미지 저장 */
+   
     public void saveDetailImages(Long productId, List<String> imageUrls) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));

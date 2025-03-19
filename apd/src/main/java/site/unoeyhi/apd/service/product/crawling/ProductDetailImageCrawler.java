@@ -2,6 +2,7 @@ package site.unoeyhi.apd.service.product.crawling;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,10 @@ public class ProductDetailImageCrawler {
                 .setTimeout(60000)
                 .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
 
+        // ✅ 랜덤 딜레이 (500ms ~ 3초)
+        int randomDelay = ThreadLocalRandom.current().nextInt(500, 3000);
+        detailPage.waitForTimeout(randomDelay);
+
         // ✅ 상세 이미지 URL 추출
         List<String> imageUrls = extractDetailImages(detailPage);
 
@@ -42,17 +47,24 @@ public class ProductDetailImageCrawler {
         productDetailImageService.saveDetailImages(productId, imageUrls);
 
         detailPage.close();
-    }
+        // ✅ 상품 간 랜덤 대기 시간 추가 (2초 ~ 5초)
+        int randomPageDelay = ThreadLocalRandom.current().nextInt(2000, 5000);
+        try {
+            Thread.sleep(randomPageDelay);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+}
 
     /** ✅ 상세 이미지 추출 */
     public List<String> extractDetailImages(Page detailPage) {
         List<String> images = new ArrayList<>();
     
         // ✅ 상세 이미지 요소 로딩 대기 (변경됨)
-        detailPage.waitForSelector("div.product-detail-content img", new Page.WaitForSelectorOptions().setTimeout(10000));
+        detailPage.waitForSelector("div.product-detail-content-inside img", new Page.WaitForSelectorOptions().setTimeout(10000));
     
         // ✅ `product-detail-content` 내 모든 이미지 가져오기
-        List<Locator> imgLocators = detailPage.locator("div.product-detail-content img").all();
+        List<Locator> imgLocators = detailPage.locator("div.product-detail-content-inside img").all();
     
         for (Locator imgLocator : imgLocators) {
             imgLocator.scrollIntoViewIfNeeded(); // ✅ 이미지가 보이도록 스크롤

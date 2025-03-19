@@ -39,18 +39,20 @@ public class ProductDetailImageCrawlerTests {
         if (playwright == null) {
             playwright = Playwright.create();
             browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                .setExecutablePath(Paths.get("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")) // ✅ Path 타입 변환
-                .setHeadless(false) // ✅ 헤드리스 모드 비활성화
+                .setExecutablePath(Paths.get("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")) // ✅ 크롬 실행 경로
+                .setHeadless(false) // ✅ 브라우저 창을 띄우도록 설정
+                .setSlowMo(500) // ✅ 동작을 500ms씩 천천히 수행 (디버깅 용이)
                 .setArgs(List.of(
                     "--disable-http2", // ✅ HTTP2 비활성화
                     "--disable-blink-features=AutomationControlled", // ✅ 봇 탐지 우회
-                    "--disable-features=NetworkService", // ✅ 추가: 네트워크 서비스 비활성화
-                    "--disable-features=ChromeWhatsNewUI" // ✅ 추가: 불필요한 기능 차단
+                    "--disable-features=NetworkService", // ✅ 네트워크 서비스 비활성화
+                    "--disable-features=ChromeWhatsNewUI" // ✅ 불필요한 기능 차단
                 ))
             );
             System.out.println("🛠 [디버그] Playwright Chrome 버전: " + browser.version());
         }
     }
+    
 
     /**
      * ✅ 쿠키 기반으로 브라우저 컨텍스트 생성

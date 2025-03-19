@@ -63,6 +63,14 @@ public class ProductDetailImageCrawler {
         // ✅ 상세 이미지 요소 로딩 대기 (변경됨)
         detailPage.waitForSelector("div.product-detail-content-inside img", new Page.WaitForSelectorOptions().setTimeout(10000));
     
+        // ✅ 랜덤 스크롤 적용
+        randomScroll(detailPage);
+        detailPage.waitForTimeout(5000); // 5초 대기
+
+        // ✅ 랜덤 딜레이 (500ms ~ 3초)
+        int randomDelay = ThreadLocalRandom.current().nextInt(500, 3000);
+        detailPage.waitForTimeout(randomDelay);
+        
         // ✅ `product-detail-content` 내 모든 이미지 가져오기
         List<Locator> imgLocators = detailPage.locator("div.product-detail-content-inside img").all();
     
@@ -78,6 +86,30 @@ public class ProductDetailImageCrawler {
     
         System.out.println("📸 [상세 이미지 크롤링 완료] 총 " + images.size() + "개 발견");
         return images;
+    }
+
+     // 랜덤 스크롤 메서드
+     private void randomScroll(Page page) {
+        int scrollTimes = (int) (Math.random() * 5) + 3; // 3~7번 랜덤 스크롤
+        int scrollDelay = (int) (Math.random() * 1000) + 500; // 500~1500ms 랜덤 딜레이
+    
+        for (int i = 0; i < scrollTimes; i++) {
+            boolean scrollUp = Math.random() < 0.3; // 30% 확률로 위로 스크롤
+            int scrollAmount = (int) (Math.random() * 400) + 300; // 300~700px 랜덤 이동
+    
+            try {
+                if (scrollUp) {
+                    page.evaluate("window.scrollBy(0, -" + scrollAmount + ")");
+                    System.out.println("📜 [스크롤] 위로 " + scrollAmount + "px 이동");
+                } else {
+                    page.evaluate("window.scrollBy(0, " + scrollAmount + ")");
+                    System.out.println("📜 [스크롤] 아래로 " + scrollAmount + "px 이동");
+                }
+                page.waitForTimeout(scrollDelay);
+            } catch (Exception e) {
+                System.out.println("🚨 [스크롤 오류] " + e.getMessage());
+            }
+        }
     }
     
 }

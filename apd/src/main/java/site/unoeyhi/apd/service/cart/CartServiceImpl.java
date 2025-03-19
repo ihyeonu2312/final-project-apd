@@ -1,15 +1,12 @@
 package site.unoeyhi.apd.service.cart;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import site.unoeyhi.apd.dto.cart.CartItemDto;
 import site.unoeyhi.apd.dto.cart.CartResponseDto;
 import site.unoeyhi.apd.entity.Cart;
 import site.unoeyhi.apd.entity.CartItem;
@@ -42,18 +39,21 @@ public class CartServiceImpl implements CartService {
 
         // 3. 해당 회원의 장바구니가 있는지 확인
         Cart cart = cartRepository.findByMember(member)
-                .orElseGet(() -> {
-                    // 장바구니가 없으면 새로 생성
-                    Cart newCart = new Cart();
-                    newCart.setMember(member);
-                    return cartRepository.save(newCart);
-                });
+        .orElseGet(() -> {
+            System.out.println("🚀 장바구니가 존재하지 않아 새로 생성합니다.");
+            Cart newCart = new Cart();
+            newCart.setMember(member);  // ✅ member 설정 추가
+            newCart.setCreatedAt(LocalDateTime.now());
+            return cartRepository.save(newCart);
+        });
+        System.out.println("✅ Cart 조회 성공: " + cart.getCartId());
+
+        
 
         // 4. 장바구니에 해당 상품이 이미 있는지 확인
         Optional<CartItem> cartItemOpt = cartItemRepository.findByCartAndProduct(cart, product);
 
         if (cartItemOpt.isPresent()) {
-            // 이미 존재하는 상품이면 수량 증가
             CartItem cartItem = cartItemOpt.get();
             cartItem.setQuantity(cartItem.getQuantity() + quantity);
         } else {
@@ -68,25 +68,21 @@ public class CartServiceImpl implements CartService {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
 
-        // ✅ 장바구니가 없으면 자동 생성
+        // ✅ 장바구니 조회
         Cart cart = cartRepository.findByMember(member)
             .orElseGet(() -> {
                 System.out.println("🚀 장바구니가 존재하지 않아 새로 생성합니다.");
                 Cart newCart = new Cart();
                 newCart.setMember(member);
                 newCart.setCreatedAt(LocalDateTime.now());
-                return cartRepository.save(newCart); // DB에 저장
+                return cartRepository.save(newCart);
             });
 
         System.out.println("✅ Cart 조회 성공: " + cart.getCartId());
 
-        return new CartResponseDto(
-            cart.getCartId(),
-            cart.getCreatedAt() != null ? cart.getCreatedAt().atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() : null, // ✅ 변환 적용
-            cart.getCartItems() != null ? cart.getCartItems().stream().map(CartItemDto::fromEntity).toList() : new ArrayList<>()
-        );
+        // ✅ 기존 생성 방식 → `fromEntity` 메서드로 변경하여 `memberId` 포함
+        return CartResponseDto.fromEntity(cart);
     }
-
 
     /** 🛒 특정 상품 장바구니에서 제거 */
     @Override

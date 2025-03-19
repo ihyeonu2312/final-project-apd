@@ -61,7 +61,7 @@ public class ProductDetailImageCrawler {
         List<String> images = new ArrayList<>();
     
         // ✅ 상세 이미지 요소 로딩 대기 (변경됨)
-        detailPage.waitForSelector("div.product-detail-content-inside img", new Page.WaitForSelectorOptions().setTimeout(10000));
+        detailPage.waitForSelector("div.product-detail-content-inside img", new Page.WaitForSelectorOptions().setTimeout(20000));
     
         // ✅ 랜덤 스크롤 적용
         randomScroll(detailPage);

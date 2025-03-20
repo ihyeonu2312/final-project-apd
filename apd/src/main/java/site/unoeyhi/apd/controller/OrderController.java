@@ -20,17 +20,31 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    /** ✅ 새로운 주문 생성 */
-    @PostMapping("/create")
-    public ResponseEntity<OrderResponseDto> createOrder(@RequestBody OrderRequestDto request) {
-        System.out.println("✅ 주문 생성 요청 받음 - memberId: " + request.getMemberId());
+    /** ✅ 결제 전 */
+    @PostMapping("/prepare")
+    public ResponseEntity<OrderResponseDto> prepareOrder(@RequestBody OrderRequestDto request) {
+        System.out.println("🛒 주문 준비 요청 - memberId: " + request.getMemberId());
 
-        Order order = orderService.createOrder(request.getMemberId());
+        Order order = orderService.prepareOrder(request.getMemberId());
 
-        System.out.println("✅ 주문 생성 완료 - orderId: " + order.getOrderId());
+        System.out.println("🛒 주문 준비 완료 - orderId: " + order.getOrderId());
         
         return ResponseEntity.ok(new OrderResponseDto(order));
     }
+    //결제 후
+    @PatchMapping("/{orderId}/complete")
+    public ResponseEntity<Void> completeOrder(@PathVariable Long orderId) {
+        System.out.println("💰 주문 완료 요청 - orderId: " + orderId);
+
+        orderService.completeOrder(orderId); // ✅ 주문 완료 메서드 호출
+
+        System.out.println("✅ 주문 완료 - orderId: " + orderId);
+        
+        return ResponseEntity.ok().build();
+    }
+
+
+
 
     /** ✅ 특정 주문 조회 */
     @GetMapping("/{orderId}")

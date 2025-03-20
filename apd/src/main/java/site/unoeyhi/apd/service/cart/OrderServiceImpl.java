@@ -30,7 +30,7 @@ public class OrderServiceImpl implements OrderService {
     private final CartRepository cartRepository;
 
     @Override
-    public Order createOrder(Long memberId) {
+    public Order prepareOrder(Long memberId) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
         Cart cart = cartRepository.findByMember(member)
@@ -44,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
         // ✅ 주문 객체 생성 (아직 저장 X)
         Order order = new Order();
         order.setMember(member);
+        order.setOrderStatus(OrderStatus.READY); // 🟢 주문 준비 상태
         order.setOrderStatus(OrderStatus.PROCESSING);
         order.setPaymentStatus(PaymentStatus.PENDING);
         order.setShippingStatus(ShippingStatus.PENDING);
@@ -83,4 +84,24 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(status);
         orderRepository.save(order);
     }
-}
+
+     /** ✅ 주문 확정 (결제 성공 후) */
+     @Override
+     public void completeOrder(Long orderId) {
+         System.out.println("💰 주문 확정 요청 - orderId: " + orderId);
+ 
+         Order order = orderRepository.findById(orderId)
+             .orElseThrow(() -> new IllegalArgumentException("주문이 존재하지 않습니다."));
+ 
+         if (order.getOrderStatus() != OrderStatus.READY) {
+             throw new IllegalStateException("해당 주문은 결제할 수 없는 상태입니다.");
+         }
+ 
+         // 주문 확정 (결제 완료)
+         order.setOrderStatus(OrderStatus.COMPLETED);
+         order.setPaymentStatus(PaymentStatus.PAID);
+ 
+         orderRepository.save(order);
+         System.out.println("✅ 주문 확정 완료 - orderId: " + orderId);
+     }
+ }

@@ -32,14 +32,18 @@ public class ProductImageServiceImpl implements ProductImageService {
         ProductImage productImage = ProductImage.builder()
                 .product(product)
                 .imageUrl(productImageDto.getImageUrl())
+                .isThumbnail(false) // 기본값으로 false 설정 (필요하면 DTO에서 설정 가능)
                 .build();
 
         return productImageRepository.save(productImage);
     }
 
     @Override
-    public List<String> getProductImages(Long productId) {
+    public List<ProductImageDto> getProductImages(Long productId) {
         List<ProductImage> images = productImageRepository.findByProductProductId(productId);
-        return images.stream().map(ProductImage::getImageUrl).collect(Collectors.toList());
+        
+        return images.stream()
+                .map(ProductImageDto::fromEntity) // ✅ 엔티티 → DTO 변환
+                .collect(Collectors.toList());
     }
 }

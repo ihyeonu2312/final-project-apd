@@ -41,4 +41,8 @@ public class ProductDetailImageService {
     public List<Map<String, Object>> findAllProductDetails() {
         return productDetailImageRepository.findAllProductDetails();
     }
+    public List<ProductDetailImage> getDetailImagesByProductId(Long productId) {
+        return productDetailImageRepository.findByProduct_ProductId(productId);
+    }
+
 }

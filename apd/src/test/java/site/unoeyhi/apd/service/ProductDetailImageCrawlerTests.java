@@ -99,6 +99,9 @@ public class ProductDetailImageCrawlerTests {
 
         for (Map<String, Object> product : productDetails) {
             Long productId = (Long) product.get("productId");
+
+            if (productId < 188) continue; // ✅✅✅✅✅✅✅✅이어서 하기✅✅✅✅✅✅✅✅✅
+
             String detailUrl = (String) product.get("detailUrl");
 
             if (detailUrl == null || detailUrl.isEmpty()) {

@@ -103,9 +103,9 @@ public class OrderServiceImpl implements OrderService {
          order.setOrderStatus(OrderStatus.COMPLETED);
          order.setPaymentStatus(PaymentStatus.PAID);
  
-         orderRepository.save(order);
          // 주문 완료 후 장바구니 비우기
          cartService.clearCart(order.getMember().getMemberId());
+         orderRepository.save(order);
 
          System.out.println("✅ 주문 확정 완료 - orderId: " + orderId);
      }

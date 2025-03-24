@@ -26,6 +26,8 @@ public class ProductDto {
     private String imageUrl;              // 상품 이미지 URL
     private String thumbnailImageUrl;     // 썸네일 이미지 URL
     private Double rating;                // 평점
+    private List<ReviewDto> reviews; // ✅ 리뷰 목록 추가
+
     private String detailUrl;             // 상세 페이지 URL
     private List<String> additionalImages; // 추가 이미지 리스트
     private List<OptionDto> options;       // 옵션 리스트
@@ -33,10 +35,10 @@ public class ProductDto {
     private LocalDateTime updatedAt;      // 수정 날짜
 
     // ✅ `Product` 엔티티를 `ProductDto`로 변환하는 생성자
-    public ProductDto(Product product, Double avgRating, Discount discount) {
+    public ProductDto(Product product, Double avgRating, Discount discount, List<ReviewDto> reviews) {
         this.productId = product.getProductId();
         this.name = product.getName();
-        this.price = product.getPrice(); // 상품가 (할인 적용 후 가격)
+        this.price = product.getPrice();
         this.stockQuantity = product.getStockQuantity() != null ? product.getStockQuantity() : 0;
         this.categoryId = product.getCategory() != null ? product.getCategory().getCategoryId() : null;
         this.imageUrl = product.getImageUrl() != null ? product.getImageUrl() : "";
@@ -45,15 +47,18 @@ public class ProductDto {
         this.detailUrl = product.getDetailUrl() != null ? product.getDetailUrl() : "";
         this.createdAt = product.getCreatedAt();
         this.updatedAt = product.getUpdatedAt();
+        this.reviews = reviews;
     
-        // ✅ 할인 가격 설정 (할인이 없으면 discountPrice = 0)
         if (discount != null && isDiscountValid(discount)) {
-            this.discountPrice = discount.getDiscountValue(); // 할인 금액
-            this.originalPrice = this.price + this.discountPrice; // 원가 = 상품가 + 할인가
+            this.discountPrice = discount.getDiscountValue();
+            this.originalPrice = this.price + this.discountPrice;
         } else {
-            this.discountPrice = 0.0; // 할인 없음
-            this.originalPrice = this.price; // 원가 = 상품가
+            this.discountPrice = 0.0;
+            this.originalPrice = this.price;
         }
+    }
+    public ProductDto(Product product, Double avgRating, Discount discount) {
+        this(product, avgRating, discount, List.of()); // 기본값으로 빈 리뷰 리스트 전달
     }
     
 

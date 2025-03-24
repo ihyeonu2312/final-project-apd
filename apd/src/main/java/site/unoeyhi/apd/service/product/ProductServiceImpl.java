@@ -7,12 +7,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import site.unoeyhi.apd.dto.product.OptionDto;
 import site.unoeyhi.apd.dto.product.ProductDto;
+import site.unoeyhi.apd.dto.product.ReviewDto;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.entity.Discount;
 import site.unoeyhi.apd.entity.Option;
 import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.entity.ProductImage;
 import site.unoeyhi.apd.entity.ProductOption;
+import site.unoeyhi.apd.entity.Review;
 import site.unoeyhi.apd.repository.CategoryRepository;
 
 import site.unoeyhi.apd.repository.product.ProductImageRepository;
@@ -224,12 +226,31 @@ public class ProductServiceImpl implements ProductService {
         }
 
      // ✅ 특정 상품 조회 구현
-     @Override
-     public Optional<ProductDto> getProductById(Long productId) {
-         return productRepository.findById(productId)
-                 .map(product -> new ProductDto(product, 0.0, null)); // 평점 및 할인 정보는 기본값으로 설정
-     }
+     private ReviewDto convertToReviewDto(Review review) {
+    return new ReviewDto(
+        review.getReviewId(),
+        review.getProduct().getProductId(),
+        review.getMemberId(),
+        review.getRating(),
+        review.getComment(),
+        review.getReviewImageUrl(),
+        review.getCreatedAt()
+    );
+}
 
+@Override
+public Optional<ProductDto> getProductById(Long productId) {
+    return productRepository.findById(productId).map(product -> {
+        Double avgRating = reviewRepository.findAverageRatingByProductId(productId);
+        List<ReviewDto> reviewDtos = reviewRepository.findByProductProductId(productId)
+                .stream()
+                .map(this::convertToReviewDto)
+                .collect(Collectors.toList());
+        Discount discount = discountRepository.findByProduct_ProductId(productId); // 할인
+
+        return new ProductDto(product, avgRating, discount, reviewDtos); // ✅ 리뷰 포함된 생성자 사용
+    });
+}
 
     @Override
     public Optional<Product> findByTitle(String title) {

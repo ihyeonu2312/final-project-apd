@@ -1,5 +1,6 @@
 package site.unoeyhi.apd.dto.cart;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,5 +10,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class OrderRequestDto {
+    @NotNull
     private Long memberId;  // ✅ 주문할 회원의 ID
 }

@@ -1,6 +1,6 @@
 package site.unoeyhi.apd.security;
 
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -8,6 +8,10 @@ import org.springframework.stereotype.Service;
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
+
+
 
 import java.util.Optional;
 
@@ -38,4 +42,13 @@ public class CustomUserDetailsService implements UserDetailsService {
                return member.map(CustomUserDetails::new)
                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + identifier));
     }
+    public Long getAuthenticatedMemberId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            return userDetails.getMemberId();
+        }
+        throw new AccessDeniedException("로그인이 필요합니다.");
+    }
+
 }

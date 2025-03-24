@@ -28,6 +28,8 @@ public class OrderServiceImpl implements OrderService {
     private final MemberRepository memberRepository;
     private final CartItemRepository cartItemRepository;
     private final CartRepository cartRepository;
+    private final CartService cartService;
+
 
     @Override
     public Order prepareOrder(Long memberId) {
@@ -45,7 +47,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
         order.setMember(member);
         order.setOrderStatus(OrderStatus.READY); // 🟢 주문 준비 상태
-        order.setOrderStatus(OrderStatus.PROCESSING);
+        //order.setOrderStatus(OrderStatus.PROCESSING);
         order.setPaymentStatus(PaymentStatus.PENDING);
         order.setShippingStatus(ShippingStatus.PENDING);
         order.setOrderDate(LocalDateTime.now());
@@ -102,6 +104,9 @@ public class OrderServiceImpl implements OrderService {
          order.setPaymentStatus(PaymentStatus.PAID);
  
          orderRepository.save(order);
+         // 주문 완료 후 장바구니 비우기
+         cartService.clearCart(order.getMember().getMemberId());
+
          System.out.println("✅ 주문 확정 완료 - orderId: " + orderId);
      }
  }

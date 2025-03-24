@@ -103,6 +103,12 @@ public class CartServiceImpl implements CartService {
     public void clearCart(Long memberId) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+        Optional<Cart> cartOpt = cartRepository.findByMember(member);
+        if (cartOpt.isEmpty()) {
+            System.out.println("⚠️ 장바구니 없음: memberId = " + memberId);
+            return; // 장바구니가 없으면 그냥 리턴
+        }
+
         Cart cart = cartRepository.findByMember(member)
             .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
         cartItemRepository.deleteAllByCart(cart);

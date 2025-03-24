@@ -112,22 +112,23 @@ public class ProductDetailImageCrawlerTests {
             System.out.println("🚀 [크롤링 시작] 상품 ID: " + productId + " | URL: " + detailUrl);
 
             Page detailPage = context.newPage();
-            detailPage.navigate(detailUrl, new Page.NavigateOptions().setTimeout(90000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+            try {
+                detailPage.navigate(detailUrl, new Page.NavigateOptions().setTimeout(90000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
 
-            // ✅ 상세 이미지 크롤링 실행
-            List<String> imageUrls = productDetailImageCrawler.extractDetailImages(detailPage);
+                // ✅ 상세 이미지 크롤링 실행
+                List<String> imageUrls = productDetailImageCrawler.extractDetailImages(detailPage);
 
-            if (imageUrls.isEmpty()) {
-                System.out.println("⚠️ [경고] 상품 ID " + productId + "의 상세 이미지 없음!");
-            } else {
-                System.out.println("📸 [크롤링 완료] 상품 ID: " + productId + " | 크롤링된 이미지 개수: " + imageUrls.size());
-                imageUrls.forEach(url -> System.out.println("🔗 이미지 URL: " + url));
-
-                // ✅ 크롤링된 상세 이미지 DB에 저장
-                productDetailImageService.saveDetailImages(productId, imageUrls);
-            }
-
-            detailPage.close();
+                if (imageUrls.isEmpty()) 
+                    System.out.println("⚠️ [경고] 상품 ID " + productId + "의 상세 이미지 없음!");
+                
+                    // ✅ 크롤링된 상세 이미지 DB에 저장
+                    productDetailImageService.saveDetailImages(productId, imageUrls);
+                } catch (Exception e) {
+                    System.out.println("❌ [에러] 상품 ID " + productId + " 크롤링 중 오류 발생!");
+                    e.printStackTrace();
+                } finally {
+                    detailPage.close();
+                }
         }
     }
 }

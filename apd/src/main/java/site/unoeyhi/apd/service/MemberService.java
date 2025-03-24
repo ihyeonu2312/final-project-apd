@@ -195,4 +195,9 @@ public class MemberService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "상세 주소를 입력해야 합니다.");
         }
     }
+
+    public Member getById(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+    }
 }

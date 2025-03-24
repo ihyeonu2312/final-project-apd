@@ -3,6 +3,12 @@ package site.unoeyhi.apd.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.ArrayList;
+import java.util.List;
+
+import site.unoeyhi.apd.entity.ChatRoom;
+import site.unoeyhi.apd.entity.ChatMessage;
 
 @Entity
 @Table(name = "member")
@@ -103,4 +109,13 @@ public class Member {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    @OneToMany(mappedBy = "buyer", cascade = CascadeType.ALL)
+    private List<ChatRoom> buyingChatRooms = new ArrayList<>();
+
+    @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
+    private List<ChatRoom> sellingChatRooms = new ArrayList<>();
+
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL)
+    private List<ChatMessage> sentMessages = new ArrayList<>();
 }

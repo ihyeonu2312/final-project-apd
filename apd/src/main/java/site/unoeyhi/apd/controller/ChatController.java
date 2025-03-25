@@ -29,16 +29,17 @@ public class ChatController {
     public ResponseEntity<ChatRoom> createRoom(
             @RequestParam Long buyerId,
             @RequestParam Long sellerId,
-            @RequestParam Integer productId
+            @RequestParam Integer productId // ✅ 중고상품 ID 받기
     ) {
-        Member buyer = memberService.getById(buyerId);
-        Member seller = memberService.getById(sellerId);
-      
-        UsedProduct product = usedProductService.findById(productId);
-
+        Member buyer = memberService.findById(buyerId).orElseThrow();
+        Member seller = memberService.findById(sellerId).orElseThrow();
+        UsedProduct product = usedProductService.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("❌ 상품이 존재하지 않습니다."));
+    
         ChatRoom room = chatRoomService.createOrGetRoom(buyer, seller, product);
         return ResponseEntity.ok(room);
     }
+    
 
     // ✅ 내가 참여한 채팅방 목록
     @GetMapping("/rooms/me")

@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import site.unoeyhi.apd.dto.usedproduct.UsedProductResponseDto;
 
 import site.unoeyhi.apd.dto.usedproduct.UsedProductCreateRequestDto;
 import site.unoeyhi.apd.entity.Member;
@@ -77,16 +78,32 @@ public ResponseEntity<?> createProduct(
 
     // ✅ 상품 단건 조회
     @GetMapping("/{id}")
-    public ResponseEntity<UsedProduct> getProduct(@PathVariable Integer id) {
+    public ResponseEntity<UsedProductResponseDto> getProduct(@PathVariable Integer id) {
         return usedProductService.findById(id)
-                .map(ResponseEntity::ok)
+                .map(product -> {
+                    // 🔥 여기서 DTO로 변환
+                    UsedProductResponseDto dto = new UsedProductResponseDto(
+                        product.getUsedProductId(),
+                        product.getName(),
+                        product.getDescription(),
+                        product.getPrice(),
+                        product.getCondition().name(),
+                        product.getStatus().name(),
+                        product.getSeller().getNickname(),
+                        product.getImages().stream()
+                            .map(img -> img.getImageUrl())
+                            .toList()
+                    );
+                    return ResponseEntity.ok(dto);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
+    
 
     // ✅ 전체 상품 목록 조회
     @GetMapping
-    public ResponseEntity<List<UsedProduct>> getAllProducts() {
-        List<UsedProduct> products = usedProductService.findAll();
+    public ResponseEntity<List<UsedProductResponseDto>> getAllProducts() {
+        List<UsedProductResponseDto> products = usedProductService.findAllDtos(); // ✅ DTO로 응답
         return ResponseEntity.ok(products);
     }
 

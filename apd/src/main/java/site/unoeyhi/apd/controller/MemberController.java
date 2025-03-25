@@ -37,25 +37,39 @@ public class MemberController {
 
     // ✅ 현재 로그인한 회원 정보 조회 API 추가
     @GetMapping("/profile")
-    public ResponseEntity<Member> getProfile(Authentication authentication) {
+    public ResponseEntity<MemberProfileDto> getProfile(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
-            return ResponseEntity.status(401).build();  // 인증되지 않은 경우 401 반환
+            return ResponseEntity.status(401).build();
         }
     
-        String subject = authentication.getName();  // 🔥 JWT의 subject(email 또는 kakaoId) 가져오기
+        String subject = authentication.getName();
         log.info("🔍 현재 로그인한 사용자: {}", subject);
     
         Optional<Member> member;
-        
-        if (subject.contains("@")) { // 🔥 이메일 형식이면 일반 로그인
+    
+        if (subject.contains("@")) {
             member = memberService.findByEmail(subject);
-        } else { // 🔥 숫자이면 카카오 로그인 (kakaoId)
+        } else {
             member = memberService.findByKakaoId(Long.parseLong(subject));
         }
     
-        return member.map(ResponseEntity::ok)
-                     .orElse(ResponseEntity.status(404).build()); // 회원이 없으면 404 반환
+        return member.map(m -> {
+            MemberProfileDto dto = new MemberProfileDto(
+                m.getMemberId(),
+                m.getEmail(),
+                m.getName(),
+                m.getNickname(),
+                m.getPhoneNumber(),
+                m.getAddress(),
+                m.getDetailAddress(),
+                m.getRole().name(),
+                m.getStatus().name(),
+                m.getAuthType().name()
+            );
+            return ResponseEntity.ok(dto);
+        }).orElse(ResponseEntity.status(404).build());
     }
+    
 
  
     //     @GetMapping("/check-email")

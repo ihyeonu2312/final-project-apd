@@ -79,11 +79,9 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             } catch (Exception e) {
                 log.error("❌ JWT 필터에서 오류 발생: ", e);
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
             }
         } else {
             log.warn("🚨 Authorization 헤더 없음 또는 형식 오류");
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
         }
 
         chain.doFilter(request, response);

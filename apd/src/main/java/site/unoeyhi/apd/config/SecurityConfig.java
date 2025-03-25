@@ -66,7 +66,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login","api/auth/kakao/login",
                 "api/auth/kakao/callback", "/api/auth/signup", "/api/auth/send-email",
-                "/api/auth/verify-email", "/api/user/check-email", "api/auth/reset-password","/api/auth/me", "/api/cart/**").permitAll()//로그인 & 회원가입 & 이메일 인증 API 허용
+                "/api/auth/verify-email", "/api/user/check-email", "api/auth/reset-password","/api/auth/me", "/api/cart/**", "/api/used-products").permitAll()//로그인 & 회원가입 & 이메일 인증 API 허용
                 .requestMatchers("/api/auth/**").authenticated() // 
                 .requestMatchers("/api/reviews/**").permitAll() // 
                 .requestMatchers("/api/user/check-nickname", "/api/user/check-phone").permitAll()

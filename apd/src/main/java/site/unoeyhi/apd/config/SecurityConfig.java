@@ -77,10 +77,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/products/category/**").permitAll() // ✅ 카테고리별 상품 API 전체 허용
                 .requestMatchers("/api/categories/**").permitAll() // ✅ 카테고리 API 전체 허용
                 .requestMatchers("/api/order/**").permitAll()
-                .requestMatchers("/api/payment/**").permitAll()
+                .requestMatchers("/payment/**").permitAll()
                 .requestMatchers( "/api/crawl/products").permitAll()  // 🔥 /api/products 엔드포인트 허용
                 .requestMatchers("/api/address/search").permitAll() // ✅ 주소 검색 API는 인증 없이 허용
                 .requestMatchers("/api/user/profile").authenticated() // ✅ 🔥 프로필 조회는 인증 필요
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().permitAll() // 🔐 그 외 모든 요청은 인증 필요
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 미사용

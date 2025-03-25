@@ -1,6 +1,7 @@
 package site.unoeyhi.apd.service.cart;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -103,16 +104,24 @@ public class CartServiceImpl implements CartService {
     public void clearCart(Long memberId) {
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+
         Optional<Cart> cartOpt = cartRepository.findByMember(member);
         if (cartOpt.isEmpty()) {
-            System.out.println("⚠️ 장바구니 없음: memberId = " + memberId);
-            return; // 장바구니가 없으면 그냥 리턴
+            System.out.println("⚠️ [clearCart] 장바구니가 존재하지 않음 - memberId: " + memberId);
+            return;
         }
 
-        Cart cart = cartRepository.findByMember(member)
-            .orElseThrow(() -> new IllegalArgumentException("장바구니가 존재하지 않습니다."));
-        cartItemRepository.deleteAllByCart(cart);
+        Cart cart = cartOpt.get();
+        List<CartItem> cartItems = cartItemRepository.findByCart(cart);
+
+        if (cartItems.isEmpty()) {
+            System.out.println("ℹ️ [clearCart] 장바구니가 이미 비어 있음 - cartId: " + cart.getCartId());
+        } else {
+            cartItemRepository.deleteAll(cartItems);
+            System.out.println("🗑 [clearCart] 장바구니 항목 삭제 완료 - cartItem 수: " + cartItems.size());
+        }
     }
+
 
     /** 🛒 장바구니 상품 수량 변경 */
     @Override

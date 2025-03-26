@@ -68,7 +68,9 @@ spring:
       id: ${nicepay.client.id}
       secret: ${nicepay.client.secret}
 
-              
+  crawler:
+    enabled: false
+            
 
   jpa:
     hibernate:

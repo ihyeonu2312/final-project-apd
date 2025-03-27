@@ -80,24 +80,11 @@ public ResponseEntity<?> createProduct(
     @GetMapping("/{id}")
     public ResponseEntity<UsedProductResponseDto> getProduct(@PathVariable Integer id) {
         return usedProductService.findById(id)
-                .map(product -> {
-                    // 🔥 여기서 DTO로 변환
-                    UsedProductResponseDto dto = new UsedProductResponseDto(
-                        product.getUsedProductId(),
-                        product.getName(),
-                        product.getDescription(),
-                        product.getPrice(),
-                        product.getCondition().name(),
-                        product.getStatus().name(),
-                        product.getSeller().getNickname(),
-                        product.getImages().stream()
-                            .map(img -> img.getImageUrl())
-                            .toList()
-                    );
-                    return ResponseEntity.ok(dto);
-                })
-                .orElse(ResponseEntity.notFound().build());
+            .map(usedProductService::toDto) // ✅ 여기만 호출
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
+    
     
 
     // ✅ 전체 상품 목록 조회

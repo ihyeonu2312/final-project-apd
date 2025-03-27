@@ -12,4 +12,6 @@ public interface UsedProductService {
     List<UsedProduct> findAll();
     List<UsedProductResponseDto> findAllDtos(); // ✅ 추가
     void deleteById(Integer id);
+    UsedProductResponseDto toDto(UsedProduct product);
+
 }

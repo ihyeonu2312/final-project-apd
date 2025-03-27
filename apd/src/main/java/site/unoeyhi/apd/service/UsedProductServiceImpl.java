@@ -39,21 +39,27 @@ public class UsedProductServiceImpl implements UsedProductService {
     }
 
     @Override
-public List<UsedProductResponseDto> findAllDtos() {
-    return usedProductRepository.findAll().stream()
-        .map(product -> new UsedProductResponseDto(
-            product.getUsedProductId(),
-            product.getName(),
-            product.getDescription(),
-            product.getPrice(),
-            product.getCondition().name(),
-            product.getStatus().name(),
-            product.getSeller().getNickname(), // seller → nickname
-            product.getImages().stream()
-                .map(image -> image.getImageUrl())
-                .toList()
-        ))
-        .toList();
+    public List<UsedProductResponseDto> findAllDtos() {
+        return usedProductRepository.findAll().stream()
+            .map(this::toDto) // ✅ 공통 DTO 변환 메서드 재사용
+            .toList();
+    }
+    
+
+public UsedProductResponseDto toDto(UsedProduct product) {
+    return new UsedProductResponseDto(
+        product.getUsedProductId(),
+        product.getName(),
+        product.getDescription(),
+        product.getPrice(),
+        product.getCondition() != null ? product.getCondition().name() : "미정",
+        product.getStatus() != null ? product.getStatus().name() : "미정",
+        product.getSeller() != null ? product.getSeller().getNickname() : "알 수 없음",
+        product.getImages() != null
+            ? product.getImages().stream().map(img -> img.getImageUrl()).toList()
+            : List.of()
+    );
 }
+
 
 }

@@ -74,4 +74,13 @@ public class MemberInquiryService {
                 response.getResponseDate()
         );
     }
+    @Transactional(readOnly = true)
+public List<MemberInquiryDetailDto> getAllInquiries() {
+    List<MemberInquiry> inquiries = inquiryRepository.findAll();
+
+    return inquiries.stream()
+            .map(this::convertToDetailDto)
+            .collect(Collectors.toList());
+}
+
 }

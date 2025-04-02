@@ -78,7 +78,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/categories/**").permitAll() // ✅ 카테고리 API 전체 허용
                 .requestMatchers("/api/order/**").permitAll()
                 .requestMatchers("/api/inquiries/**").permitAll()
-                .requestMatchers("/api/admin/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("관리자")
                 .requestMatchers("/payment/**").permitAll()
                 .requestMatchers( "/api/crawl/products").permitAll()  // 🔥 /api/products 엔드포인트 허용
                 .requestMatchers("/api/address/search").permitAll() // ✅ 주소 검색 API는 인증 없이 허용

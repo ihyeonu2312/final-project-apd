@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import site.unoeyhi.apd.dto.inquiry.InquiryResponseRequestDto;
 import site.unoeyhi.apd.dto.inquiry.MemberInquiryDetailDto;
 import site.unoeyhi.apd.entity.Member;
+import site.unoeyhi.apd.security.CustomUserDetails;
 import site.unoeyhi.apd.service.InquiryResponseService;
 import site.unoeyhi.apd.service.MemberInquiryService;
 
@@ -23,25 +24,28 @@ public class InquiryResponseController {
 
     @PostMapping("/response")
     public ResponseEntity<Long> createResponse(
-            @AuthenticationPrincipal Member admin,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody InquiryResponseRequestDto dto
     ) {
+        Member admin = userDetails.getMember();
         if (!admin.getRole().equals(Member.Role.관리자)) {
             return ResponseEntity.status(403).build();
         }
-
+    
         Long responseId = responseService.createResponse(admin, dto);
         return ResponseEntity.ok(responseId);
     }
+    
 
     @GetMapping("")
-    public ResponseEntity<List<MemberInquiryDetailDto>> getAllInquiries(@AuthenticationPrincipal Member admin) {
-        System.out.println("✅ 관리자 인증 정보: " + admin); // 이거 찍어보면 바로 확인됨
+    public ResponseEntity<List<MemberInquiryDetailDto>> getAllInquiries(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        Member admin = userDetails.getMember(); // 🔥 여기서 Member 추출
         if (!admin.getRole().equals(Member.Role.관리자)) {
             return ResponseEntity.status(403).build();
         }
 
-        List<MemberInquiryDetailDto> inquiries = inquiryService.getAllInquiries(); // ✅ 서비스 연결
+        List<MemberInquiryDetailDto> inquiries = inquiryService.getAllInquiries();
         return ResponseEntity.ok(inquiries);
     }
+
 }

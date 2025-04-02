@@ -1,5 +1,6 @@
 package site.unoeyhi.apd.security;
 
+import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -65,15 +66,17 @@ public class JwtFilter extends OncePerRequestFilter {
                 if (jwtUtil.validateToken(token)) {
                     log.info("✅ JWT 토큰 검증 성공: " + token);
                     String subject = jwtUtil.extractSubject(token);
-                    String authType = jwtUtil.extractAuthType(token);
-                    
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(subject);
-        
+                
+                    // ✅ CustomUserDetails → Member 추출
+                    CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(subject);
+
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-        
-                    SecurityContextHolder.getContext().setAuthentication(authentication); // 인증 정보 저장
-                } else {
+                    
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    
+                }
+                else {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
                     log.warn("🚨 JWT 검증 실패: 유효하지 않은 토큰");
                 }

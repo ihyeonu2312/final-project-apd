@@ -1,11 +1,13 @@
 package site.unoeyhi.apd.security;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import site.unoeyhi.apd.entity.Member;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 public class CustomUserDetails implements UserDetails {
 
@@ -43,10 +45,11 @@ public class CustomUserDetails implements UserDetails {
         return this.member;
     }
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // 필요시 권한 추가
-    }
+@Override
+public Collection<? extends GrantedAuthority> getAuthorities() {
+    return List.of(new SimpleGrantedAuthority("ROLE_" + role)); // 예: ROLE_관리자
+}
+
 
     @Override
     public String getPassword() {

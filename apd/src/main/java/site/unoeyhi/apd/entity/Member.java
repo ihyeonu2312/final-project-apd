@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import site.unoeyhi.apd.entity.ChatRoom;
 import site.unoeyhi.apd.entity.ChatMessage;
 
@@ -94,6 +97,9 @@ public class Member {
         INACTIVE  // 이메일 인증 미완료 (또는 제제 및 정지 비활성 계정)
     }
 
+    public List<GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + this.role.name()));
+    }
 
 
     // ✅ 자동으로 createdAt 설정 (최초 등록 시)

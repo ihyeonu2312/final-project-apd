@@ -65,25 +65,25 @@ public class AuthController {
           Authentication authentication = authenticationManager.authenticate(
               new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
           );
-
+  
           SecurityContextHolder.getContext().setAuthentication(authentication);
-
-          // ✅ JWT 생성
-          String jwt = jwtUtil.generateToken(authentication.getName());
-
-          // ✅ 로그인한 사용자의 memberId 가져오기
+  
+          // ✅ 로그인한 사용자 정보 조회
           Optional<Member> member = memberRepository.findByEmail(authentication.getName());
-
+  
           if (member.isEmpty()) {
-              return ResponseEntity.badRequest().body(new AuthResponse(null, null)); // 회원 없음
+              return ResponseEntity.badRequest().body(new AuthResponse(null, null));
           }
-
-          return ResponseEntity.ok(new AuthResponse(jwt, member.get().getMemberId())); // ✅ memberId 추가
+  
+          // ✅ 역할 포함된 JWT 발급
+          String jwt = jwtUtil.generateToken(member.get().getEmail(), member.get().getRole().name());
+  
+          return ResponseEntity.ok(new AuthResponse(jwt, member.get().getMemberId()));
       } catch (Exception e) {
           return ResponseEntity.badRequest().body(new AuthResponse(null, null));
       }
   }
-
+  
   @PostMapping("/signup")
   public ResponseEntity<String> signup(@RequestBody SignupRequest request) {
     Optional<EmailVerification> verificationOpt = emailVerificationRepository.findByEmail(request.getEmail());
@@ -199,7 +199,9 @@ public class AuthController {
           log.info("✅ 사용자 정보 조회 완료: {}", member);
   
           // ✅ JWT 토큰 생성 (회원 로그인)
-          String jwtToken = jwtUtil.generateTokenForKakao(member.getKakaoId());
+          // ✅ 역할 정보 포함하여 JWT 생성
+String jwtToken = jwtUtil.generateTokenForKakao(member.getKakaoId(), member.getRole().name());
+
  
           log.info("✅ JWT 발급 완료: {}", jwtToken);
           // ✅ 프론트엔드 `/kakao/callback?token=JWT값`으로 리디렉트

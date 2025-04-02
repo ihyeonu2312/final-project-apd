@@ -103,8 +103,8 @@ public class MemberService {
         if (!passwordEncoder.matches(password, member.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "비밀번호가 일치하지 않습니다.");
         }
-
-        return jwtUtil.generateToken(member.getEmail()); // JWT 토큰 생성 후 반환
+        return jwtUtil.generateToken(member.getEmail(), member.getRole().name());
+        // JWT 토큰 생성 후 반환
     }
 
     @Transactional

@@ -34,6 +34,18 @@ public class JwtUtil {
                 .compact();
     }
 
+    // ✅ 이메일 + 역할을 받아서 JWT 생성
+public String generateToken(String email, String role) {
+    return Jwts.builder()
+            .setSubject(email)
+            .claim("authType", "EMAIL")
+            .claim("role", role) // <-- 역할 추가!
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+            .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+            .compact();
+}
+
 
      // ✅ 📌 JWT 생성 (카카오 기반)
      public String generateTokenForKakao(Long kakaoId) {
@@ -45,6 +57,18 @@ public class JwtUtil {
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
+    public String generateTokenForKakao(Long kakaoId, String role) {
+        return Jwts.builder()
+                .setSubject(String.valueOf(kakaoId))
+                .claim("authType", "KAKAO")
+                .claim("role", role)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+    
 
     // ✅ 📌 JWT에서 이메일 추출
     public String extractSubject(String token) {

@@ -90,7 +90,7 @@ public class ProductServiceImpl implements ProductService {
             saveProductImages(savedProduct, productDto.getAdditionalImages());
 
             // ✅ 옵션 저장
-            saveProductOptions(savedProduct, productDto.getOptions());
+            // saveProductOptions(savedProduct, productDto.getOptions());
 
             // ✅ 할인 저장
             double discountPrice = (productDto.getDiscountPrice() != null) ? productDto.getDiscountPrice() : 0.0;
@@ -227,30 +227,30 @@ public class ProductServiceImpl implements ProductService {
 
      // ✅ 특정 상품 조회 구현
      private ReviewDto convertToReviewDto(Review review) {
-    return new ReviewDto(
-        review.getReviewId(),
-        review.getProduct().getProductId(),
-        review.getMemberId(),
-        review.getRating(),
-        review.getComment(),
-        review.getReviewImageUrl(),
-        review.getCreatedAt()
-    );
-}
+        return new ReviewDto(
+            review.getReviewId(),
+            review.getProduct().getProductId(),
+            review.getMemberId(),
+            review.getRating(),
+            review.getComment(),
+            review.getReviewImageUrl(),
+            review.getCreatedAt()
+        );
+    }
 
-@Override
-public Optional<ProductDto> getProductById(Long productId) {
-    return productRepository.findById(productId).map(product -> {
-        Double avgRating = reviewRepository.findAverageRatingByProductId(productId);
-        List<ReviewDto> reviewDtos = reviewRepository.findByProductProductId(productId)
-                .stream()
-                .map(this::convertToReviewDto)
-                .collect(Collectors.toList());
-        Discount discount = discountRepository.findByProduct_ProductId(productId); // 할인
+    @Override
+    public Optional<ProductDto> getProductById(Long productId) {
+        return productRepository.findByIdWithOptions(productId).map(product -> {
+            Double avgRating = reviewRepository.findAverageRatingByProductId(productId);
+            List<ReviewDto> reviewDtos = reviewRepository.findByProductProductId(productId)
+                    .stream()
+                    .map(this::convertToReviewDto)
+                    .collect(Collectors.toList());
+            Discount discount = discountRepository.findByProduct_ProductId(productId); // 할인
 
-        return new ProductDto(product, avgRating, discount, reviewDtos); // ✅ 리뷰 포함된 생성자 사용
-    });
-}
+            return new ProductDto(product, avgRating, discount, reviewDtos); // ✅ 리뷰 포함된 생성자 사용
+        });
+    }
 
     @Override
     public Optional<Product> findByTitle(String title) {

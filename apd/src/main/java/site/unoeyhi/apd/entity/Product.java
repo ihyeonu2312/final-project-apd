@@ -3,6 +3,7 @@ package site.unoeyhi.apd.entity;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -92,6 +93,13 @@ public class Product {
         image.setProduct(this); // Product 설정
         this.images.add(image);
     }
+    // Product.java 내부에 아래 메서드 추가
+    public List<Option> getOptions() {
+        return this.productOptions.stream()
+                .map(po -> po.getOption())  // ❗ map(ProductOption::getOption) 대신 람다 사용
+                .collect(Collectors.toList());
+    }
+
     
     
 }

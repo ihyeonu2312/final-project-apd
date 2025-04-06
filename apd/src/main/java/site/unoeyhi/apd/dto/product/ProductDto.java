@@ -3,9 +3,11 @@ package site.unoeyhi.apd.dto.product;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.*;
 import site.unoeyhi.apd.entity.Discount;
+import site.unoeyhi.apd.entity.Option;
 import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.entity.ProductImage;
 import site.unoeyhi.apd.entity.ProductOption;
@@ -30,7 +32,7 @@ public class ProductDto {
 
     private String detailUrl;             // 상세 페이지 URL
     private List<String> additionalImages; // 추가 이미지 리스트
-    private List<OptionDto> options;       // 옵션 리스트
+    private Map<String, List<String>> options; //옵션 리스트
     private LocalDateTime createdAt;      // 생성 날짜
     private LocalDateTime updatedAt;      // 수정 날짜
 
@@ -49,6 +51,7 @@ public class ProductDto {
         this.updatedAt = product.getUpdatedAt();
         this.reviews = reviews;
     
+        //할인 계산
         if (discount != null && isDiscountValid(discount)) {
             this.discountPrice = discount.getDiscountValue();
             this.originalPrice = this.price + this.discountPrice;
@@ -56,17 +59,30 @@ public class ProductDto {
             this.discountPrice = 0.0;
             this.originalPrice = this.price;
         }
+
+        // ✅ 옵션 가공하여 Map<String, List<String>> 형태로 설정
+        if (product.getOptions() != null) {
+            this.options = product.getOptions().stream()
+                    .collect(Collectors.groupingBy(
+                        Option::getOptionValueType,
+                        Collectors.mapping(Option::getOptionValue, Collectors.toList())
+                    ));
+        } else {
+            this.options = Map.of();
+        }
+        
     }
+    
     public ProductDto(Product product, Double avgRating, Discount discount) {
         this(product, avgRating, discount, List.of()); // 기본값으로 빈 리뷰 리스트 전달
     }
     
 
-// ✅ 할인 기간이 유효한지 확인하는 메서드
-private boolean isDiscountValid(Discount discount) {
-    LocalDate today = LocalDate.now();
-    return (discount.getStartDate().isBefore(today) || discount.getStartDate().isEqual(today)) &&
-           (discount.getEndDate() == null || discount.getEndDate().isAfter(today));
-}
+    // ✅ 할인 기간이 유효한지 확인하는 메서드
+    private boolean isDiscountValid(Discount discount) {
+        LocalDate today = LocalDate.now();
+        return (discount.getStartDate().isBefore(today) || discount.getStartDate().isEqual(today)) &&
+            (discount.getEndDate() == null || discount.getEndDate().isAfter(today));
+    }
 
 }

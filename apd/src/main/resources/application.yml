@@ -74,7 +74,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true 
     open-in-view: false  # 🔹 추가됨: View에서 JPA 세션 사용 방지
     properties:

@@ -44,6 +44,9 @@ public class PaymentController {
     String tid = data.get("tid");
     String amount = data.get("amount");
 
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.TEXT_PLAIN);
+    
         if ("3001".equals(resultCode)) {
             // ✅ 결제 성공 처리
             // 주문 ID 파싱해서 주문 상태 업데이트 로직 추가
@@ -51,7 +54,7 @@ public class PaymentController {
             // ❌ 결제 실패 처리
         }
 
-        return ResponseEntity.ok("RECEIVED");
+        return ResponseEntity.ok("OK");
     }
 
 

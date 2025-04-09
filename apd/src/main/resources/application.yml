@@ -31,7 +31,7 @@ spring:
     name: apd
 
   datasource:
-    url: jdbc:mariadb://api.unoeyhi.site:3306/mifo
+    url: jdbc:mariadb://np.unoeyhi.site:3306/mifo
     driver-class-name: org.mariadb.jdbc.Driver
     username: ${database.username}
     password: ${database.password}

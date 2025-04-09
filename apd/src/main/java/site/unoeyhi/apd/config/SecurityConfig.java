@@ -97,7 +97,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // ✅ 정확한 프론트엔드 도메인 허용
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"
+        ,"https://unoeyhi.site" )); // ✅ 정확한 프론트엔드 도메인 허용
         configuration.setAllowedMethods(List.of("OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE")); // ✅ OPTIONS 허용 필수
         configuration.setAllowedHeaders(List.of("*")); // ✅ 모든 헤더 허용
         configuration.setAllowCredentials(true); // ✅ 인증 정보 포함 허용

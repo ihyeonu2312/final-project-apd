@@ -13,7 +13,7 @@ import site.unoeyhi.apd.service.cart.PaymentService;
 
 @Log4j2
 @RestController
-@RequestMapping("/payment")
+@RequestMapping("/api/payment")
 @RequiredArgsConstructor
 public class PaymentController {
 

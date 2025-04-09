@@ -19,7 +19,7 @@ public class S3Service {
 
     public String uploadFile(String key, byte[] content, String mimeType) {
         try {
-            // S3 버킷에 업로드하는 로직
+            // S3 버킷에 업로드하는 로직.
             InputStream inputStream = new ByteArrayInputStream(content);
 
             // PutObjectRequest 생성

@@ -57,7 +57,7 @@ public class ProductCrawler {
             // ✅ 가격 크롤링
             double originalPrice = extractPrice(detailPage, "span.origin-price"); // ✅ 원가 크롤링
             double discountRate = extractDiscountRate(detailPage, "span.discount-rate"); // ✅ 할인율 크롤링
-            double discountPrice = extractPrice(detailPage, "div.prod-coupon-price"); // ✅ 할인가 크롤링
+            double discountPrice = extractPrice(detailPage, "div.prod-coupon-price span.total-price strong"); // ✅ 할인가 크롤링
             double finalPrice = extractPrice(detailPage, "span.total-price"); // ✅ 최종 가격 크롤링
 
             // ✅ 할인율이 존재할 경우, 할인가 직접 계산 (할인가가 없을 때)
@@ -125,7 +125,7 @@ public class ProductCrawler {
         double discountValue = originalPrice - finalPrice;
 
         // ✅ 할인율이 존재하는 경우만 저장
-        if (discountValue > 0) {
+        if (Math.abs(discountValue) >= 1) { // 1원 이상 차이만 할인
             discountService.saveDiscount(savedProduct, "fixed", discountValue);
             System.out.println("✅ [할인 저장 완료] 원가: " + originalPrice + " | 최종 가격: " + finalPrice + " | 할인 값: " + discountValue);
         } else {
@@ -362,30 +362,134 @@ public class ProductCrawler {
         // extractInputOptions(detailPage.locator("input[type='text']"), optionList, optionSet);
         extractPriceChangeOptions(detailPage.locator("span.price-change"), optionList, optionSet);
 
-        // ✅ 드롭다운 옵션 크롤링 추가
+        double basePrice = extractPrice(detailPage, "div.prod-coupon-price span.total-price strong");
+
+        // ✅ 드롭다운 옵션 크롤링
         List<Locator> dropdownOptions = detailPage.locator("li.prod-option-dropdown-item").all();
-            for (Locator option : dropdownOptions) {
-                String optionText = option.textContent().trim();
-                int priceGap = extractPriceGap(optionText);
-                String cleanValue = optionText.replaceAll("\\(.*\\)", "").trim();
 
-                if (!cleanValue.isEmpty() && optionSet.add(cleanValue)) {
-                    optionList.add(new OptionDto("드롭다운 옵션", cleanValue, priceGap));
-                    System.out.println("🛠 [옵션 추가] 드롭다운 옵션: " + cleanValue + " (추가금: " + priceGap + ")");
+        for (int i = 0; i < dropdownOptions.size(); i++) {
+            Locator option = dropdownOptions.get(i);
+            String optionText = option.textContent().trim();
+            String cleanValue = optionText.replaceAll("\\(.*\\)", "").trim();
+
+            // 클릭 전에 현재 가격 저장
+            double currentPriceBeforeClick = extractPrice(detailPage, "div.prod-coupon-price span.total-price strong");
+
+            // ✅ 옵션 클릭
+            option.click();
+
+            // ✅ 가격 변경될 때까지 대기
+            try {
+                detailPage.waitForFunction(
+                    "prev => document.querySelector('span.total-price strong')?.innerText.replace(/[^0-9]/g, '') !== prev",
+                    Integer.toString((int) currentPriceBeforeClick),
+                    new Page.WaitForFunctionOptions().setTimeout(3000)
+                );
+            } catch (Exception e) {
+                System.out.println("⚠️ [가격 대기 실패] 옵션: " + cleanValue);
+            }
+
+            // ✅ 변경된 가격 다시 추출
+            double changedPrice = extractPrice(detailPage, "div.prod-coupon-price span.total-price strong");
+            int priceGap = (int)(changedPrice - basePrice);
+
+            if (!cleanValue.isEmpty() && optionSet.add(cleanValue)) {
+                optionList.add(new OptionDto("드롭다운 옵션", cleanValue, priceGap));
+                System.out.println("🛠 [옵션 추가] 드롭다운 옵션: " + cleanValue + " (추가금: " + priceGap + ")");
+            }
+        }
+
+        // ✅ 버튼 옵션 클릭 후 가격 변화 추적
+        Locator buttonOptions = detailPage.locator("button.prod-option__selected");
+
+        for (int i = 0; i < buttonOptions.count(); i++) {
+            Locator button = buttonOptions.nth(i);
+            String optionText = button.textContent().trim();
+            if (optionText.isEmpty() || optionText.equals("옵션을 선택해 주세요")) continue;
+
+            // 기존 가격 저장
+            double priceBeforeClick = extractPrice(detailPage, "div.prod-coupon-price span.total-price strong");
+
+            // 버튼 클릭
+            button.click();
+
+            // 가격 변화 대기
+            try {
+                detailPage.waitForFunction(
+                    "prev => document.querySelector('span.total-price strong')?.innerText.replace(/[^0-9]/g, '') !== prev",
+                    Integer.toString((int) priceBeforeClick),
+                    new Page.WaitForFunctionOptions().setTimeout(3000)
+                );
+            } catch (Exception e) {
+                System.out.println("⚠️ [가격 대기 실패] 버튼 옵션: " + optionText);
+            }
+
+            // 새 가격 가져오기
+            double afterClickPrice = extractPrice(detailPage, "div.prod-coupon-price span.total-price strong");
+            int priceGap = (int)(afterClickPrice - basePrice);
+
+            if (!optionText.isEmpty() && optionSet.add(optionText)) {
+                optionList.add(new OptionDto("버튼 옵션", optionText, priceGap));
+                System.out.println("🛠 [옵션 추가] 버튼 옵션: " + optionText + " (추가금: " + priceGap + ")");
+            }
+        }
+
+        //드롭다운 버튼 옵션 선택
+        Locator dropdownButtons = detailPage.locator("button.prod-option__selected");
+
+        for (int i = 0; i < dropdownButtons.count(); i++) {
+            Locator button = dropdownButtons.nth(i);
+            button.click(); // 드롭다운 열기
+            detailPage.waitForTimeout(300);
+
+            Locator optionListItems = detailPage.locator("ul.prod-option__list > li");
+            for (int j = 0; j < optionListItems.count(); j++) {
+                Locator item = optionListItems.nth(j);
+                String itemText = item.textContent().trim();
+                if (itemText.isEmpty() || itemText.contains("선택") || itemText.contains("전체")) continue;
+
+                // 클릭 전 가격
+                double priceBefore = extractPrice(detailPage, "div.prod-coupon-price span.total-price strong");
+
+                item.click(); // 실제 옵션 클릭
+                detailPage.waitForTimeout(300);
+
+                // 가격 변경 감지
+                try {
+                    detailPage.waitForFunction(
+                        "prev => document.querySelector('span.total-price strong')?.innerText.replace(/[^0-9]/g, '') !== prev",
+                        Integer.toString((int) priceBefore),
+                        new Page.WaitForFunctionOptions().setTimeout(3000)
+                    );
+                } catch (Exception e) {
+                    System.out.println("⚠️ [가격 대기 실패] 버튼 옵션 클릭 실패: " + itemText);
                 }
-            }
 
-        
-            // ✅ 옵션이 없는 경우 기본 옵션 추가
-            if (optionList.isEmpty()) {
-                optionList.add(new OptionDto("기본 옵션", "단일 상품",0));
-                System.out.println("⚠️ [기본 옵션 추가] 옵션이 없어 기본 옵션 저장");
+                // 변경된 가격 계산
+                double priceAfter = extractPrice(detailPage, "div.prod-coupon-price span.total-price strong");
+                int priceGap = (int)(priceAfter - basePrice);
+
+                if (!itemText.isEmpty() && optionSet.add(itemText)) {
+                    optionList.add(new OptionDto("드롭다운/버튼 옵션", itemText, priceGap));
+                    System.out.println("🛠 [옵션 추가] " + itemText + " (추가금: " + priceGap + ")");
+                }
+
+                button.click(); // 다시 드롭다운 열기 (다음 옵션을 위해)
+                detailPage.waitForTimeout(300);
             }
-        
-        
-            // ✅ 크롤링된 옵션 출력
-            System.out.println("🛠 [옵션 크롤링 완료] 크롤링된 옵션 개수: " + optionList.size());
-            return optionList;
+        }
+
+
+
+        // ✅ 옵션이 없는 경우 기본 옵션 추가
+        if (optionList.isEmpty()) {
+            optionList.add(new OptionDto("기본 옵션", "단일 상품", 0));
+            System.out.println("⚠️ [기본 옵션 추가] 옵션이 없어 기본 옵션 저장");
+        }
+
+        // ✅ 크롤링된 옵션 출력
+        System.out.println("🛠 [옵션 크롤링 완료] 크롤링된 옵션 개수: " + optionList.size());
+        return optionList;
     }
     
 
@@ -424,9 +528,6 @@ public class ProductCrawler {
             }
         }
     }
-    
-    
-    
     
     
     private void extractTableOptions(Locator locator, List<OptionDto> optionList, Set<String> optionSet) {

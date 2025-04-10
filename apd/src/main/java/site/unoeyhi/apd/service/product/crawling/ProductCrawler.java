@@ -1,8 +1,5 @@
 // package site.unoeyhi.apd.service.product.crawling;
 
-// import com.microsoft.playwright.*;
-// import com.microsoft.playwright.options.LoadState;
-// import com.microsoft.playwright.options.WaitUntilState;
 // import org.springframework.stereotype.Service;
 // import site.unoeyhi.apd.dto.product.OptionDto;
 // import site.unoeyhi.apd.dto.product.ProductDto;

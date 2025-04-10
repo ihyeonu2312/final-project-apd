@@ -23,9 +23,6 @@ public class Category {
     @Column(name = "category_id", updatable = false, nullable = false)
     private Long categoryId;
 
-    // @Column(name = "coupang_category_key", nullable = true, unique = true)
-    // private String coupangCategoryKey; // ✅ 쿠팡 카테고리 키 (예: "fashion", "electronics")
-
     @Column(nullable = false, unique = true) 
     private String categoryName; // ✅ 쿠팡 카테고리명
 

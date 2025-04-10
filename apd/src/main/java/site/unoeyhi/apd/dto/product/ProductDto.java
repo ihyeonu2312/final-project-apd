@@ -63,12 +63,13 @@ public class ProductDto {
         // ✅ 옵션 가공하여 Map<String, List<String>> 형태로 설정
         if (product.getOptions() != null) {
             this.options = product.getOptions().stream()
-                    .collect(Collectors.groupingBy(
-                        Option::getOptionValueType,
-                        Collectors.mapping(Option::getOptionValue, Collectors.toList())
-                    ));
+                .map(OptionDto::new) // Option → OptionDto 변환
+                .collect(Collectors.groupingBy(
+                    OptionDto::getOptionValueType,
+                    Collectors.mapping(OptionDto::getOptionValue, Collectors.toList())
+                ));
         } else {
-            this.options = Map.of();
+            this.options = Map.of(); // 빈 맵 처리
         }
         
     }

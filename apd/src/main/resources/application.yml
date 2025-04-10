@@ -69,12 +69,12 @@ spring:
       secret: ${nicepay.client.secret}
 
   crawler:
-    enabled: false
+    enabled: true
             
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true 
     open-in-view: false  # 🔹 추가됨: View에서 JPA 세션 사용 방지
     properties:

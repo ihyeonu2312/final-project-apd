@@ -2,7 +2,7 @@ package site.unoeyhi.apd.service.product.crawling;
 
 import com.microsoft.playwright.*;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-@ConditionalOnProperty(name = "crawler.enabled", havingValue = "true") //브라우저 비활성화
+// @ConditionalOnProperty(name = "crawler.enabled", havingValue = "true") //브라우저 비활성화
 @Service
 public class BrowserManager {
     private static final Path COOKIE_PATH = Paths.get("cookies.json");

@@ -64,9 +64,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화 (API 서버에서는 주로 비활성화)
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login","api/auth/kakao/login",
-                "api/auth/kakao/callback", "/api/auth/signup", "/api/auth/send-email",
-                "/api/auth/verify-email", "/api/user/check-email", "api/auth/reset-password","/api/auth/me", "/api/cart/**", "/api/used-products").permitAll()//로그인 & 회원가입 & 이메일 인증 API 허용
+                .requestMatchers("/api/auth/login","/api/auth/kakao/login",
+                "/api/auth/kakao/callback", "/api/auth/signup", "/api/auth/send-email",
+                "/api/auth/verify-email", "/api/user/check-email", "/api/auth/reset-password","/api/auth/me", "/api/cart/**", "/api/used-products").permitAll()//로그인 & 회원가입 & 이메일 인증 API 허용
                 .requestMatchers("/api/auth/**").authenticated() // 
                 .requestMatchers("/api/reviews/**").permitAll() // 
                 .requestMatchers("/api/user/check-nickname", "/api/user/check-phone").permitAll()

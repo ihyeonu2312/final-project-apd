@@ -43,4 +43,16 @@ public class OptionServiceImpl implements OptionService {
     public Optional<Option> findByTypeAndValue(String optionValueType, String optionValue) {
         return optionRepository.findByOptionValueTypeAndOptionValue(optionValueType, optionValue);
     }
+    @Override
+    public Option findOrCreateOption(String type, String value, int priceGap) {
+        return optionRepository.findByOptionValueTypeAndOptionValue(type, value)
+            .orElseGet(() -> optionRepository.save(
+                Option.builder()
+                    .optionValueType(type)
+                    .optionValue(value)
+                    .priceGap(priceGap)
+                    .build()
+            ));
+    }
+
 }

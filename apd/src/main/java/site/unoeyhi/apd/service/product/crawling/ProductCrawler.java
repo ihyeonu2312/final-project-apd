@@ -302,11 +302,6 @@ public class ProductCrawler {
             return 0.0;
         }
     }
-
-
-
-    
-
     /**
      * ✅ 상품 상세 페이지에서 추가 이미지 크롤링
      */
@@ -364,25 +359,26 @@ public class ProductCrawler {
         extractListOptions(detailPage.locator("div.bundle-option"), "번들 옵션", optionList, optionSet);
         extractAttributeOptions(detailPage.locator("input[type='radio']"), "value", "라디오 버튼 옵션", optionList, optionSet);
         extractListOptions(detailPage.locator("select option"), "셀렉트 옵션", optionList, optionSet);
-        extractInputOptions(detailPage.locator("input[type='text']"), optionList, optionSet);
+        // extractInputOptions(detailPage.locator("input[type='text']"), optionList, optionSet);
         extractPriceChangeOptions(detailPage.locator("span.price-change"), optionList, optionSet);
 
         // ✅ 드롭다운 옵션 크롤링 추가
         List<Locator> dropdownOptions = detailPage.locator("li.prod-option-dropdown-item").all();
             for (Locator option : dropdownOptions) {
                 String optionText = option.textContent().trim();
+                int priceGap = extractPriceGap(optionText);
+                String cleanValue = optionText.replaceAll("\\(.*\\)", "").trim();
 
-                // ✅ 옵션 값이 비어있지 않은지 확인 후 저장
-                if (!optionText.isEmpty() && optionSet.add(optionText)) {
-                    optionList.add(new OptionDto("드롭다운 옵션", optionText));
-                    System.out.println("🛠 [옵션 추가] 드롭다운 옵션: " + optionText);
+                if (!cleanValue.isEmpty() && optionSet.add(cleanValue)) {
+                    optionList.add(new OptionDto("드롭다운 옵션", cleanValue, priceGap));
+                    System.out.println("🛠 [옵션 추가] 드롭다운 옵션: " + cleanValue + " (추가금: " + priceGap + ")");
                 }
             }
 
         
             // ✅ 옵션이 없는 경우 기본 옵션 추가
             if (optionList.isEmpty()) {
-                optionList.add(new OptionDto("기본 옵션", "단일 상품"));
+                optionList.add(new OptionDto("기본 옵션", "단일 상품",0));
                 System.out.println("⚠️ [기본 옵션 추가] 옵션이 없어 기본 옵션 저장");
             }
         
@@ -412,16 +408,19 @@ public class ProductCrawler {
     
             // **소문자로 변환 후 정확한 일치 검사**
             boolean isExcluded = excludedKeywords.stream().anyMatch(ex -> optionText.equalsIgnoreCase(ex));
-    
             if (isExcluded) {
                 System.out.println("🚫 [필터링됨] 옵션 제외: " + optionText);
                 continue;
             }
-    
+
+            // priceGap 추출 + 괄호 제거
+            int priceGap = extractPriceGap(optionText);
+            String cleanValue = optionText.replaceAll("\\(.*\\)", "").trim();
+        
             // ✅ 중복 방지 후 추가
             if (optionSet.add(optionText)) {
-                optionList.add(new OptionDto(optionType, optionText));
-                System.out.println("✅ 옵션 추가됨: " + optionType + " - " + optionText);
+                optionList.add(new OptionDto(optionType,  cleanValue, priceGap));
+                System.out.println("✅ 옵션 추가됨: " + optionType + " - " + cleanValue  + " (추가금: " + priceGap + ")");
             }
         }
     }
@@ -434,32 +433,40 @@ public class ProductCrawler {
         for (Locator row : locator.all()) {
             String optionTitle = row.locator("span.title").textContent().trim();
             String optionValue = row.locator("span.value").textContent().trim();
-            if (!optionTitle.isEmpty() && !optionValue.isEmpty() && optionSet.add(optionValue)) {
-                optionList.add(new OptionDto(optionTitle, optionValue));
+            int priceGap = extractPriceGap(optionValue);
+            String cleanValue = optionValue.replaceAll("\\(.*\\)", "").trim();
+
+            if (!optionTitle.isEmpty() && !cleanValue.isEmpty() && optionSet.add(cleanValue)) {
+                optionList.add(new OptionDto(optionTitle, cleanValue, priceGap));
             }
         }
     }
-    private void extractInputOptions(Locator locator, List<OptionDto> optionList, Set<String> optionSet) {
-        for (Locator input : locator.all()) {
-            String placeholder = input.getAttribute("placeholder");
-            String value = input.getAttribute("value");
-            String finalValue = (value != null) ? value : placeholder;
+
+    // private void extractInputOptions(Locator locator, List<OptionDto> optionList, Set<String> optionSet) {
+    //     for (Locator input : locator.all()) {
+    //         String placeholder = input.getAttribute("placeholder");
+    //         String value = input.getAttribute("value");
+    //         String finalValue = (value != null) ? value : placeholder;
     
-            if (finalValue != null && optionSet.add(finalValue)) {
-                optionList.add(new OptionDto("텍스트 입력 옵션", finalValue));
-            }
-        }
-    }
+    //         if (finalValue != null && optionSet.add(finalValue)) {
+    //             optionList.add(new OptionDto("텍스트 입력 옵션", finalValue));
+    //         }
+    //     }
+    // }
     private void extractPriceChangeOptions(Locator locator, List<OptionDto> optionList, Set<String> optionSet) {
         for (Locator option : locator.all()) {
             String priceText = option.textContent().trim();
             Locator parentOption = option.locator(".."); // 부모 요소에서 옵션 이름 찾기
             String optionName = parentOption.textContent().trim();
-    
-            if (!priceText.isEmpty() && optionSet.add(priceText)) {
-                String finalText = optionName + " (" + priceText + ")";
-                optionList.add(new OptionDto("옵션별 가격 변동", finalText));
+
+            String finalText = optionName + " (" + priceText + ")";
+            int priceGap = extractPriceGap(priceText);
+            String cleanValue = optionName.trim();
+            
+            if (!cleanValue.isEmpty() && optionSet.add(cleanValue)) {
+                optionList.add(new OptionDto("옵션별 가격 변동", cleanValue, priceGap));
             }
+            
         }
     }
     
@@ -467,14 +474,34 @@ public class ProductCrawler {
     
 
     private void extractAttributeOptions(Locator locator, String attributeName, String optionType, List<OptionDto> optionList, Set<String> optionSet) {
-    for (Locator option : locator.all()) {
-        String optionValue = option.getAttribute(attributeName);
-        if (optionValue != null && optionSet.add(optionValue)) {
-            optionList.add(new OptionDto(optionType, optionValue));
+        for (Locator option : locator.all()) {
+            String optionValue = option.getAttribute(attributeName);
+    
+            // null 체크 먼저
+            if (optionValue != null) {
+                int priceGap = extractPriceGap(optionValue);
+                String cleanValue = optionValue.replaceAll("\\(.*\\)", "").trim();
+    
+                if (!cleanValue.isEmpty() && optionSet.add(cleanValue)) {
+                    optionList.add(new OptionDto(optionType, cleanValue, priceGap));
+                }
+            }
         }
     }
-}
+    
 
+    private int extractPriceGap(String text) {
+        try {
+            if (text.contains("+") && text.contains("원")) {
+                String number = text.replaceAll(".*\\+(\\d{1,3}(,\\d{3})*)원.*", "$1");
+                return Integer.parseInt(number.replace(",", ""));
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ [가격 추출 실패] 원본 텍스트: " + text);
+        }
+        return 0;
+    }
+    
 
   
     // 랜덤 스크롤 메서드

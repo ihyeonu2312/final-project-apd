@@ -12,20 +12,23 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Table(name = "`option`")
+@EntityListeners(org.springframework.data.jpa.domain.support.AuditingEntityListener.class)
 public class Option {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "option_id")
-    private Long optionId; // 옵션 ID (PK)
+    private Long optionId;
 
     @Column(name = "option_value_type", nullable = false)
-    private String optionValueType; // 옵션 타입 (예: 색상, 크기)
+    private String optionValueType;
 
     @Column(name = "option_value", nullable = false)
-    private String optionValue; // 옵션 값 (예: 빨강, XL)
+    private String optionValue;
+
+    @Column(name = "price_gap", nullable = false, columnDefinition = "int default 0")
+    private int priceGap;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt; // 생성 날짜 (자동 저장)
+    private LocalDateTime createdAt;
 }

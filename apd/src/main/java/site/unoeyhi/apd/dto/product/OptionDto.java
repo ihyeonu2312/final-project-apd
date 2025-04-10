@@ -17,6 +17,7 @@ public class OptionDto {
     private String optionValue;     // ✅ 옵션 값 (예: 빨강, 파랑, M, L)
     private LocalDateTime createdAt; // ✅ 옵션 생성 날짜
     private String optionImageUrl;  // ✅ 옵션 이미지 URL (있을 경우)
+    private int priceGap; 
 
     // ✅ `Option` 엔티티를 DTO로 변환하는 생성자
     public OptionDto(Option option) {
@@ -24,6 +25,7 @@ public class OptionDto {
         this.optionValueType = option.getOptionValueType();
         this.optionValue = option.getOptionValue();
         this.createdAt = option.getCreatedAt();
+        this.priceGap = option.getPriceGap();
     }
 
     // ✅ `ProductOption` 엔티티를 DTO로 변환하는 생성자
@@ -33,11 +35,13 @@ public class OptionDto {
         this.optionValueType = option.getOptionValueType();
         this.optionValue = option.getOptionValue();
         this.createdAt = option.getCreatedAt();
+        this.priceGap = productOption.getPriceGap();
     }
 
-    public OptionDto(String optionValueType, String optionValue) {
+    public OptionDto(String optionValueType, String optionValue, int priceGap) {
         this.optionValueType = optionValueType;
         this.optionValue = optionValue;
+        this.priceGap = priceGap;
         this.optionImageUrl = null; // ✅ 새로운 옵션 추가 시 기본값
         this.createdAt = LocalDateTime.now(); // 기본 생성 시간 설정
     }

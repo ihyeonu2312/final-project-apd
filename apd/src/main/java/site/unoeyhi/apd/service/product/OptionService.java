@@ -11,6 +11,7 @@ public interface OptionService {
     Option getOptionById(Long id);
     void deleteOption(Long id);
     Optional<Option> findByTypeAndValue(String optionValueType, String optionValue);
+    Option findOrCreateOption(String type, String value, int priceGap);
     
 }
 

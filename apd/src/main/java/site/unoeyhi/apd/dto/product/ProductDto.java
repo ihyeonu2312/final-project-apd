@@ -32,7 +32,8 @@ public class ProductDto {
 
     private String detailUrl;             // 상세 페이지 URL
     private List<String> additionalImages; // 추가 이미지 리스트
-    private Map<String, List<String>> options; //옵션 리스트
+    private Map<String, List<String>> options; //옵션 리스트 프론트 호환용
+    private List<OptionDto> optionDetails;  //옵션 가격 포함 상세 리스트
     private LocalDateTime createdAt;      // 생성 날짜
     private LocalDateTime updatedAt;      // 수정 날짜
 
@@ -68,8 +69,13 @@ public class ProductDto {
                     OptionDto::getOptionValueType,
                     Collectors.mapping(OptionDto::getOptionValue, Collectors.toList())
                 ));
+            // ✅ 옵션 디테일 전체 포함 (옵션 가격 등)
+            this.optionDetails = product.getOptions().stream()
+            .map(OptionDto::new)
+            .collect(Collectors.toList());
         } else {
             this.options = Map.of(); // 빈 맵 처리
+            this.optionDetails = List.of();
         }
         
     }

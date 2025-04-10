@@ -25,4 +25,7 @@ public class ProductOption {
     @ManyToOne(fetch = FetchType.LAZY) // ✅ 옵션은 여러 상품과 연결될 수 있으므로 CascadeType 설정 X
     @JoinColumn(name = "option_id", nullable = false)
     private Option option; // 옵션 (Foreign Key)
+
+    @Column(name = "price_gap", nullable = false, columnDefinition = "int default 0")
+    private int priceGap;
 }

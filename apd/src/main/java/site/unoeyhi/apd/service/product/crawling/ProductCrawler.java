@@ -27,6 +27,7 @@ public class ProductCrawler {
     private final ProductService productService;
     private final DiscountService discountService;
 
+
     @Autowired
     public ProductCrawler(ProductService productService, DiscountService discountService ) {
         this.productService = productService;
@@ -93,6 +94,7 @@ public class ProductCrawler {
                     OptionDto::getOptionValueType,
                     Collectors.mapping(OptionDto::getOptionValue, Collectors.toList())
                 ));
+
     
             // ✅ 상품 저장
             ProductDto productDto = ProductDto.builder()

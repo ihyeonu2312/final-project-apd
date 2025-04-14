@@ -1,5 +1,6 @@
 package site.unoeyhi.apd.controller;
 
+import site.unoeyhi.apd.dto.MemberProfileDto;
 import site.unoeyhi.apd.dto.UpdateUserRequest;
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.repository.MemberRepository;

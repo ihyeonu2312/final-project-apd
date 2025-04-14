@@ -9,6 +9,7 @@ public record MemberInquiryDetailDto(
     String questionText, // ✅ 필드명 맞추기
     String status,
     LocalDateTime createdAt,
+    String memberNickname,
     List<InquiryResponseDto> responses
 ) {}
 

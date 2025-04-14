@@ -61,6 +61,7 @@ public class MemberInquiryService {
                   inquiry.getQuestionText(),   // ✅ questionText
                   inquiry.getStatus(),         // ✅ status
                   inquiry.getCreatedAt(),      // ✅ createdAt
+                  inquiry.getMember().getNickname(),
                   responseDtos                  // ✅ responses
               );
               

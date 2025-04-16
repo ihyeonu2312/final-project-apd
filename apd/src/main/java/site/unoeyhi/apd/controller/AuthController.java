@@ -23,10 +23,9 @@ import site.unoeyhi.apd.util.JwtUtil;
 import site.unoeyhi.apd.dto.AuthResponse;
 import site.unoeyhi.apd.dto.EmailVerificationRequest;
 import site.unoeyhi.apd.dto.LoginRequest;
-import site.unoeyhi.apd.dto.MemberDto;
-
 import site.unoeyhi.apd.dto.ResetPasswordRequestDto;
 import site.unoeyhi.apd.dto.SignupRequest;
+import site.unoeyhi.apd.dto.member.MemberDto;
 import site.unoeyhi.apd.entity.EmailVerification;
 import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.entity.EmailVerification.EmailVerificationStatus;

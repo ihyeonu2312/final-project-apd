@@ -1,4 +1,4 @@
-package site.unoeyhi.apd.dto;
+package site.unoeyhi.apd.dto.member;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

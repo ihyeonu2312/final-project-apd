@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.unoeyhi.apd.dto.CategoryDto;
 import site.unoeyhi.apd.dto.product.CategoryWithProductsDto;
+import site.unoeyhi.apd.dto.product.ProductSummaryDto;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.repository.CategoryRepository;
 import java.util.List;
@@ -52,12 +53,21 @@ public class CategoryQueryServiceImpl implements CategoryQueryService {
     }
 
     // ✅ 상품 포함 DTO 변환
-    private CategoryWithProductsDto convertToDtoWithProducts(Category category) {
-        return new CategoryWithProductsDto(
-                category.getCategoryId(),
-                category.getCategoryName(),
-                category.getUrl(),
-                category.getProducts()  // ✅ 상품 포함
-        );
-    }
+private CategoryWithProductsDto convertToDtoWithProducts(Category category) {
+    List<ProductSummaryDto> productDtos = category.getProducts().stream()
+            .map(product -> new ProductSummaryDto(
+                    product.getProductId(),
+                    product.getName(),
+                    product.getImageUrl(),
+                    product.getPrice()
+            ))
+            .toList();
+
+    return new CategoryWithProductsDto(
+            category.getCategoryId(),
+            category.getCategoryName(),
+            category.getUrl(),
+            productDtos
+    );
+}
 }

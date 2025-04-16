@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.Locale.Category;
 
-@Service 
+// @Service // 로컬에선 해제
 public class ProductCrawler {
 
     private final ProductService productService;

@@ -13,7 +13,7 @@ import site.unoeyhi.apd.service.product.ProductService;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-@Service
+// @Service // 로컬에선 해제
 @EnableAsync
 public class CoupangCrawlerService {
 

@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Service
+// @Service // 로컬에선 해제
 public class CategoryCrawler {
     private final CategoryRepository categoryRepository;
     private final ProductCrawler productCrawler;

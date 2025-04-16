@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Scanner;
 
 // @ConditionalOnProperty(name = "crawler.enabled", havingValue = "true") //브라우저 비활성화
-@Service
+// @Service // 로컬에선 해제
 public class BrowserManager {
     private static final Path COOKIE_PATH = Paths.get("cookies.json");
 

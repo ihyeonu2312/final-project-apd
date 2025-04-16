@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-@Service
+// @Service // 로컬에선 해제
 public class CoupangLogin {
     private static final String COOKIES_PATH = "cookies.json";
 

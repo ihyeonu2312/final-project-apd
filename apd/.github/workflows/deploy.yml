@@ -1,0 +1,35 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치 푸시할 때 자동 배포
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Copy via SSH
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          source: "."
+          target: "/home/ubuntu/final-project-apd"
+
+      - name: Restart Spring Boot
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            pkill -f 'apd-0.0.1-SNAPSHOT.jar' || true
+            cd ~/final-project-apd/apd
+            ./gradlew build -x test
+            nohup java -Xmx512m -Xms256m -jar build/libs/apd-0.0.1-SNAPSHOT.jar > ~/logs/apd.log 2>&1 &

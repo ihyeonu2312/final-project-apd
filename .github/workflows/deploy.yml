@@ -31,16 +31,5 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           use_insecure_cipher: true
           script: |
-            echo "기존 프로세스 종료 시도"
-            pkill -f 'apd-0.0.1-SNAPSHOT.jar' || true
-
-            echo "프로젝트 디렉토리 이동"
-            cd ~/final-project-apd/apd || exit 1
-
-            echo "Gradle 빌드 시작"
-            ./gradlew clean build -x test || exit 1
-
-            echo "Spring Boot 실행 중..."
-            nohup setsid java -Xmx512m -Xms256m -jar build/libs/apd-0.0.1-SNAPSHOT.jar > ~/logs/apd.log 2>&1 &
-
-            echo "배포 스크립트 완료"
+            echo "🚀 실행 스크립트 실행"
+            ~/start-apd.sh

@@ -35,7 +35,7 @@ public class CartItem {
     private Product product;
 
     @Column(nullable = false)
-    private int quantity = 1; // 기본값 = 1
+    private int quantity = 1; // 기본값 1
 
     @Column(nullable = false)
     private double price; // 가격 저장

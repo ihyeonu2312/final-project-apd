@@ -3,7 +3,7 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # main 브랜치 푸시할 때 자동으로 배포
+      - main
 
 jobs:
   deploy:
@@ -22,6 +22,7 @@ jobs:
           source: "."
           target: "/home/ubuntu/final-project-apd"
           use_insecure_cipher: true
+          fingerprint: "SHA256:ZHTc02If6n7UuF9p6T3ZPiFK1X/GuUdQ8MiTScLs7wE"
 
       - name: Restart Spring Boot
         uses: appleboy/ssh-action@master
@@ -29,7 +30,8 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
-          use_insecure_cipher: true 
+          use_insecure_cipher: true
+          fingerprint: "SHA256:ZHTc02If6n7UuF9p6T3ZPiFK1X/GuUdQ8MiTScLs7wE"
           script: |
             pkill -f 'apd-0.0.1-SNAPSHOT.jar' || true
             cd ~/final-project-apd/apd

@@ -26,6 +26,7 @@ spring:
     include:
       - oauth
       - s3
+      - nicepay
 
   application:
     name: apd
@@ -68,6 +69,13 @@ spring:
     client:
       id: ${nicepay.client.id}
       secret: ${nicepay.client.secret}
+
+  site:
+    url: https://unoeyhi.site/payment/success
+
+
+
+    
 
   crawler:
     enabled: true

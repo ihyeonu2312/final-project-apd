@@ -79,7 +79,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/order/**").permitAll()
                 .requestMatchers("/api/inquiries/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("관리자")
-                .requestMatchers("/payment/**").permitAll()
+                .requestMatchers("/api/payment/**").permitAll()
                 .requestMatchers( "/api/crawl/products").permitAll()  // 🔥 /api/products 엔드포인트 허용
                 .requestMatchers("/api/address/search").permitAll() // ✅ 주소 검색 API는 인증 없이 허용
                 .requestMatchers("/api/user/profile").authenticated() // ✅ 🔥 프로필 조회는 인증 필요

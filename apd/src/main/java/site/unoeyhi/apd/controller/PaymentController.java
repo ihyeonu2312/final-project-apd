@@ -37,7 +37,7 @@ public class PaymentController {
     public ResponseEntity<?> initiatePayment(
         @PathVariable Long orderId,
         @RequestBody PaymentRequestDto requestDto) {
-        
+            log.info("✅ [PaymentController] /{}/pay 요청 수신", orderId);
         try {
             // ✅ `NicePayPaymentService`에서 처리하도록 위임 (Access Token 포함)
             PaymentInitiateResponseDto responseDto = paymentService.initiatePayment(orderId, requestDto);
@@ -59,9 +59,8 @@ public class PaymentController {
         try {
             if (!"3001".equals(resultCode)) {
                 log.warn("❌ 결제 실패 또는 취소: resultCode = {}", resultCode);
-                return ResponseEntity.ok("IGNORED");
-            }
-            
+                return ResponseEntity.badRequest().body("결제 실패: " + resultCode); // 실패 코드를 명시적으로 반환
+        }
             
             // 주문 ID 파싱
             Long orderId = Long.parseLong(moid.replace("ORDER-", ""));

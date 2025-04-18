@@ -48,6 +48,9 @@ public class NicePayAuthService {
                 System.out.println("✅ [NicePay] 기존 accessToken 사용");
                 return accessToken;
             }
+            
+            System.out.println("🔐 [NicePay] 기존 토큰 만료, 새로 발급 요청");
+            
 
             String credentials = clientId + ":" + clientSecret;
             String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());

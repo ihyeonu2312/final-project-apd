@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import site.unoeyhi.apd.dto.cart.PaymentInitiateResponseDto;
 import site.unoeyhi.apd.dto.cart.PaymentRequestDto;
 import site.unoeyhi.apd.dto.cart.PaymentResponseDto;
@@ -26,6 +27,7 @@ import site.unoeyhi.apd.repository.cart.OrderRepository;
 import site.unoeyhi.apd.repository.cart.PaymentRepository;
 import site.unoeyhi.apd.service.cart.NicePayAuthService;
 
+@Log4j2
 @Service
 @RequiredArgsConstructor
 public class NicePayPaymentService implements PaymentService {
@@ -38,8 +40,9 @@ public class NicePayPaymentService implements PaymentService {
     @Value("${nicepay.api.payment-url}")
     private String paymentApiUrl;
 
-    @Value("${your.site.return-url}")
+    @Value("${site.url:#{null}}")
     private String returnUrl;
+    
 
     @Override
     public PaymentInitiateResponseDto initiatePayment(Long orderId, PaymentRequestDto requestDto) {
@@ -59,6 +62,8 @@ public class NicePayPaymentService implements PaymentService {
         payload.put("orderId", "ORDER-" + orderId);
         payload.put("goodsName", "장바구니 상품");
         payload.put("returnUrl", returnUrl);  // ex: https://unoeyhi.site/payment/success
+        System.out.println("✅ 리턴 URL: " + returnUrl);
+
         payload.put("buyerName", "테스트고객");
         payload.put("buyerEmail", "test@example.com");
         payload.put("payMethod", requestDto.getPaymentMethod().name());
@@ -77,7 +82,8 @@ public class NicePayPaymentService implements PaymentService {
 
         Map<String, Object> body = response.getBody();
         if (body == null || !body.containsKey("nextRedirectUrl")) {
-            throw new RuntimeException("결제 요청 실패");
+            log.error("❌ 결제 요청 실패: 응답 없음");
+            throw new RuntimeException("결제 요청에 실패했습니다. 다시 시도해 주세요.");
         }
 
         String redirectUrl = (String) body.get("nextRedirectUrl");

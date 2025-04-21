@@ -86,7 +86,7 @@ public class NicePayPaymentService implements PaymentService {
             throw new RuntimeException("결제 요청에 실패했습니다. 다시 시도해 주세요.");
         }
 
-        String redirectUrl = (String) body.get("nextRedirectUrl");
+        String redirectUrl = (String) body.get("nextRedirectPcUrl");
         System.out.println("✅ 리다이렉트 URL: " + redirectUrl);
 
 

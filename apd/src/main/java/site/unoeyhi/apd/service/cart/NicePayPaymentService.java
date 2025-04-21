@@ -62,7 +62,7 @@ public class NicePayPaymentService implements PaymentService {
         payload.put("orderId", "ORDER-" + orderId);
         payload.put("goodsName", "장바구니 상품");
         payload.put("returnUrl", returnUrl);  // ex: https://unoeyhi.site/payment/success
-        System.out.println("✅ 리턴 URL: " + returnUrl);
+        System.out.println("✅ 리턴 URL: " + returnUrl); //콜백
 
         payload.put("buyerName", "테스트고객");
         payload.put("buyerEmail", "test@example.com");

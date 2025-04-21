@@ -69,9 +69,11 @@ spring:
     client:
       id: ${nicepay.client.id}
       secret: ${nicepay.client.secret}
+    return-url: https://api.unoeyhi.site/api/payment/result  # ✅ REST API 웹훅 콜백 주소
 
   site:
-    url: https://unoeyhi.site/payment/success
+    url: https://unoeyhi.site  # ✅ 프론트 주소
+
 
 
 

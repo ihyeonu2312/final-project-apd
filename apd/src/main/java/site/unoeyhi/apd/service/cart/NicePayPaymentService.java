@@ -40,9 +40,9 @@ public class NicePayPaymentService implements PaymentService {
     @Value("${nicepay.api.payment-url}")
     private String paymentApiUrl;
 
-    @Value("${site.url:#{null}}")
+    @Value("${nicepay.return-url}")
     private String returnUrl;
-    
+        
 
     @Override
     public PaymentInitiateResponseDto initiatePayment(Long orderId, PaymentRequestDto requestDto) {

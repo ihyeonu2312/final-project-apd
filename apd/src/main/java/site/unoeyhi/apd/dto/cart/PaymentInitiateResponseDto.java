@@ -7,5 +7,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class PaymentInitiateResponseDto {
     private String paymentUrl; // NICE 리디렉트 URL
-    private String paymentStatus; // 보통 "PENDING"
+    private String paymentStatus; // PENDING
 }

@@ -23,17 +23,6 @@ jobs:
           target: "/home/ubuntu/final-project-apd"
           use_insecure_cipher: true
 
-      - name: 🔐 Upload application-secret.yml from Secrets
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          use_insecure_cipher: true
-          script: |
-            echo "${{ secrets.APPLICATION_SECRET_YML }}" > /home/ubuntu/final-project-apd/apd/src/main/resources/application-secret.yml
-            sed -i 's/\\n/\n/g' /home/ubuntu/final-project-apd/apd/src/main/resources/application-secret.yml
-            
       - name: Restart Spring Boot
         uses: appleboy/ssh-action@master
         with:

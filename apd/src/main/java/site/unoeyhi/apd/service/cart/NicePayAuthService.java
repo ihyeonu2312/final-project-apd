@@ -3,6 +3,8 @@ package site.unoeyhi.apd.service.cart;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import jakarta.annotation.PostConstruct;
@@ -50,20 +52,22 @@ public class NicePayAuthService {
             System.out.println("🔐 [NicePay] 기존 토큰 만료, 새로 발급 요청");
     
             // ✅ 본문 구성
-            Map<String, String> body = Map.of(
-                "client_id", clientId,
-                "client_secret", clientSecret
-            );
-            System.out.println("🧾 보낼 본문: " + body); // body 확인
-    
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("client_id", clientId);
+            body.add("client_secret", clientSecret);
+
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-    
-            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(body, headers);
-    
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
             ResponseEntity<Map> response = restTemplate.exchange(
-                authUrl, HttpMethod.POST, requestEntity, Map.class
+                authUrl,
+                HttpMethod.POST,
+                request,
+                Map.class
             );
+
     
             System.out.println("🔐 응답 상태: " + response.getStatusCode());
             System.out.println("🔐 응답 바디: " + response.getBody());

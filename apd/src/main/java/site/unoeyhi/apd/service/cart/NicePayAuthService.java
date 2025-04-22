@@ -64,6 +64,7 @@ public class NicePayAuthService {
 
             // ✅ 실제 NicePay는 body 없이도 동작함
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("grant_type", "client_credentials"); //415 에러 방지
     
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
     

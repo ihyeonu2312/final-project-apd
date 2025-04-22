@@ -48,4 +48,18 @@ public class InquiryResponseController {
         return ResponseEntity.ok(inquiries);
     }
 
+    @GetMapping("/{id}")
+public ResponseEntity<MemberInquiryDetailDto> getInquiryDetail(
+        @AuthenticationPrincipal CustomUserDetails userDetails,
+        @PathVariable Long id
+) {
+    Member admin = userDetails.getMember();
+    if (!admin.getRole().equals(Member.Role.관리자)) {
+        return ResponseEntity.status(403).build();
+    }
+
+    MemberInquiryDetailDto detail = inquiryService.getInquiryDetail(id);
+    return ResponseEntity.ok(detail);
+}
+
 }

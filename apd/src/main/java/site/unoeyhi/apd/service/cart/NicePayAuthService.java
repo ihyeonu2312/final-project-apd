@@ -60,7 +60,8 @@ public class NicePayAuthService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
             headers.set("Authorization", "Basic " + encodedCredentials);
-    
+            System.out.println("🧾 Authorization 헤더: Basic " + encodedCredentials);
+
             // ✅ 실제 NicePay는 body 없이도 동작함
             MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
     

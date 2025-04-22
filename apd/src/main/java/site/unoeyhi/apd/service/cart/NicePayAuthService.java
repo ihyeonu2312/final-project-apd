@@ -57,9 +57,13 @@ public class NicePayAuthService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("Authorization", "Basic " + encodedCredentials);
 
-            HttpEntity<String> requestEntity = new HttpEntity<>(null, headers);
+            Map<String, String> body = Map.of(
+                "client_id", clientId,
+                "client_secret", clientSecret
+            );
+
+            HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(body, headers);
 
             ResponseEntity<Map> response = restTemplate.exchange(
                 authUrl,
@@ -67,6 +71,7 @@ public class NicePayAuthService {
                 requestEntity,
                 Map.class
             );
+
 
             System.out.println("🔐 응답 상태: " + response.getStatusCode());
             System.out.println("🔐 응답 바디: " + response.getBody());

@@ -8,6 +8,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import jakarta.annotation.PostConstruct;
+
+import java.util.Base64;
 import java.util.Map;
 
 @Service
@@ -51,23 +53,25 @@ public class NicePayAuthService {
     
             System.out.println("🔐 [NicePay] 기존 토큰 만료, 새로 발급 요청");
     
-            // ✅ 본문 구성
-            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-            body.add("client_id", clientId);
-            body.add("client_secret", clientSecret);
-
+            // ✅ Authorization 헤더 생성
+            String credentials = clientId + ":" + clientSecret;
+            String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
+    
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
+            headers.set("Authorization", "Basic " + encodedCredentials);
+    
+            // ✅ 실제 NicePay는 body 없이도 동작함
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+    
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-
+    
             ResponseEntity<Map> response = restTemplate.exchange(
                 authUrl,
                 HttpMethod.POST,
                 request,
                 Map.class
             );
-
     
             System.out.println("🔐 응답 상태: " + response.getStatusCode());
             System.out.println("🔐 응답 바디: " + response.getBody());

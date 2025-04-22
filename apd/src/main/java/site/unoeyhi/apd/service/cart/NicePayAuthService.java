@@ -54,6 +54,7 @@ public class NicePayAuthService {
                 "client_id", clientId,
                 "client_secret", clientSecret
             );
+            System.out.println("🧾 보낼 본문: " + body); // body 확인
     
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

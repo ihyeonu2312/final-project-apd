@@ -64,8 +64,8 @@ spring:
 
   nicepay:
     api:
-      auth-url: https://api.testpay.nicepay.co.kr/v1/token
-      payment-url: https://api.testpay.nicepay.co.kr/v1/payments/request
+      auth-url: https://sandbox-api.nicepay.co.kr/v1/token
+      payment-url: https://sandbox-api.nicepay.co.kr/v1/payments/request
     client:
       id: ${nicepay.client.id}
       secret: ${nicepay.client.secret}

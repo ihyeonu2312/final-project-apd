@@ -7,8 +7,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.Map;
 
+@RequiredArgsConstructor
 @Service
 public class NicePayAuthService {
 
@@ -26,10 +29,6 @@ public class NicePayAuthService {
     private long expireAt;
 
     private final RestTemplate restTemplate;
-
-    public NicePayAuthService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
 
     public String getAccessToken() {
         try {

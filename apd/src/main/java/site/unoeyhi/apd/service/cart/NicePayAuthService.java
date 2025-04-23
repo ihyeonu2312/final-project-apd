@@ -1,10 +1,10 @@
 package site.unoeyhi.apd.service.cart;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.util.Base64;
 import java.util.Map;
@@ -41,13 +41,16 @@ public class NicePayAuthService {
             String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
 
             Map<String, String> tokenResponse = webClient.post()
-                    .uri(authUrl)
-                    .header("Authorization", "Basic " + encodedCredentials)
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .body(BodyInserters.fromFormData("grant_type", "client_credentials")) // 이 포맷을 요구함
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block();
+                .uri(authUrl)
+                .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
+                .body(BodyInserters.fromFormData("grant_type", "client_credentials"))
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
+                .block();
+
+        
+
+
 
             if (tokenResponse != null && tokenResponse.get("accessToken") != null) {
                 accessToken = tokenResponse.get("accessToken").toString();

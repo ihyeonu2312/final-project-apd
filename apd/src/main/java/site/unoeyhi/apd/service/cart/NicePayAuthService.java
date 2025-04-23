@@ -21,10 +21,15 @@ public class NicePayAuthService {
     @Value("${nicepay.client.secret}")
     private String clientSecret;
 
-    private final RestTemplate restTemplate = new RestTemplate();
 
     private String accessToken;
     private long expireAt;
+
+    private final RestTemplate restTemplate;
+
+    public NicePayAuthService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     public String getAccessToken() {
         try {

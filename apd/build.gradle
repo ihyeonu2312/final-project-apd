@@ -25,6 +25,7 @@ repositories {
 
 dependencies {
     // Spring Boot 기본 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-webflux' //webClient
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -94,7 +95,6 @@ dependencies {
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
     implementation"com.fasterxml.jackson.core:jackson-databind:2.18.3"
 
-    implementation 'org.springframework.boot:spring-boot-starter-webflux' //webClient
 
 
 }

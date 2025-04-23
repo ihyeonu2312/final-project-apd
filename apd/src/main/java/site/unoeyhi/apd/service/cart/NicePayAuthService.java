@@ -41,7 +41,7 @@ public class NicePayAuthService {
 
 
             String response = webClient.post()
-            .uri(authUrl)
+            .uri("https://sandbox-api.nicepay.co.kr/v1/access-token")
             .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .body(BodyInserters.fromFormData("grant_type", "client_credentials"))
@@ -53,6 +53,7 @@ public class NicePayAuthService {
             .bodyToMono(String.class)
             .doOnNext(body -> System.out.println("✅ NicePay 정상 응답: " + body))
             .block();
+            System.out.println("🧭 authUrl 확인: " + authUrl);
         
 // 🔻 이 부분은 임시로 주석 처리
 /*

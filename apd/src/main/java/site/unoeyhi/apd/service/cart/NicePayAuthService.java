@@ -39,24 +39,26 @@ public class NicePayAuthService {
                 return accessToken;
             }
 
-            String credentials = clientId + ":" + clientSecret;
-            String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
 
-            Map<String, String> tokenResponse = webClient.post()
-                .uri(authUrl)
-                .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED) // ✅ 명시적으로 추가
-                .body(BodyInserters.fromFormData("grant_type", "client_credentials"))
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
-                .block();
+            String response = webClient.post()
+    .uri(authUrl)
+    .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
+    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+    .body(BodyInserters.fromFormData("grant_type", "client_credentials"))
+    .retrieve()
+    .bodyToMono(String.class)
+    .doOnNext(System.out::println) // ✅ 응답 확인
+    .block();
 
+// 🔻 이 부분은 임시로 주석 처리
+/*
+if (tokenResponse != null && tokenResponse.get("access_token") != null) {
+    accessToken = tokenResponse.get("access_token").toString();
+    expireAt = System.currentTimeMillis() + (29 * 60 * 1000);
+    return accessToken;
+}
+*/
 
-            if (tokenResponse != null && tokenResponse.get("accessToken") != null) {
-                accessToken = tokenResponse.get("accessToken").toString();
-                expireAt = System.currentTimeMillis() + (29 * 60 * 1000);
-                return accessToken;
-            }
 
             throw new RuntimeException("❌ AccessToken 발급 실패: 응답 없음");
         } catch (Exception e) {

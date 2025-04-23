@@ -49,11 +49,19 @@ public class NicePayAuthService {
 
             // 응답 파싱
             Map<String, Object> responseBody = response.getBody();
-            if (responseBody != null && responseBody.get("access_token") != null) {
-                accessToken = responseBody.get("access_token").toString();
-                expireAt = System.currentTimeMillis() + (29 * 60 * 1000); // 29분간 캐싱
-                return accessToken;
+            if (responseBody != null) {
+                System.out.println("✅ 응답 내용: " + responseBody); // 👈 이걸로 실제 키 확인해봐
+            
+                Object token = responseBody.get("access_token");
+                if (token == null) token = responseBody.get("accessToken"); // ✅ 대소문자 둘 다 시도
+            
+                if (token != null) {
+                    accessToken = token.toString();
+                    expireAt = System.currentTimeMillis() + (29 * 60 * 1000);
+                    return accessToken;
+                }
             }
+            
 
             throw new RuntimeException("❌ AccessToken 발급 실패: 응답 없음");
         } catch (Exception e) {

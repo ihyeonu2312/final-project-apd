@@ -36,7 +36,7 @@ public class NicePayPaymentService implements PaymentService {
     @Value("${nicepay.return-url}")
     private String returnUrl;
 
-    private final RestTemplate restTemplate;
+    private final RestTemplate restTemplate; //RestTemplate 자동 주입
         
 
     @Override

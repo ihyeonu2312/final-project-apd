@@ -41,15 +41,19 @@ public class NicePayAuthService {
 
 
             String response = webClient.post()
-    .uri(authUrl)
-    .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
-    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-    .body(BodyInserters.fromFormData("grant_type", "client_credentials"))
-    .retrieve()
-    .bodyToMono(String.class)
-    .doOnNext(System.out::println) // ✅ 응답 확인
-    .block();
-
+            .uri(authUrl)
+            .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("grant_type", "client_credentials"))
+            .retrieve()
+            .onStatus(status -> true, clientResponse -> clientResponse.bodyToMono(String.class).map(body -> {
+                System.out.println("❌ NicePay 에러 응답 본문: " + body);
+                return new RuntimeException("응답 에러: " + body);
+            }))
+            .bodyToMono(String.class)
+            .doOnNext(body -> System.out.println("✅ NicePay 정상 응답: " + body))
+            .block();
+        
 // 🔻 이 부분은 임시로 주석 처리
 /*
 if (tokenResponse != null && tokenResponse.get("access_token") != null) {

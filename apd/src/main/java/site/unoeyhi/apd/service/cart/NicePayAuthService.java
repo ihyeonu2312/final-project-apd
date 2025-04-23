@@ -50,6 +50,12 @@ public class NicePayAuthService {
 
             // 요청 전송
             ResponseEntity<Map> response = restTemplate.postForEntity(authUrl, request, Map.class);
+            
+            System.out.println("✅ 요청 URL: " + authUrl);
+            System.out.println("✅ Content-Type: " + headers.getContentType());
+            System.out.println("✅ BasicAuth: " + headers.getFirst("Authorization"));
+            System.out.println("✅ Body: " + body);
+
 
             // 응답 파싱
             Map<String, Object> responseBody = response.getBody();

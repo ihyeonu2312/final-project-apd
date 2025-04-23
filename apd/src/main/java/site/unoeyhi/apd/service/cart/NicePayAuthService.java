@@ -2,8 +2,10 @@ package site.unoeyhi.apd.service.cart;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Base64;
@@ -43,13 +45,11 @@ public class NicePayAuthService {
             Map<String, String> tokenResponse = webClient.post()
                 .uri(authUrl)
                 .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED) // ✅ 명시적으로 추가
                 .body(BodyInserters.fromFormData("grant_type", "client_credentials"))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() {})
                 .block();
-
-        
-
 
 
             if (tokenResponse != null && tokenResponse.get("accessToken") != null) {

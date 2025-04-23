@@ -1,6 +1,8 @@
 spring:
   config:
     import: classpath:application-secret.yml
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.http.client.HttpClientAutoConfiguration
 
   mail:
     host: smtp.gmail.com

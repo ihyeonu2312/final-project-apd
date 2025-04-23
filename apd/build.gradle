@@ -97,8 +97,10 @@ dependencies {
     
     // Apache HttpClient 5 전체 구성 요소
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+    implementation 'org.apache.httpcomponents.client5:httpclient5-win:5.2.1' // ✅ 추가
     implementation 'org.apache.httpcomponents.core5:httpcore5:5.2.1'
     implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.2.1'
+
 
 
 

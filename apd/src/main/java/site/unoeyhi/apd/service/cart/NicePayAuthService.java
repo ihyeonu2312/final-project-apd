@@ -1,20 +1,16 @@
 package site.unoeyhi.apd.service.cart;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.Base64;
 import java.util.Map;
 
 @Service
 public class NicePayAuthService {
-
-    private final WebClient webClient;
 
     @Value("${nicepay.api.auth-url}")
     private String authUrl;
@@ -25,12 +21,10 @@ public class NicePayAuthService {
     @Value("${nicepay.client.secret}")
     private String clientSecret;
 
+    private final RestTemplate restTemplate = new RestTemplate();
+
     private String accessToken;
     private long expireAt;
-
-    public NicePayAuthService(WebClient.Builder builder) {
-        this.webClient = builder.build();
-    }
 
     public String getAccessToken() {
         try {
@@ -39,31 +33,27 @@ public class NicePayAuthService {
                 return accessToken;
             }
 
+            // 헤더 설정
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            headers.setBasicAuth(clientId, clientSecret);
 
-            String response = webClient.post()
-            .uri("https://sandbox-api.nicepay.co.kr/v1/access-token")
-            .headers(headers -> headers.setBasicAuth(clientId, clientSecret))
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(BodyInserters.fromFormData("grant_type", "client_credentials"))
-            .retrieve()
-            .onStatus(status -> true, clientResponse -> clientResponse.bodyToMono(String.class).map(body -> {
-                System.out.println("❌ NicePay 에러 응답 본문: " + body);
-                return new RuntimeException("응답 에러: " + body);
-            }))
-            .bodyToMono(String.class)
-            .doOnNext(body -> System.out.println("✅ NicePay 정상 응답: " + body))
-            .block();
-            System.out.println("🧭 authUrl 확인: " + authUrl);
-        
-// 🔻 이 부분은 임시로 주석 처리
-/*
-if (tokenResponse != null && tokenResponse.get("access_token") != null) {
-    accessToken = tokenResponse.get("access_token").toString();
-    expireAt = System.currentTimeMillis() + (29 * 60 * 1000);
-    return accessToken;
-}
-*/
+            // 요청 바디 설정
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("grant_type", "client_credentials");
 
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+            // 요청 전송
+            ResponseEntity<Map> response = restTemplate.postForEntity(authUrl, request, Map.class);
+
+            // 응답 파싱
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody != null && responseBody.get("access_token") != null) {
+                accessToken = responseBody.get("access_token").toString();
+                expireAt = System.currentTimeMillis() + (29 * 60 * 1000); // 29분간 캐싱
+                return accessToken;
+            }
 
             throw new RuntimeException("❌ AccessToken 발급 실패: 응답 없음");
         } catch (Exception e) {

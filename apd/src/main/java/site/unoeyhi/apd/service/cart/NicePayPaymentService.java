@@ -6,26 +6,20 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import site.unoeyhi.apd.dto.cart.PaymentInitiateResponseDto;
 import site.unoeyhi.apd.dto.cart.PaymentRequestDto;
-import site.unoeyhi.apd.dto.cart.PaymentResponseDto;
 import site.unoeyhi.apd.entity.Order;
 import site.unoeyhi.apd.entity.Payment;
-import site.unoeyhi.apd.eums.OrderStatus;
-import site.unoeyhi.apd.eums.PaymentMethod;
 import site.unoeyhi.apd.eums.PaymentStatus;
 import site.unoeyhi.apd.repository.cart.OrderRepository;
 import site.unoeyhi.apd.repository.cart.PaymentRepository;
-import site.unoeyhi.apd.service.cart.NicePayAuthService;
 
 @Log4j2
 @Service
@@ -35,13 +29,14 @@ public class NicePayPaymentService implements PaymentService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final NicePayAuthService authService;
-    private final RestTemplate restTemplate;
 
     @Value("${nicepay.api.payment-url}")
     private String paymentApiUrl;
 
     @Value("${nicepay.return-url}")
     private String returnUrl;
+
+    private final RestTemplate restTemplate;
         
 
     @Override

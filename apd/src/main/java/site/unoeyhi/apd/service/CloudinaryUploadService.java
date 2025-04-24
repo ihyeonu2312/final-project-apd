@@ -24,7 +24,8 @@ public class CloudinaryUploadService {
 
     private final ProductRepository productRepository;
     private final ProductDetailImageRepository detailImageRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
 
     @Value("${cloudinary.cloud_name}")
     private String cloudName;

@@ -95,10 +95,10 @@ dependencies {
     implementation"com.fasterxml.jackson.core:jackson-databind:2.18.3"
 
     
-    // Apache HttpClient 5 전체 구성 요소
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
-    implementation 'org.apache.httpcomponents.core5:httpcore5:5.2.1'
-    implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.2.1'
+    // ✅ Apache HttpClient 
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.1'
+    implementation 'org.apache.httpcomponents.core5:httpcore5:5.4.1'
+
 
 
 

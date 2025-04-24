@@ -54,7 +54,6 @@ public class NicePayAuthService {
                     return accessToken;
                 }
             }
-    
             throw new RuntimeException("❌ AccessToken 발급 실패: 응답 없음");
         } catch (Exception e) {
             e.printStackTrace();

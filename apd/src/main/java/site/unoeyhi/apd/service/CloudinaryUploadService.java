@@ -71,44 +71,49 @@ public class CloudinaryUploadService {
     }
 
     private String uploadToCloudinary(String imageUrl) {
-    String url = String.format(UPLOAD_URL, cloudName);
-
-    try {
-        // ✅ InputStream으로 이미지 로드
-        InputStream imageStream = new URL(imageUrl).openStream();
-        InputStreamResource imageResource = new InputStreamResource(imageStream) {
-            @Override
-            public String getFilename() {
-                return "image.jpg";
-            }
-
-            @Override
-            public long contentLength() {
-                return -1; // unknown
-            }
-        };
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("file", imageResource);
-        body.add("upload_preset", uploadPreset);
-
-        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-
-        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-        if (response.getStatusCode() == HttpStatus.OK) {
-            return (String) response.getBody().get("secure_url");
-        } else {
-            log.error("Cloudinary 업로드 실패: {}", response);
-            throw new RuntimeException("Cloudinary 업로드 실패");
-        }
-    } catch (IOException e) {
-        log.error("이미지 스트림 읽기 실패: {}", e.getMessage());
-        throw new RuntimeException("이미지 스트림 읽기 실패", e);
-    }
-}
-
+        String url = String.format(UPLOAD_URL, cloudName);
     
+        try {
+            InputStream imageStream = new URL(imageUrl).openStream();
+            InputStreamResource imageResource = new InputStreamResource(imageStream) {
+                @Override
+                public String getFilename() {
+                    return "image.jpg";
+                }
+    
+                @Override
+                public long contentLength() {
+                    return -1;
+                }
+            };
+    
+            // ✅ 수정된 부분 시작
+            HttpHeaders fileHeader = new HttpHeaders();
+            fileHeader.setContentDispositionFormData("file", "image.jpg");
+            fileHeader.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+    
+            HttpEntity<InputStreamResource> fileEntity = new HttpEntity<>(imageResource, fileHeader);
+    
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", fileEntity);
+            body.add("upload_preset", uploadPreset);
+            // ✅ 수정된 부분 끝
+    
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+    
+            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+    
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            if (response.getStatusCode() == HttpStatus.OK) {
+                return (String) response.getBody().get("secure_url");
+            } else {
+                log.error("Cloudinary 업로드 실패: {}", response);
+                throw new RuntimeException("Cloudinary 업로드 실패");
+            }
+        } catch (IOException e) {
+            log.error("이미지 스트림 읽기 실패: {}", e.getMessage());
+            throw new RuntimeException("이미지 스트림 읽기 실패", e);
+        }
+    }
 }

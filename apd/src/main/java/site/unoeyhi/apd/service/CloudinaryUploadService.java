@@ -3,10 +3,12 @@ package site.unoeyhi.apd.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
+import java.net.URL;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import site.unoeyhi.apd.entity.Product;
@@ -14,6 +16,8 @@ import site.unoeyhi.apd.entity.ProductDetailImage;
 import site.unoeyhi.apd.repository.product.ProductDetailImageRepository;
 import site.unoeyhi.apd.repository.product.ProductRepository;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -67,33 +71,44 @@ public class CloudinaryUploadService {
     }
 
     private String uploadToCloudinary(String imageUrl) {
-        String url = String.format(UPLOAD_URL, cloudName);
-    
+    String url = String.format(UPLOAD_URL, cloudName);
+
+    try {
+        // ✅ InputStream으로 이미지 로드
+        InputStream imageStream = new URL(imageUrl).openStream();
+        InputStreamResource imageResource = new InputStreamResource(imageStream) {
+            @Override
+            public String getFilename() {
+                return "image.jpg";
+            }
+
+            @Override
+            public long contentLength() {
+                return -1; // unknown
+            }
+        };
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-    
+
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("file", imageUrl);
+        body.add("file", imageResource);
         body.add("upload_preset", uploadPreset);
-    
+
         HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-    
-        log.info("🔥 Cloudinary 업로드 요청: file={}, preset={}", imageUrl, uploadPreset);
-    
-        try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-            log.info("✅ Cloudinary 응답: status={}, body={}", response.getStatusCode(), response.getBody());
-    
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return (String) response.getBody().get("secure_url");
-            } else {
-                log.error("❌ Cloudinary 업로드 실패: {}", response);
-                throw new RuntimeException("Cloudinary 업로드 실패");
-            }
-        } catch (Exception e) {
-            log.error("❗ Cloudinary 예외 발생", e);
-            throw new RuntimeException("Cloudinary 업로드 중 예외 발생");
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+        if (response.getStatusCode() == HttpStatus.OK) {
+            return (String) response.getBody().get("secure_url");
+        } else {
+            log.error("Cloudinary 업로드 실패: {}", response);
+            throw new RuntimeException("Cloudinary 업로드 실패");
         }
+    } catch (IOException e) {
+        log.error("이미지 스트림 읽기 실패: {}", e.getMessage());
+        throw new RuntimeException("이미지 스트림 읽기 실패", e);
     }
+}
+
     
 }

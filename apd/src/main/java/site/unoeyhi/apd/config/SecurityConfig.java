@@ -69,6 +69,7 @@ public class SecurityConfig {
                 "/api/auth/verify-email", "/api/user/check-email", "/api/auth/reset-password","/api/auth/me", "/api/cart/**", "/api/used-products").permitAll()//로그인 & 회원가입 & 이메일 인증 API 허용
                 .requestMatchers("/api/auth/**").authenticated() // 
                 .requestMatchers("/api/reviews/**").permitAll() // 
+                .requestMatchers("/api/dev/**").permitAll() // 
                 .requestMatchers("/api/user/check-nickname", "/api/user/check-phone").permitAll()
                 .requestMatchers("/api/public/**").permitAll() // 🔥 추가적인 공개 API 허용 가능
                 .requestMatchers("/api/products").permitAll() // 🔥 `/api/products` 엔드포인트 접근 허용 추가

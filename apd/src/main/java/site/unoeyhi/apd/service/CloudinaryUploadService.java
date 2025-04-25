@@ -68,22 +68,32 @@ public class CloudinaryUploadService {
 
     private String uploadToCloudinary(String imageUrl) {
         String url = String.format(UPLOAD_URL, cloudName);
-
+    
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
+    
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", imageUrl);
         body.add("upload_preset", uploadPreset);
-
+    
         HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-
-        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-        if (response.getStatusCode() == HttpStatus.OK) {
-            return (String) response.getBody().get("secure_url");
-        } else {
-            log.error("Cloudinary 업로드 실패: {}", response);
-            throw new RuntimeException("Cloudinary 업로드 실패");
+    
+        log.info("🔥 Cloudinary 업로드 요청: file={}, preset={}", imageUrl, uploadPreset);
+    
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            log.info("✅ Cloudinary 응답: status={}, body={}", response.getStatusCode(), response.getBody());
+    
+            if (response.getStatusCode() == HttpStatus.OK) {
+                return (String) response.getBody().get("secure_url");
+            } else {
+                log.error("❌ Cloudinary 업로드 실패: {}", response);
+                throw new RuntimeException("Cloudinary 업로드 실패");
+            }
+        } catch (Exception e) {
+            log.error("❗ Cloudinary 예외 발생", e);
+            throw new RuntimeException("Cloudinary 업로드 중 예외 발생");
         }
     }
+    
 }

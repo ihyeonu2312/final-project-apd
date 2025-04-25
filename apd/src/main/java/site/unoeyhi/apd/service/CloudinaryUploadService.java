@@ -3,7 +3,7 @@ package site.unoeyhi.apd.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -15,9 +15,9 @@ import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.entity.ProductDetailImage;
 import site.unoeyhi.apd.repository.product.ProductDetailImageRepository;
 import site.unoeyhi.apd.repository.product.ProductRepository;
-
+import org.apache.commons.io.FileUtils;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -70,50 +70,36 @@ public class CloudinaryUploadService {
         }
     }
 
-    private String uploadToCloudinary(String imageUrl) {
-        String url = String.format(UPLOAD_URL, cloudName);
-    
-        try {
-            InputStream imageStream = new URL(imageUrl).openStream();
-            InputStreamResource imageResource = new InputStreamResource(imageStream) {
-                @Override
-                public String getFilename() {
-                    return "image.jpg";
-                }
-    
-                @Override
-                public long contentLength() {
-                    return -1;
-                }
-            };
-    
-            // ✅ 수정된 부분 시작
-            HttpHeaders fileHeader = new HttpHeaders();
-            fileHeader.setContentDispositionFormData("file", "image.jpg");
-            fileHeader.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-    
-            HttpEntity<InputStreamResource> fileEntity = new HttpEntity<>(imageResource, fileHeader);
-    
-            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", fileEntity);
-            body.add("upload_preset", uploadPreset);
-            // ✅ 수정된 부분 끝
-    
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-    
-            HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
-    
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return (String) response.getBody().get("secure_url");
-            } else {
-                log.error("Cloudinary 업로드 실패: {}", response);
-                throw new RuntimeException("Cloudinary 업로드 실패");
-            }
-        } catch (IOException e) {
-            log.error("이미지 스트림 읽기 실패: {}", e.getMessage());
-            throw new RuntimeException("이미지 스트림 읽기 실패", e);
+    public String uploadToCloudinary(String imageUrl) {
+    String url = String.format(UPLOAD_URL, cloudName);
+
+    try {
+        // ✅ 외부 URL 이미지 → 임시 파일로 저장
+        File tempFile = File.createTempFile("upload-", ".jpg");
+        FileUtils.copyURLToFile(new URL(imageUrl), tempFile); // commons-io 필요
+
+        // ✅ 전송용 body 구성
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new FileSystemResource(tempFile));
+        body.add("upload_preset", uploadPreset);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            return (String) response.getBody().get("secure_url");
+        } else {
+            log.error("Cloudinary 업로드 실패: {}", response);
+            throw new RuntimeException("Cloudinary 업로드 실패");
         }
+    } catch (IOException e) {
+        log.error("이미지 다운로드 실패: {}", e.getMessage());
+        throw new RuntimeException("이미지 다운로드 실패", e);
     }
+}
+
 }

@@ -88,6 +88,7 @@ public class CloudinaryUploadService {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", new FileSystemResource(tempFile));
             body.add("upload_preset", uploadPreset);
+            body.add("api_key", apiKey);  // ✅ 추가
     
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -107,9 +108,9 @@ public class CloudinaryUploadService {
             throw new RuntimeException("이미지 다운로드 실패", e);
         } finally {
             if (tempFile != null && tempFile.exists()) {
-                tempFile.delete(); // ✅ 업로드 끝났으면 임시 파일 삭제
+                tempFile.delete();
             }
         }
-
-}
+    }
+    
 }

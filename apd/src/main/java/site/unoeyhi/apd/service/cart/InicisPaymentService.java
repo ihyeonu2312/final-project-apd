@@ -14,13 +14,13 @@ import java.time.LocalDateTime;
 @Service
 public class InicisPaymentService {
 
-    @Value("${inicis.mid}")
+    @Value("${spring.inicis.mid}")
     private String mid;
 
-    @Value("${inicis.signKey}")
+    @Value("${spring.inicis.signKey}")
     private String signKey;
 
-    @Value("${inicis.apiUrl}")
+    @Value("${spring.inicis.apiUrl}")
     private String apiUrl;
 
     public InicisPaymentRequestDto createPaymentRequest(Long amount, String orderId, String buyerName) {

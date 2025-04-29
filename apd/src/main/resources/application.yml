@@ -73,10 +73,6 @@ spring:
     url: https://unoeyhi.site  # ✅ 프론트 주소
 
 
-
-
-    
-
   crawler:
     enabled: true
             

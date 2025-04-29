@@ -64,14 +64,10 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: 1148753  # ✅ 필수
 
-  nicepay:
-    api:
-      auth-url: https://sandbox-api.nicepay.co.kr/v1/access-token
-      payment-url: https://sandbox-api.nicepay.co.kr/v1/payments/request
-    client:
-      id: ${nicepay.client.id}
-      secret: ${nicepay.client.secret}
-    return-url: https://api.unoeyhi.site/api/payment/result  # ✅ REST API 웹훅 콜백 주소
+  inicis:
+    mid: INIpayTest
+    signKey: SU5JTElURV9UUklQTEVERVNfS0VZU1RS
+    apiUrl: https://mobile.inicis.com/smart/payment/
 
   site:
     url: https://unoeyhi.site  # ✅ 프론트 주소

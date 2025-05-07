@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.unoeyhi.apd.dto.product.ReviewDto;
+import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.entity.Review;
 import site.unoeyhi.apd.repository.product.ReviewRepository;
+import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.repository.product.ProductRepository;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -19,6 +21,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
+    private final MemberRepository memberRepository;
 
     @Override
     public List<ReviewDto> getReviewsByProductId(Long productId) {
@@ -57,14 +60,20 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     private ReviewDto convertToDto(Review review) {
+        String nickname = memberRepository.findById(review.getMemberId())
+                            .map(Member::getNickname)
+                            .orElse("탈퇴한 회원");
+    
         return new ReviewDto(
-            review.getReviewId(),               // ✅ 리뷰 ID
-            review.getProduct().getProductId(), // ✅ 상품 ID
-            review.getMemberId(),               // ✅ 작성한 회원 ID (Member 객체 아님)
-            review.getRating(),                 // ✅ 평점
-            review.getComment(),                // ✅ 리뷰 내용
-            review.getReviewImageUrl(),         // ✅ 리뷰 이미지 URL
-            review.getCreatedAt()               // ✅ 생성 날짜 (String)
+            review.getReviewId(),
+            review.getProduct().getProductId(),
+            review.getMemberId(),
+            nickname, // ✅ 추가된 필드
+            review.getRating(),
+            review.getComment(),
+            review.getReviewImageUrl(),
+            review.getCreatedAt()
         );
     }
+    
 }

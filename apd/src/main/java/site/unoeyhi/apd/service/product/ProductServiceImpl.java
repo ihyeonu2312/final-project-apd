@@ -10,13 +10,14 @@ import site.unoeyhi.apd.dto.product.ProductDto;
 import site.unoeyhi.apd.dto.product.ReviewDto;
 import site.unoeyhi.apd.entity.Category;
 import site.unoeyhi.apd.entity.Discount;
+import site.unoeyhi.apd.entity.Member;
 import site.unoeyhi.apd.entity.Option;
 import site.unoeyhi.apd.entity.Product;
 import site.unoeyhi.apd.entity.ProductImage;
 import site.unoeyhi.apd.entity.ProductOption;
 import site.unoeyhi.apd.entity.Review;
 import site.unoeyhi.apd.repository.CategoryRepository;
-
+import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.repository.product.ProductImageRepository;
 import site.unoeyhi.apd.repository.product.ProductRepository;
 import site.unoeyhi.apd.repository.product.ReviewRepository;
@@ -36,6 +37,7 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final MemberRepository memberRepository; 
     private final ProductImageRepository productImageRepository;
     private final OptionRepository optionRepository;
     private final ProductOptionRepository productOptionRepository;
@@ -45,7 +47,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository,
                               ProductImageRepository productImageRepository, OptionRepository optionRepository,
                               ProductOptionRepository productOptionRepository, DiscountRepository discountRepository,
-                              ReviewRepository reviewRepository) {
+                              ReviewRepository reviewRepository, MemberRepository memberRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.productImageRepository = productImageRepository;
@@ -53,6 +55,7 @@ public class ProductServiceImpl implements ProductService {
         this.productOptionRepository = productOptionRepository;
         this.discountRepository = discountRepository;
         this.reviewRepository = reviewRepository;
+        this.memberRepository = memberRepository;
     }
 
     
@@ -225,10 +228,18 @@ public class ProductServiceImpl implements ProductService {
 
      // ✅ 특정 상품 조회 구현
      private ReviewDto convertToReviewDto(Review review) {
+        String nickname = "탈퇴한 회원"; // 기본값
+    
+        // 닉네임 조회하려면 memberRepository 필요함
+        Optional<Member> memberOpt = memberRepository.findById(review.getMemberId());
+        if (memberOpt.isPresent()) {
+            nickname = memberOpt.get().getNickname();
+        }
         return new ReviewDto(
             review.getReviewId(),
             review.getProduct().getProductId(),
             review.getMemberId(),
+            nickname,
             review.getRating(),
             review.getComment(),
             review.getReviewImageUrl(),

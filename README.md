@@ -7,4 +7,4 @@ test@example.com / 123456
 admin@example.com / 123456
 
 <h2>테이블 구조</h2>
-[image](https://github.com/user-attachments/assets/9eb869f5-bfee-4824-8dbe-e53013a7da86)
+![image](https://github.com/user-attachments/assets/9eb869f5-bfee-4824-8dbe-e53013a7da86)

@@ -5,3 +5,6 @@ https://unoeyhi.site/
 test@example.com / 123456
 <h2>테스트용 관리자 ID / PW </h2>
 admin@example.com / 123456
+
+테이블 구조
+![image](https://github.com/user-attachments/assets/9eb869f5-bfee-4824-8dbe-e53013a7da86)

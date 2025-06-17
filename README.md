@@ -1,7 +1,19 @@
-# finalProject_apd
-<h1>쇼핑몰 프로젝트 알팡당입니다.</h1>
-https://unoeyhi.site/
-<h2>테스트용 로그인 ID / PW </h2>
-test@example.com / 123456
-<h2>테스트용 관리자 ID / PW </h2>
-admin@example.com / 123456
+#  finalProject_apd - 알팡당
+
+**배포 주소**: [https://unoeyhi.site/](https://unoeyhi.site/)
+
+---
+
+## 테스트 계정
+
+| 구분   | 이메일              | 비밀번호   |
+|--------|---------------------|------------|
+| 일반회원 | test@example.com     | 123456     |
+| 관리자   | admin@example.com    | 123456     |
+
+---
+
+## 테이블 ERD
+
+
+![Image](https://github.com/user-attachments/assets/f54f9c06-ee49-46a1-8735-067f540d7491)

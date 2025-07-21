@@ -26,4 +26,11 @@ public class PaymentController {
 
         return ResponseEntity.ok("success");
     }
+
+    @GetMapping("/payment/success")
+    public ResponseEntity<String> paymentSuccessGet(@RequestParam Map<String, String> params) {
+        System.out.println("✅ [GET 결제 성공 콜백]");
+        params.forEach((k, v) -> System.out.println("🔸 " + k + " = " + v));
+        return ResponseEntity.ok("success (GET)");
+    }
 }

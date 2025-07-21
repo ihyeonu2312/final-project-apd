@@ -1,0 +1,28 @@
+<!-- src/main/resources/static/payment-redirect.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>결제 처리 중...</title>
+</head>
+<body>
+  <p>결제를 처리 중입니다. 잠시만 기다려주세요...</p>
+
+  <form id="paymentForm" method="POST" action="/payment/success">
+    <input type="hidden" name="authToken" id="authToken" />
+  </form>
+
+  <script>
+    // URL에서 쿼리스트링 파싱
+    const params = new URLSearchParams(window.location.search);
+    const authToken = params.get("authToken");
+
+    if (authToken) {
+      document.getElementById("authToken").value = authToken;
+      document.getElementById("paymentForm").submit();
+    } else {
+      document.body.innerHTML = "<h2>결제 정보가 올바르지 않습니다.</h2>";
+    }
+  </script>
+</body>
+</html>

@@ -13,4 +13,5 @@ public class InicisPaymentRequestDto {
     private String timestamp;
     private String hashData;
     private String apiUrl;
+    private String returnUrl; //콜백 주소
 }

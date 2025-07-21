@@ -47,6 +47,7 @@ public class InicisPaymentService implements PaymentService  {
                 .timestamp(timestamp)
                 .hashData(hashData)
                 .apiUrl(apiUrl)
+                .returnUrl("https://unoeyhi.site/payment-redirect.html")
                 .build();
     }
 

@@ -1,36 +1,39 @@
 package site.unoeyhi.apd.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import site.unoeyhi.apd.service.cart.PaymentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Enumeration;
 import java.util.Map;
 
 @Slf4j
 @RestController
 @RequestMapping("/payment")
+@RequiredArgsConstructor
 public class PaymentController {
 
-    @PostMapping("/payment/success")
-    public ResponseEntity<String> handlePaymentSuccess(HttpServletRequest request) {
-        System.out.println("✅ [결제 완료 콜백 수신]");
+    private final PaymentService paymentService;
 
-        Enumeration<String> parameterNames = request.getParameterNames();
-        while (parameterNames.hasMoreElements()) {
-            String name = parameterNames.nextElement();
-            String value = request.getParameter(name);
-            System.out.println("🔸 " + name + " = " + value);
+    // ✅ POST 방식 (이니시스 콜백)
+    @PostMapping("/success")
+    public ResponseEntity<String> paymentSuccess(HttpServletRequest request) {
+        String authToken = request.getParameter("authToken");
+        if (authToken == null || authToken.isEmpty()) {
+            return ResponseEntity.badRequest().body("authToken 없음");
         }
 
-        return ResponseEntity.ok("success");
+        String result = paymentService.approve(authToken); // 승인 요청
+        return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/payment/success")
+    // ✅ GET 방식 (테스트 또는 웹표준 방식)
+    @GetMapping("/success")
     public ResponseEntity<String> paymentSuccessGet(@RequestParam Map<String, String> params) {
-        System.out.println("✅ [GET 결제 성공 콜백]");
-        params.forEach((k, v) -> System.out.println("🔸 " + k + " = " + v));
+        log.info("✅ [GET 결제 성공 콜백]");
+        params.forEach((k, v) -> log.info("🔸 {} = {}", k, v));
         return ResponseEntity.ok("success (GET)");
     }
 }

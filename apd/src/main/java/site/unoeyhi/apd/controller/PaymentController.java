@@ -13,20 +13,16 @@ import java.util.Map;
 @RequestMapping("/payment")
 public class PaymentController {
 
-    @PostMapping("/success")
-    public ResponseEntity<String> paymentSuccess(HttpServletRequest request) {
-        log.info("✅ NICEPAY 결제 완료 콜백 수신");
+    @PostMapping("/payment/success")
+    public ResponseEntity<String> handlePaymentSuccess(HttpServletRequest request) {
+        System.out.println("✅ [결제 완료 콜백 수신]");
 
-        // 폼 파라미터 로그 찍기
         Enumeration<String> parameterNames = request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             String name = parameterNames.nextElement();
             String value = request.getParameter(name);
-            log.info("🔸 {} = {}", name, value);
+            System.out.println("🔸 " + name + " = " + value);
         }
-
-        // TODO: 여기에 orderId, 결제 상태 파싱 → 주문 완료 처리 로직 연결
-        // ex) orderService.completeOrder(orderId);
 
         return ResponseEntity.ok("success");
     }

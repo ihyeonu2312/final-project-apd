@@ -1,12 +1,14 @@
 package site.unoeyhi.apd.controller;
 
 import lombok.RequiredArgsConstructor;
-import site.unoeyhi.apd.dto.cart.InicisPaymentRequestDto;
+import site.unoeyhi.apd.dto.cart.PaymentInitiateResponseDto;
+import site.unoeyhi.apd.dto.cart.PaymentRequestDto;
 import site.unoeyhi.apd.service.cart.InicisPaymentService;
 import site.unoeyhi.apd.service.cart.OrderService;
 
 import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,6 +17,17 @@ import org.springframework.web.bind.annotation.*;
 public class InicisPaymentController {
 
     private final OrderService orderService;
+    private final InicisPaymentService inicisPaymentService;
+
+    @PostMapping("/request")
+    public ResponseEntity<PaymentInitiateResponseDto> initiatePayment(
+            @RequestParam("orderId") Long orderId,
+            @RequestBody PaymentRequestDto requestDto) {
+
+        PaymentInitiateResponseDto response = inicisPaymentService.initiatePayment(orderId, requestDto);
+        return ResponseEntity.ok(response);
+    }
+
 
     @PostMapping("/result")
     public String paymentResult(@RequestParam Map<String, String> resultData) {

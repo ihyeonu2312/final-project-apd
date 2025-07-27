@@ -19,7 +19,7 @@ public class InicisPaymentController {
     private final OrderService orderService;
     private final InicisPaymentService inicisPaymentService;
 
-    @PostMapping("/request")
+    @PostMapping("/{orderId}/pay")
     public ResponseEntity<PaymentInitiateResponseDto> initiatePayment(
             @RequestParam("orderId") Long orderId,
             @RequestBody PaymentRequestDto requestDto) {

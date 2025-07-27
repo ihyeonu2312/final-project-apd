@@ -7,7 +7,6 @@ import site.unoeyhi.apd.repository.MemberRepository;
 import site.unoeyhi.apd.service.EmailService;
 import site.unoeyhi.apd.service.MemberService;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

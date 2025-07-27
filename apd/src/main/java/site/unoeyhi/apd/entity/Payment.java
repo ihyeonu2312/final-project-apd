@@ -35,7 +35,7 @@ public class Payment {
     private Order order;
 
     @Column(nullable = false)
-    private double amount;
+    private Long amount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

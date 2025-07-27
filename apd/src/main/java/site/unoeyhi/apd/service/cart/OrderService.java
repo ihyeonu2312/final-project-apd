@@ -11,4 +11,5 @@ public interface OrderService {
     List<Order> getOrdersByMember(Long memberId);  // ✅ 회원 주문 목록 조회 추가
     void updateOrderStatus(Long orderId, OrderStatus status);
     void completeOrder(Long orderId); //주문 완료
+    
 }

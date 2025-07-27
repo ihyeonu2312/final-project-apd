@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import site.unoeyhi.apd.dto.cart.InicisPaymentRequestDto;
 import site.unoeyhi.apd.dto.cart.PaymentInitiateResponseDto;
 import site.unoeyhi.apd.dto.cart.PaymentRequestDto;
-import site.unoeyhi.apd.dto.cart.PaymentResponseDto;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -56,7 +55,7 @@ public class InicisPaymentService implements PaymentService  {
             String data = mid + orderId + amount + timestamp + signKey;
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hash = md.digest(data.getBytes(StandardCharsets.UTF_8));
-
+ 
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
@@ -118,7 +117,6 @@ public class InicisPaymentService implements PaymentService  {
 
      @Override
     public String approve(String authToken) {
-        // 이니시스 승인 처리 로직 작성 예정
         return "✅ 결제 승인 완료 (authToken: " + authToken + ")";
     }
 

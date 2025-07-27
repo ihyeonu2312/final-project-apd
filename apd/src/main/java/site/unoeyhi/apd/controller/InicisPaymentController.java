@@ -28,8 +28,6 @@ public class InicisPaymentController {
         return ResponseEntity.ok(response);
     }
 
-    
-
     @PostMapping("/result")
     public String paymentResult(@RequestParam Map<String, String> resultData) {
         String status = resultData.get("P_STATUS");

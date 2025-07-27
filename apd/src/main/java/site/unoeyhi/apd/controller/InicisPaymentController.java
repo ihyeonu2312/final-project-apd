@@ -21,7 +21,7 @@ public class InicisPaymentController {
 
     @PostMapping("/{orderId}/pay")
     public ResponseEntity<PaymentInitiateResponseDto> initiatePayment(
-            @RequestParam("orderId") Long orderId,
+            @PathVariable("orderId") Long orderId,
             @RequestBody PaymentRequestDto requestDto) {
 
         PaymentInitiateResponseDto response = inicisPaymentService.initiatePayment(orderId, requestDto);

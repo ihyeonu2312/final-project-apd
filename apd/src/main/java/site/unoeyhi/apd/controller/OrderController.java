@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import site.unoeyhi.apd.dto.cart.OrderRequestDto;
 import site.unoeyhi.apd.dto.cart.OrderResponseDto;
 import site.unoeyhi.apd.entity.Order;
 import site.unoeyhi.apd.eums.OrderStatus;
+import site.unoeyhi.apd.security.CustomUserDetails;
 import site.unoeyhi.apd.security.CustomUserDetailsService;
 import site.unoeyhi.apd.service.cart.OrderService;
 
@@ -26,13 +28,13 @@ public class OrderController {
 
     /** ✅ 결제 전 */
     @PostMapping("/prepare")
-    public ResponseEntity<OrderResponseDto> prepareOrder(@Valid @RequestBody OrderRequestDto request) {
-        System.out.println("🛒 주문 준비 요청 - memberId: " + request.getMemberId());
+    public ResponseEntity<OrderResponseDto> prepareOrder(
+        @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        Order order = orderService.prepareOrder(request.getMemberId());
+        Long memberId = userDetails.getMember().getMemberId(); // 🔥 로그인한 사용자 ID
+        System.out.println("🛒 주문 준비 요청 - memberId: " + memberId);
 
-        System.out.println("🛒 주문 준비 완료 - orderId: " + order.getOrderId());
-        
+        Order order = orderService.prepareOrder(memberId);
         return ResponseEntity.ok(new OrderResponseDto(order));
     }
     //결제 후
